@@ -8,7 +8,14 @@
 #include "scene/model.h"
 #include "camera/camera.h"
 #include "light/light.h"
+#include "render/shader.h"
 #include "utils/time.h"
+
+#include "ecs/ecs.h"
+#include "ecs/components.h"
+#include "systems/render_system.h"
+
+using namespace luchengine;
 
 int main()
 {
@@ -39,12 +46,21 @@ int main()
     scene.setCamera(&camera);
     scene.setLight(&light);
 
-    luchrender::scene::SceneObject* object = scene.addObject(&model);
+    // ecs
+    ecs::World world;
 
-    // tune object
-    object->getMaterial().setShader(shader);
-    object->getMaterial().setColor({1.0f, 0.5f, 0.0f});
-    object->getTransform().setPosition({0, 0, 0});
+    auto entity = world.create();
+
+    auto& transformComponent = world.add<ecs::TransformComponent>(entity);
+    transformComponent.transform.setIdentity();
+    transformComponent.transform.setPosition({0, 0, 0});
+
+    auto& renderableComponent = world.add<ecs::RenderableComponent>(entity);
+    renderableComponent.model = &model;
+    renderableComponent.material.setShader(shader);
+    renderableComponent.material.setColor({1.0f, 0.5f, 0.0f});
+
+    systems::RenderSystem renderSystem(scene);
 
     // time
     luchrender::utils::FrameTimer timer;
@@ -59,8 +75,11 @@ int main()
         // update camera
         camera.update(luchrender::window::Window::get(), dt);
 
-        // rotate object continuously
-        object->getTransform().rotate({0, 0, 0.5}, dt);
+        // rotate entity
+        if (auto* t = world.get<ecs::TransformComponent>(entity))
+        {
+            t->transform.rotateZ(0.5f * dt);
+        }
 
         // framebuffer size + aspect
         int fbw;
@@ -69,7 +88,8 @@ int main()
         luchrender::render::Renderer::resizeViewport(fbw, fbh);
         scene.setAspect(fbh > 0 ? float(fbw) / float(fbh) : 1.0f);
 
-        // render
+        // sync and render
+        renderSystem.rebuild(world);
         luchrender::render::Renderer::clear(0.05f, 0.05f, 0.08f, 1.0f);
         luchrender::render::Renderer::render(scene);
         luchrender::window::Window::swapBuffers();
