@@ -2,14 +2,14 @@
  * main.cpp
  */
 
-#include "window/window.h"
+#include "app/window.h"
+#include "app/loop.h"
 #include "render/renderer.h"
+#include "render/shader.h"
 #include "scene/scene.h"
 #include "scene/model.h"
 #include "camera/camera.h"
 #include "light/light.h"
-#include "render/shader.h"
-#include "utils/time.h"
 
 #include "ecs/ecs.h"
 #include "ecs/components.h"
@@ -20,8 +20,8 @@ using namespace luchengine;
 int main()
 {
     // window
-    luchrender::window::WindowConfig windowCfg{800, 600, "Demo", true};
-    if (!luchrender::window::Window::init(windowCfg))
+    luchrender::app::WindowConfig windowCfg{800, 600, "Demo", true};
+    if (!luchrender::app::Window::init(windowCfg))
     {
         return -1;
     }
@@ -66,35 +66,20 @@ int main()
     luchrender::utils::FrameTimer timer;
 
     // loop
-    while (!luchrender::window::Window::shouldClose())
-    {
-        float dt = timer.tick();
+    luchrender::app::Loop loop(scene);
+    loop.run(
+        [&](float dt) {
+            camera.update(luchrender::app::Window::get(), dt);
 
-        luchrender::window::Window::pollEvents();
+            if (auto* t = world.get<luchengine::ecs::TransformComponent>(entity))
+            {
+                t->transform.rotateZ(0.5f * dt);
+            }
 
-        // update camera
-        camera.update(luchrender::window::Window::get(), dt);
-
-        // rotate entity
-        if (auto* t = world.get<ecs::TransformComponent>(entity))
-        {
-            t->transform.rotateZ(0.5f * dt);
+            renderSystem.rebuild(world);
         }
+    );
 
-        // framebuffer size + aspect
-        int fbw;
-        int fbh;
-        luchrender::window::Window::getSize(fbw, fbh);
-        luchrender::render::Renderer::resizeViewport(fbw, fbh);
-        scene.setAspect(fbh > 0 ? float(fbw) / float(fbh) : 1.0f);
-
-        // sync and render
-        renderSystem.rebuild(world);
-        luchrender::render::Renderer::clear(0.05f, 0.05f, 0.08f, 1.0f);
-        luchrender::render::Renderer::render(scene);
-        luchrender::window::Window::swapBuffers();
-    }
-
-    luchrender::window::Window::shutdown();
+    luchrender::app::Window::shutdown();
     return 0;
 }
