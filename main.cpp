@@ -32,7 +32,7 @@ int main()
     luchrender::scene::Model model("assets/models/fox.obj");
 
     // shader
-    auto shader = std::make_shared<luchrender::render::Shader>("shaders/normal.vert.glsl", "shaders/normal.frag.glsl");
+    auto shader = std::make_shared<luchrender::render::Shader>("assets/shaders/normal.vert.glsl", "assets/shaders/normal.frag.glsl");
 
     // scene
     luchrender::scene::Scene scene;
