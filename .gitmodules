@@ -1,0 +1,6 @@
+[submodule "luchphysic"]
+	path = luchphysic
+	url = https://github.com/admtrv/luchphysic.git
+[submodule "luchrender"]
+	path = luchrender
+	url = https://github.com/admtrv/luchrender.git

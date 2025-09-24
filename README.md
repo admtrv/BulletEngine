@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="resources/engine.png" alt="LuchEngine Logo" width="350">
+    <img src="assets/images/engine.png" alt="LuchEngine Logo" width="350">
 </p>
 
 <p align="center">
@@ -7,6 +7,13 @@
 </p>
 
 <p align="center">
-    <img src="resources/render.png" alt="LuchRender Logo" width="200">
-    <img src="resources/physic.png" alt="LuchPhysic Logo" width="200">
+
+  <a href="https://github.com/admtrv/luchrender">
+    <img src="assets/images/render.png" alt="LuchRender Logo" height="70">
+  </a>
+  
+  <a href="https://github.com/admtrv/luchphysic">
+    <img src="assets/images/physic.png" alt="LuchPhysic Logo" height="70">
+  </a>
+  
 </p>
