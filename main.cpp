@@ -9,8 +9,8 @@
 #include "render/shader.h"
 #include "scene/scene.h"
 #include "scene/model.h"
-#include "camera/camera.h"
-#include "light/light.h"
+#include "scene/camera.h"
+#include "scene/light.h"
 
 // luchengine
 #include "ecs/ecs.h"
@@ -31,41 +31,35 @@ int main()
     // renderer
     luchrender::render::Renderer::init();
 
-    // camera
-    luchrender::camera::FlyCamera camera({0,1.5f,5.0f});
-
-    // light
-    luchrender::light::DirectionalLight light;
-
-    // model
+    // assets
     luchrender::scene::Model model("assets/models/fox.obj");
-
-    // shader
-    auto shader = std::make_shared<luchrender::render::Shader>("assets/shaders/normal.vert.glsl", "assets/shaders/normal.frag.glsl");
+    std::shared_ptr<luchrender::render::Shader> shader = std::make_shared<luchrender::render::Shader>(
+        "assets/shaders/normal.vert.glsl",
+        "assets/shaders/normal.frag.glsl"
+    );
 
     // scene
     luchrender::scene::Scene scene;
+
+    luchrender::scene::FlyCamera camera({0,1.5f,5.0f});
     scene.setCamera(&camera);
+
+    luchrender::scene::DirectionalLight light;
     scene.setLight(&light);
 
     // ecs
     ecs::World world;
+    ecs::Entity entity = world.create();
 
-    auto entity = world.create();
-
+    // components
     auto& transformComponent = world.add<ecs::TransformComponent>(entity);
-    transformComponent.transform.setIdentity();
-    transformComponent.transform.setPosition({0, 0, 0});
-
     auto& renderableComponent = world.add<ecs::RenderableComponent>(entity);
     renderableComponent.model = &model;
     renderableComponent.material.setShader(shader);
     renderableComponent.material.setColor({1.0f, 0.5f, 0.0f});
 
+    // connection layer luchrender <-> luchengine
     systems::RenderSystem renderSystem(scene);
-
-    // time
-    luchrender::utils::FrameTimer timer;
 
     // loop
     luchrender::app::Loop loop(scene);
