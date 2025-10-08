@@ -1,7 +1,8 @@
 /*
- * render_system.cpp
+ * RenderSystem.cpp
  */
-#include "render_system.h"
+
+#include "RenderSystem.h"
 
 namespace luchengine {
 namespace systems {

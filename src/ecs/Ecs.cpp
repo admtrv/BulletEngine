@@ -1,8 +1,8 @@
 /*
- * ecs.cpp
+ * Ecs.cpp
  */
 
-#include "ecs.h"
+#include "Ecs.h"
 
 namespace luchengine {
 namespace ecs {

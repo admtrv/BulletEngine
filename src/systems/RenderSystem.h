@@ -1,11 +1,13 @@
 /*
- * render_system.h
+ * RenderSystem.h
  */
+
 #pragma once
 
-#include "ecs/ecs.h"
-#include "scene/scene.h"
-#include "ecs/components.h"
+#include "ecs/Ecs.h"
+#include "ecs/Components.h"
+
+#include "scene/Scene.h"
 
 namespace luchengine {
 namespace systems {

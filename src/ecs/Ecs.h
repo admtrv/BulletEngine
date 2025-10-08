@@ -1,5 +1,5 @@
 /*
- * ecs.h
+ * Ecs.h
  */
 
 #pragma once

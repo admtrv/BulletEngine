@@ -1,13 +1,13 @@
 /*
- * components.h
+ * Components.h
  */
 
 #pragma once
 
-#include "ecs.h"
-#include "scene/transform.h"
-#include "scene/model.h"
-#include "render/material.h"
+#include "Ecs.h"
+#include "scene/Transform.h"
+#include "scene/Model.h"
+#include "render/Material.h"
 
 namespace luchengine {
 namespace ecs {
