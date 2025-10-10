@@ -12,7 +12,7 @@
 namespace luchengine {
 namespace systems {
 
-// adapter ECS -> luchrender::scene::Scene
+// render adapter
 class RenderSystem {
 public:
     explicit RenderSystem(luchrender::scene::Scene& scene) : m_scene(scene) {}

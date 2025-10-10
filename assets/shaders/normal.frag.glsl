@@ -1,4 +1,5 @@
 #version 330 core
+
 in vec3 vNor;
 
 uniform vec3 uLightDir;
@@ -6,7 +7,8 @@ uniform vec3 uColor;
 
 out vec4 FragColor;
 
-void main() {
+void main()
+{
     vec3 N = normalize(vNor);
     float ndl = max(dot(N, normalize(uLightDir)), 0.0);
     float ambient = 0.2;

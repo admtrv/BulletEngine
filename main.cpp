@@ -5,6 +5,8 @@
 // luchrender
 #include "app/Window.h"
 #include "app/Loop.h"
+#include "render/passes/Grid.h"
+#include "render/passes/WorldAxis.h"
 #include "render/Renderer.h"
 #include "render/Shader.h"
 #include "scene/Scene.h"
@@ -12,9 +14,13 @@
 #include "scene/Camera.h"
 #include "scene/Light.h"
 
+// luchphysic
+#include "math/Integrator.h"
+
 // luchengine
 #include "ecs/Ecs.h"
 #include "ecs/Components.h"
+#include "systems/PhysicsSystem.h"
 #include "systems/RenderSystem.h"
 
 using namespace luchengine;
@@ -30,6 +36,14 @@ int main()
 
     // renderer
     luchrender::render::Renderer::init();
+
+    // grid
+    auto grid = std::make_shared<luchrender::render::Grid>();
+    luchrender::render::Renderer::registerPrePass(grid);
+
+    // world coordinated
+    auto worldAxis = std::make_shared<luchrender::render::WorldAxis>();
+    luchrender::render::Renderer::registerPrePass(worldAxis);
 
     // assets
     luchrender::scene::Model model("assets/models/bullet.obj");
@@ -50,15 +64,26 @@ int main()
     // ecs
     ecs::World world;
     ecs::Entity bullet = world.create();
+
     // components
     auto& transformComponent = world.add<ecs::TransformComponent>(bullet);
+
     auto& renderableComponent = world.add<ecs::RenderableComponent>(bullet);
     renderableComponent.model = &model;
     renderableComponent.material.setShader(shader);
     renderableComponent.material.setColor({1.0f, 0.5f, 0.0f});
 
-    // connection layer luchrender <-> luchengine
+    // rigid body
+    auto& rigidBodyComponent = world.add<ecs::RigidBodyComponent>(bullet);
+    rigidBodyComponent.body.setMass(0.05f);
+    rigidBodyComponent.body.setPosition({0.0f, 1.5f, 0.0f});
+    rigidBodyComponent.body.setVelocityFromAngles(10.0f, 45.0f, 90.0f);
+
+    // connection layers
     systems::RenderSystem renderSystem(scene);
+
+    luchphysic::math::EulerIntegrator euler;
+    systems::PhysicsSystem physicsSystem(euler);
 
     // loop
     luchrender::app::Loop loop(scene);
@@ -66,11 +91,7 @@ int main()
         [&](float dt) {
             camera.update(luchrender::app::Window::get(), dt);
 
-            // if (auto* t = world.get<luchengine::ecs::TransformComponent>(entity))
-            // {
-                // t->transform.rotateZ(0.5f * dt);
-            // }
-
+            physicsSystem.update(world, dt);
             renderSystem.rebuild(world);
         }
     );

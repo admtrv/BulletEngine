@@ -24,6 +24,9 @@ set(LUCHRENDER_BUILD_APP OFF CACHE BOOL "" FORCE)
 # connect luchrender as library
 add_subdirectory(luchrender)
 
+# connect luchphysic as library
+add_subdirectory(luchphysic)
+
 # collect all source files recursively, excluding build directory
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/*.cpp")
 list(FILTER SOURCES EXCLUDE REGEX ".*/.*build.*/.*")
@@ -39,6 +42,9 @@ target_include_directories(${BIN_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
 # linking luchrender
 target_link_libraries(${BIN_NAME} PRIVATE luchrender)
+
+# linking luchphysic
+target_link_libraries(${BIN_NAME} PRIVATE luchphysic)
 
 # copy resources to binary after compilation
 add_custom_command(TARGET ${BIN_NAME} POST_BUILD
