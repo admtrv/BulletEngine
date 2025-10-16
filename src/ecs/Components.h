@@ -30,5 +30,12 @@ public:
     BulletPhysic::dynamics::RigidBody body;
 };
 
+class TrajectoryComponent : public Component {
+public:
+    std::vector<glm::vec3> points;
+    glm::vec3 color{1.0f, 1.0f, 1.0f};
+    float minSegment = 0.02f;
+};
+
 } // namespace ecs
 } // namespace BulletEngine

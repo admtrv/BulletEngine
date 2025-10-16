@@ -49,6 +49,16 @@ target_link_libraries(${BIN_NAME} PRIVATE BulletPhysic)
 # copy resources to binary after compilation
 add_custom_command(TARGET ${BIN_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_CURRENT_SOURCE_DIR}/assets
+            ${CMAKE_CURRENT_SOURCE_DIR}/BulletRender/assets
             $<TARGET_FILE_DIR:${BIN_NAME}>/assets
+    COMMENT "Copying BulletRender assets..."
 )
+
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+    add_custom_command(TARGET ${BIN_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_CURRENT_SOURCE_DIR}/assets
+                $<TARGET_FILE_DIR:${BIN_NAME}>/assets
+        COMMENT "Copying BulletEngine assets..."
+    )
+endif()

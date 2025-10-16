@@ -22,6 +22,7 @@
 #include "ecs/Components.h"
 #include "systems/BallisticSystem.h"
 #include "systems/RenderSystem.h"
+#include "systems/TrajectorySystem.h"
 
 using namespace BulletEngine;
 
@@ -44,6 +45,10 @@ int main()
     // world coordinated
     auto worldAxis = std::make_shared<BulletRender::render::WorldAxis>();
     BulletRender::render::Renderer::registerPrePass(worldAxis);
+
+    // trajectory lines
+    auto lines = std::make_shared<BulletRender::render::Lines>(2.0f);
+    BulletRender::render::Renderer::registerPrePass(lines);
 
     // assets
     BulletRender::scene::Model model("assets/models/bullet.obj");
@@ -68,6 +73,8 @@ int main()
     // components
     auto& transformComponent = world.add<ecs::TransformComponent>(bullet);
 
+    auto& trajectoryComponent = world.add<ecs::TrajectoryComponent>(bullet);
+
     auto& renderableComponent = world.add<ecs::RenderableComponent>(bullet);
     renderableComponent.model = &model;
     renderableComponent.material.setShader(shader);
@@ -82,6 +89,8 @@ int main()
     // connection layers
     systems::RenderSystem renderSystem(scene);
 
+    systems::TrajectorySystem trajectorySystem(lines);
+
     BulletPhysic::math::EulerIntegrator euler;
     systems::BallisticSystem ballisticSystem(euler);
 
@@ -92,6 +101,7 @@ int main()
             camera.update(BulletRender::app::Window::get(), dt);
 
             ballisticSystem.update(world, dt);
+            trajectorySystem.update(world);
             renderSystem.rebuild(world);
         }
     );
