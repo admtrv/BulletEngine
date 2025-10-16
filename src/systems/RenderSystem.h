@@ -9,19 +9,19 @@
 
 #include "scene/Scene.h"
 
-namespace luchengine {
+namespace BulletEngine {
 namespace systems {
 
 // render adapter
 class RenderSystem {
 public:
-    explicit RenderSystem(luchrender::scene::Scene& scene) : m_scene(scene) {}
+    explicit RenderSystem(BulletRender::scene::Scene& scene) : m_scene(scene) {}
 
     void rebuild(ecs::World& world);
 
 private:
-    luchrender::scene::Scene& m_scene;
+    BulletRender::scene::Scene& m_scene;
 };
 
 } // namespace systems
-} // namespace luchengine
+} // namespace BulletEngine

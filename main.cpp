@@ -2,7 +2,7 @@
  * main.cpp
  */
 
-// luchrender
+// BulletRender
 #include "app/Window.h"
 #include "app/Loop.h"
 #include "render/passes/Grid.h"
@@ -14,51 +14,51 @@
 #include "scene/Camera.h"
 #include "scene/Light.h"
 
-// luchphysic
+// BulletPhysic
 #include "math/Integrator.h"
 
-// luchengine
+// BulletEngine
 #include "ecs/Ecs.h"
 #include "ecs/Components.h"
-#include "systems/PhysicsSystem.h"
+#include "systems/BallisticSystem.h"
 #include "systems/RenderSystem.h"
 
-using namespace luchengine;
+using namespace BulletEngine;
 
 int main()
 {
     // window
-    luchrender::app::WindowConfig windowCfg{800, 600, "Demo", true};
-    if (!luchrender::app::Window::init(windowCfg))
+    BulletRender::app::WindowConfig windowCfg{800, 600, "Demo", true};
+    if (!BulletRender::app::Window::init(windowCfg))
     {
         return -1;
     }
 
     // renderer
-    luchrender::render::Renderer::init();
+    BulletRender::render::Renderer::init();
 
     // grid
-    auto grid = std::make_shared<luchrender::render::Grid>();
-    luchrender::render::Renderer::registerPrePass(grid);
+    auto grid = std::make_shared<BulletRender::render::Grid>();
+    BulletRender::render::Renderer::registerPrePass(grid);
 
     // world coordinated
-    auto worldAxis = std::make_shared<luchrender::render::WorldAxis>();
-    luchrender::render::Renderer::registerPrePass(worldAxis);
+    auto worldAxis = std::make_shared<BulletRender::render::WorldAxis>();
+    BulletRender::render::Renderer::registerPrePass(worldAxis);
 
     // assets
-    luchrender::scene::Model model("assets/models/bullet.obj");
-    std::shared_ptr<luchrender::render::Shader> shader = std::make_shared<luchrender::render::Shader>(
+    BulletRender::scene::Model model("assets/models/bullet.obj");
+    std::shared_ptr<BulletRender::render::Shader> shader = std::make_shared<BulletRender::render::Shader>(
         "assets/shaders/normal.vert.glsl",
         "assets/shaders/normal.frag.glsl"
     );
 
     // scene
-    luchrender::scene::Scene scene;
+    BulletRender::scene::Scene scene;
 
-    luchrender::scene::FlyCamera camera({0,1.5f,5.0f});
+    BulletRender::scene::FlyCamera camera({0,1.5f,5.0f});
     scene.setCamera(&camera);
 
-    luchrender::scene::DirectionalLight light;
+    BulletRender::scene::DirectionalLight light;
     scene.setLight(&light);
 
     // ecs
@@ -82,20 +82,20 @@ int main()
     // connection layers
     systems::RenderSystem renderSystem(scene);
 
-    luchphysic::math::EulerIntegrator euler;
-    systems::PhysicsSystem physicsSystem(euler);
+    BulletPhysic::math::EulerIntegrator euler;
+    systems::BallisticSystem ballisticSystem(euler);
 
     // loop
-    luchrender::app::Loop loop(scene);
+    BulletRender::app::Loop loop(scene);
     loop.run(
         [&](float dt) {
-            camera.update(luchrender::app::Window::get(), dt);
+            camera.update(BulletRender::app::Window::get(), dt);
 
-            physicsSystem.update(world, dt);
+            ballisticSystem.update(world, dt);
             renderSystem.rebuild(world);
         }
     );
 
-    luchrender::app::Window::shutdown();
+    BulletRender::app::Window::shutdown();
     return 0;
 }

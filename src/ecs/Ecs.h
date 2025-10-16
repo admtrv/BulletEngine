@@ -9,7 +9,7 @@
 #include <memory>
 #include <unordered_map>
 
-namespace luchengine {
+namespace BulletEngine {
 namespace ecs {
 
 using Entity = uint32_t;
@@ -58,4 +58,4 @@ private:
 };
 
 } // namespace ecs
-} // namespace luchengine
+} // namespace BulletEngine

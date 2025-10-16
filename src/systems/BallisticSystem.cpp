@@ -1,15 +1,15 @@
 /*
- * PhysicsSystem.cpp
+ * BallisticSystem.cpp
  */
 
-#include "PhysicsSystem.h"
+#include "BallisticSystem.h"
 
-namespace luchengine {
+namespace BulletEngine {
 namespace systems {
 
-PhysicsSystem::PhysicsSystem(luchphysic::math::IIntegrator& integrator) : m_integrator(integrator) {}
+BallisticSystem::BallisticSystem(BulletPhysic::math::IIntegrator& integrator) : m_integrator(integrator) {}
 
-void PhysicsSystem::update(ecs::World& world, float dt)
+void BallisticSystem::update(ecs::World& world, float dt)
 {
     for (auto entity : world.entities())
     {
@@ -52,4 +52,4 @@ void PhysicsSystem::update(ecs::World& world, float dt)
 }
 
 } // namespace systems
-} // namespace luchengine
+} // namespace BulletEngine

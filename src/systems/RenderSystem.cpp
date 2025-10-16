@@ -4,7 +4,7 @@
 
 #include "RenderSystem.h"
 
-namespace luchengine {
+namespace BulletEngine {
 namespace systems {
 
 void RenderSystem::rebuild(ecs::World& world)
@@ -36,4 +36,4 @@ void RenderSystem::rebuild(ecs::World& world)
 }
 
 } // namespace systems
-} // namespace luchengine
+} // namespace BulletEngine

@@ -11,24 +11,24 @@
 
 #include "dynamics/RigidBody.h"
 
-namespace luchengine {
+namespace BulletEngine {
 namespace ecs {
 
 class TransformComponent : public Component {
 public:
-    luchrender::scene::Transform transform;
+    BulletRender::scene::Transform transform;
 };
 
 class RenderableComponent : public Component {
 public:
-    luchrender::scene::Model* model = nullptr;
-    luchrender::render::Material material;
+    BulletRender::scene::Model* model = nullptr;
+    BulletRender::render::Material material;
 };
 
 class RigidBodyComponent : public Component {
 public:
-    luchphysic::dynamics::RigidBody body;
+    BulletPhysic::dynamics::RigidBody body;
 };
 
 } // namespace ecs
-} // namespace luchengine
+} // namespace BulletEngine

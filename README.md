@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="assets/images/engine.png" alt="LuchEngine Logo" width="350">
+    <img src="assets/images/BulletEngine.png" alt="BulletEngine Logo" width="350">
 </p>
 
 <p align="center">
@@ -8,12 +8,12 @@
 
 <p align="center">
 
-  <a href="https://github.com/admtrv/luchrender">
-    <img src="assets/images/render.png" alt="LuchRender Logo" height="70">
+  <a href="https://github.com/admtrv/BulletRender">
+    <img src="assets/images/BulletRender.png" alt="BulletRender Logo" height="70">
   </a>
   
-  <a href="https://github.com/admtrv/luchphysic">
-    <img src="assets/images/physic.png" alt="LuchPhysic Logo" height="70">
+  <a href="https://github.com/admtrv/BulletPhysic">
+    <img src="assets/images/BulletPhysic.png" alt="BulletPhysic Logo" height="70">
   </a>
   
 </p>

@@ -1,5 +1,5 @@
 /*
- * PhysicsSystem.h
+ * BallisticSystem.h
  */
 
 #pragma once
@@ -15,19 +15,19 @@
 
 #include <cmath>
 
-namespace luchengine {
+namespace BulletEngine {
 namespace systems {
 
 // physics adapter
-class PhysicsSystem {
+class BallisticSystem {
 public:
-    explicit PhysicsSystem(luchphysic::math::IIntegrator& integrator);
+    explicit BallisticSystem(BulletPhysic::math::IIntegrator& integrator);
 
     void update(ecs::World& world, float dt);
 
 private:
-    luchphysic::math::IIntegrator& m_integrator;
+    BulletPhysic::math::IIntegrator& m_integrator;
 };
 
 } // namespace systems
-} // namespace luchengine
+} // namespace BulletEngine

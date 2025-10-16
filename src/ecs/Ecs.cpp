@@ -4,7 +4,7 @@
 
 #include "Ecs.h"
 
-namespace luchengine {
+namespace BulletEngine {
 namespace ecs {
 
 Entity World::create()
@@ -29,4 +29,4 @@ void World::destroy(Entity entity)
 }
 
 } // namespace ecs
-} // namespace luchengine
+} // namespace BulletEngine
