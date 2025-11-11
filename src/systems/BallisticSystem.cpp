@@ -7,20 +7,24 @@
 namespace BulletEngine {
 namespace systems {
 
-BallisticSystem::BallisticSystem(BulletPhysic::math::IIntegrator& integrator) : m_integrator(integrator) {}
+BallisticSystem::BallisticSystem(BulletPhysic::math::IIntegrator& integrator) : m_integrator(integrator)
+{
+    setRealismLevel(BulletPhysic::preset::RealismLevel::BASIC); // start with basic simulation
+}
 
 void BallisticSystem::update(ecs::World& world, float dt)
 {
     for (auto entity : world.entities())
     {
-        auto* transformComponent  = world.get<ecs::TransformComponent>(entity);
+        auto* transformComponent = world.get<ecs::TransformComponent>(entity);
         auto* rigidBodyComponent = world.get<ecs::RigidBodyComponent>(entity);
+
         if (!transformComponent || !rigidBodyComponent)
         {
             continue;
         }
 
-        m_integrator.step(rigidBodyComponent->body, dt);
+        m_integrator.step(rigidBodyComponent->body, &m_forceRegistry, dt);
 
         const auto& p = rigidBodyComponent->body.position();
         const auto& v = rigidBodyComponent->body.velocity();
@@ -30,8 +34,10 @@ void BallisticSystem::update(ecs::World& world, float dt)
 
         glm::mat4 M = transformComponent->transform.getMatrix();
 
+        // update position
         M[3] = glm::vec4(pos, 1.0f);
 
+        // update orientation based on velocity
         if (glm::length2(vel) > 1e-6f)
         {
             glm::vec3 dir = glm::normalize(vel);
@@ -49,6 +55,11 @@ void BallisticSystem::update(ecs::World& world, float dt)
 
         transformComponent->transform.setMatrix(M);
     }
+}
+
+void BallisticSystem::setRealismLevel(BulletPhysic::preset::RealismLevel level, float projectileArea)
+{
+    BulletPhysic::preset::PresetManager::configure(m_forceRegistry, level, projectileArea);
 }
 
 } // namespace systems

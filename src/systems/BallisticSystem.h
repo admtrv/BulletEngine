@@ -8,6 +8,9 @@
 #include "ecs/Components.h"
 #include "math/Integrator.h"
 
+// BulletPhysic
+#include "PresetManager.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtx/norm.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -25,8 +28,13 @@ public:
 
     void update(ecs::World& world, float dt);
 
+    BulletPhysic::dynamics::forces::ForceRegistry& getForceRegistry() { return m_forceRegistry;}
+
+    void setRealismLevel(BulletPhysic::preset::RealismLevel level, float projectileArea = 0.01f);
+
 private:
     BulletPhysic::math::IIntegrator& m_integrator;
+    BulletPhysic::dynamics::forces::ForceRegistry m_forceRegistry;
 };
 
 } // namespace systems

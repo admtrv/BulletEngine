@@ -93,6 +93,7 @@ int main()
 
     BulletPhysic::math::EulerIntegrator euler;
     systems::BallisticSystem ballisticSystem(euler);
+    ballisticSystem.setRealismLevel(BulletPhysic::preset::RealismLevel::ATMOSPHERIC);
 
     // loop
     BulletRender::app::Loop loop(scene);
