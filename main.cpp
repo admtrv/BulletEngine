@@ -20,10 +20,10 @@
 // BulletEngine
 #include "ecs/Ecs.h"
 #include "ecs/Components.h"
-#include "systems/BallisticSystem.h"
-#include "systems/RenderSystem.h"
-#include "systems/TrajectorySystem.h"
-#include "systems/InputSystem.h"
+#include "ecs/systems/BallisticSystem.h"
+#include "ecs/systems/RenderSystem.h"
+#include "ecs/systems/TrajectorySystem.h"
+#include "ecs/systems/InputSystem.h"
 
 using namespace BulletEngine;
 
@@ -72,16 +72,16 @@ int main()
     std::vector<ecs::Entity> firedProjectiles; // list of all fired projectiles
 
     // connection layers
-    systems::RenderSystem renderSystem(scene);
+    ecs::systems::RenderSystem renderSystem(scene);
 
-    systems::TrajectorySystem trajectorySystem(lines);
+    ecs::systems::TrajectorySystem trajectorySystem(lines);
 
     BulletPhysic::math::EulerIntegrator euler;
-    systems::BallisticSystem ballisticSystem(euler);
+    ecs::systems::BallisticSystem ballisticSystem(euler);
     ballisticSystem.setRealismLevel(BulletPhysic::preset::RealismLevel::WIND);
     ballisticSystem.setWindVelocity({0.0f, 0.0f, 2.0f});
 
-    systems::InputSystem inputSystem(world);
+    ecs::systems::InputSystem inputSystem(world);
     inputSystem.setLaunchCallback([&](ecs::Entity projectile) {
 
         auto& renderableComponent = world.add<ecs::RenderableComponent>(projectile);

@@ -19,6 +19,7 @@
 #include <cmath>
 
 namespace BulletEngine {
+namespace ecs {
 namespace systems {
 
 // physics adapter
@@ -39,4 +40,5 @@ private:
 };
 
 } // namespace systems
+} // namespace ecs
 } // namespace BulletEngine

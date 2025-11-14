@@ -6,6 +6,7 @@
 #include "dynamics/forces/WindDragForce.h"
 
 namespace BulletEngine {
+namespace ecs {
 namespace systems {
 
 BallisticSystem::BallisticSystem(BulletPhysic::math::IIntegrator& integrator) : m_integrator(integrator)
@@ -73,4 +74,5 @@ void BallisticSystem::setWindVelocity(const BulletPhysic::math::Vec3& windVel)
 }
 
 } // namespace systems
+} // namespace ecs
 } // namespace BulletEngine

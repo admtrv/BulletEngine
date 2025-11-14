@@ -10,6 +10,7 @@
 #include "scene/Scene.h"
 
 namespace BulletEngine {
+namespace ecs {
 namespace systems {
 
 // render adapter
@@ -24,4 +25,5 @@ private:
 };
 
 } // namespace systems
+} // namespace ecs
 } // namespace BulletEngine

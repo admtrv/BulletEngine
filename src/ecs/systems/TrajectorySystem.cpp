@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 
 namespace BulletEngine {
+namespace ecs {
 namespace systems {
 
 void TrajectorySystem::update(ecs::World& world)
@@ -35,4 +36,5 @@ void TrajectorySystem::update(ecs::World& world)
 }
 
 } // namespace systems
+} // namespace ecs
 } // namespace BulletEngine

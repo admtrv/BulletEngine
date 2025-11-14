@@ -5,6 +5,7 @@
 #include "InputSystem.h"
 
 namespace BulletEngine {
+namespace ecs {
 namespace systems {
 
 InputSystem::InputSystem(ecs::World& world) : m_world(world)
@@ -65,4 +66,5 @@ void InputSystem::launchProjectile()
 }
 
 } // namespace systems
+} // namespace ecs
 } // namespace BulletEngine

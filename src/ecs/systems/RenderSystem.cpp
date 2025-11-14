@@ -5,6 +5,7 @@
 #include "RenderSystem.h"
 
 namespace BulletEngine {
+namespace ecs {
 namespace systems {
 
 void RenderSystem::rebuild(ecs::World& world)
@@ -36,4 +37,5 @@ void RenderSystem::rebuild(ecs::World& world)
 }
 
 } // namespace systems
+} // namespace ecs
 } // namespace BulletEngine

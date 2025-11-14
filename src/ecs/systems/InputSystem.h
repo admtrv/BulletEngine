@@ -12,6 +12,7 @@
 #include <functional>
 
 namespace BulletEngine {
+namespace ecs {
 namespace systems {
 
 class InputSystem {
@@ -31,4 +32,5 @@ private:
 };
 
 } // namespace systems
+} // namespace ecs
 } // namespace BulletEngine

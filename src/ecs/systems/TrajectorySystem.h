@@ -9,6 +9,7 @@
 #include "render/passes/Lines.h"
 
 namespace BulletEngine {
+namespace ecs {
 namespace systems {
 
 class TrajectorySystem {
@@ -22,4 +23,5 @@ private:
 };
 
 } // namespace systems
+} // namespace ecs
 } // namespace BulletEngine
