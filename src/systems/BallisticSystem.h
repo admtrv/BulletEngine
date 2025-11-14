@@ -31,6 +31,7 @@ public:
     BulletPhysic::dynamics::forces::ForceRegistry& getForceRegistry() { return m_forceRegistry;}
 
     void setRealismLevel(BulletPhysic::preset::RealismLevel level, float projectileArea = 0.01f);
+    void setWindVelocity(const BulletPhysic::math::Vec3& windVel);
 
 private:
     BulletPhysic::math::IIntegrator& m_integrator;

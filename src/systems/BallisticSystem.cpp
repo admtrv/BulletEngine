@@ -3,6 +3,7 @@
  */
 
 #include "BallisticSystem.h"
+#include "dynamics/forces/WindDragForce.h"
 
 namespace BulletEngine {
 namespace systems {
@@ -60,6 +61,15 @@ void BallisticSystem::update(ecs::World& world, float dt)
 void BallisticSystem::setRealismLevel(BulletPhysic::preset::RealismLevel level, float projectileArea)
 {
     BulletPhysic::preset::PresetManager::configure(m_forceRegistry, level, projectileArea);
+}
+
+void BallisticSystem::setWindVelocity(const BulletPhysic::math::Vec3& windVel)
+{
+    auto wind = m_forceRegistry.getByName(std::string("Wind Drag"));
+    if (wind)
+    {
+        static_cast<BulletPhysic::dynamics::forces::WindDragForce*>(wind)->setWindVelocity(windVel);
+    }
 }
 
 } // namespace systems
