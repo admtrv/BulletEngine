@@ -23,6 +23,7 @@
 #include "systems/BallisticSystem.h"
 #include "systems/RenderSystem.h"
 #include "systems/TrajectorySystem.h"
+#include "systems/InputSystem.h"
 
 using namespace BulletEngine;
 
@@ -68,23 +69,7 @@ int main()
 
     // ecs
     ecs::World world;
-    ecs::Entity bullet = world.create();
-
-    // components
-    auto& transformComponent = world.add<ecs::TransformComponent>(bullet);
-
-    auto& trajectoryComponent = world.add<ecs::TrajectoryComponent>(bullet);
-
-    auto& renderableComponent = world.add<ecs::RenderableComponent>(bullet);
-    renderableComponent.model = &model;
-    renderableComponent.material.setShader(shader);
-    renderableComponent.material.setColor({1.0f, 0.5f, 0.0f});
-
-    // rigid body
-    auto& rigidBodyComponent = world.add<ecs::RigidBodyComponent>(bullet);
-    rigidBodyComponent.body.setMass(0.05f);
-    rigidBodyComponent.body.setPosition({0.0f, 1.5f, 0.0f});
-    rigidBodyComponent.body.setVelocityFromAngles(10.0f, 45.0f, 90.0f);
+    std::vector<ecs::Entity> firedProjectiles; // list of all fired projectiles
 
     // connection layers
     systems::RenderSystem renderSystem(scene);
@@ -96,12 +81,24 @@ int main()
     ballisticSystem.setRealismLevel(BulletPhysic::preset::RealismLevel::WIND);
     ballisticSystem.setWindVelocity({0.0f, 0.0f, 2.0f});
 
+    systems::InputSystem inputSystem(world);
+    inputSystem.setLaunchCallback([&](ecs::Entity projectile) {
+
+        auto& renderableComponent = world.add<ecs::RenderableComponent>(projectile);
+        renderableComponent.model = &model;
+        renderableComponent.material.setShader(shader);
+        renderableComponent.material.setColor({1.0f, 0.5f, 0.0f});
+
+        firedProjectiles.push_back(projectile);
+    });
+
     // loop
     BulletRender::app::Loop loop(scene);
     loop.run(
         [&](float dt) {
             camera.update(BulletRender::app::Window::get(), dt);
 
+            inputSystem.update(BulletRender::app::Window::get());
             ballisticSystem.update(world, dt);
             trajectorySystem.update(world);
             renderSystem.rebuild(world);
