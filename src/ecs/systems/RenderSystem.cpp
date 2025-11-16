@@ -8,31 +8,37 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-void RenderSystem::rebuild(ecs::World& world)
+void RenderSystem::rebuild(World& world)
 {
     m_scene.clear();
 
     for (auto entity : world.entities())
     {
-        auto* transformComponent = world.get<ecs::TransformComponent>(entity);
-        auto* renderableComponent = world.get<ecs::RenderableComponent>(entity);
+        auto* transformComponent = world.get<TransformComponent>(entity);
 
-        if (!transformComponent || !renderableComponent)
+        // render normal objects
+        auto* renderableComponent = world.get<RenderableComponent>(entity);
+        if (transformComponent && renderableComponent && renderableComponent->model)
         {
-            continue;
+            auto* object = m_scene.addObject(renderableComponent->model);
+
+            object->getMaterial().setShader(renderableComponent->material.getShader());
+            object->getMaterial().setColor(renderableComponent->material.getColor());
+
+            object->getTransform().setMatrix(transformComponent->transform.getMatrix());
         }
 
-        if (!renderableComponent->model)
+        // render colliders
+        auto* colliderComponent = world.get<ColliderComponent>(entity);
+        if (transformComponent && colliderComponent && colliderComponent->isVisible && colliderComponent->model)
         {
-            continue;
+            auto* colliderObject = m_scene.addObject(colliderComponent->model);
+
+            colliderObject->getMaterial().setShader(colliderComponent->material.getShader());
+            colliderObject->getMaterial().setColor(colliderComponent->material.getColor());
+
+            colliderObject->getTransform().setMatrix(transformComponent->transform.getMatrix());
         }
-
-        auto* object = m_scene.addObject(renderableComponent->model);
-
-        object->getMaterial().setShader(renderableComponent->material.getShader());
-        object->getMaterial().setColor(renderableComponent->material.getColor());
-
-        object->getTransform().setMatrix(transformComponent->transform.getMatrix());
     }
 }
 

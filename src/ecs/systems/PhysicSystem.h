@@ -1,20 +1,16 @@
 /*
- * BallisticSystem.h
+ * PhysicSystem.h
  */
 
 #pragma once
 
 #include "ecs/Ecs.h"
 #include "ecs/Components.h"
-#include "math/Integrator.h"
 
-// BulletPhysic
 #include "PresetManager.h"
-
-#include <glm/glm.hpp>
-#include <glm/gtx/norm.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include "math/Integrator.h"
+#include "collision/BoxCollider.h"
+#include "dynamics/forces/WindDragForce.h"
 
 #include <cmath>
 
@@ -22,12 +18,11 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-// physics adapter
-class BallisticSystem {
+class PhysicSystem {
 public:
-    explicit BallisticSystem(BulletPhysic::math::IIntegrator& integrator);
+    explicit PhysicSystem(BulletPhysic::math::IIntegrator& integrator);
 
-    void update(ecs::World& world, float dt);
+    void update(World& world, float dt);
 
     BulletPhysic::dynamics::forces::ForceRegistry& getForceRegistry() { return m_forceRegistry;}
 

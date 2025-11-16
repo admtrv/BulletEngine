@@ -13,12 +13,11 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-// render adapter
 class RenderSystem {
 public:
     explicit RenderSystem(BulletRender::scene::Scene& scene) : m_scene(scene) {}
 
-    void rebuild(ecs::World& world);
+    void rebuild(World& world);
 
 private:
     BulletRender::scene::Scene& m_scene;

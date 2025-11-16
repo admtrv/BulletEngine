@@ -16,7 +16,7 @@ Entity World::create()
 
 void World::destroy(Entity entity)
 {
-    for (size_t i = 0; i < m_entities.size(); ++i)
+    for (size_t i = 0; i < m_entities.size(); i++)
     {
         if (m_entities[i] == entity)
         {

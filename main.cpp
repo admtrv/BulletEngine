@@ -16,14 +16,18 @@
 
 // BulletPhysic
 #include "math/Integrator.h"
+#include "collision/BoxCollider.h"
+#include "collision/GroundCollider.h"
 
 // BulletEngine
 #include "ecs/Ecs.h"
 #include "ecs/Components.h"
-#include "ecs/systems/BallisticSystem.h"
+#include "ecs/systems/PhysicSystem.h"
 #include "ecs/systems/RenderSystem.h"
 #include "ecs/systems/TrajectorySystem.h"
 #include "ecs/systems/InputSystem.h"
+#include "ecs/systems/CollisionSystem.h"
+#include "objects/Projectile.h"
 
 using namespace BulletEngine;
 
@@ -51,45 +55,39 @@ int main()
     auto lines = std::make_shared<BulletRender::render::Lines>(2.0f);
     BulletRender::render::Renderer::registerPrePass(lines);
 
-    // assets
-    BulletRender::scene::Model model("assets/models/bullet.obj");
-    std::shared_ptr<BulletRender::render::Shader> shader = std::make_shared<BulletRender::render::Shader>(
-        "assets/shaders/normal.vert.glsl",
-        "assets/shaders/normal.frag.glsl"
-    );
-
     // scene
     BulletRender::scene::Scene scene;
 
-    BulletRender::scene::FlyCamera camera({0,1.5f,5.0f});
+    // camera
+    BulletRender::scene::FlyCamera camera({0.0f, 1.5f, 5.0f});
     scene.setCamera(&camera);
 
+    // light
     BulletRender::scene::DirectionalLight light;
     scene.setLight(&light);
 
     // ecs
     ecs::World world;
-    std::vector<ecs::Entity> firedProjectiles; // list of all fired projectiles
 
-    // connection layers
+    // systems
     ecs::systems::RenderSystem renderSystem(scene);
-
+    ecs::systems::CollisionSystem collisionSystem;
     ecs::systems::TrajectorySystem trajectorySystem(lines);
 
     BulletPhysic::math::EulerIntegrator euler;
-    ecs::systems::BallisticSystem ballisticSystem(euler);
-    ballisticSystem.setRealismLevel(BulletPhysic::preset::RealismLevel::WIND);
-    ballisticSystem.setWindVelocity({0.0f, 0.0f, 2.0f});
+    ecs::systems::PhysicSystem physicSystem(euler);
+    physicSystem.setRealismLevel(BulletPhysic::preset::RealismLevel::WIND);
+    physicSystem.setWindVelocity({0.0f, 0.0f, 2.0f});
 
-    ecs::systems::InputSystem inputSystem(world);
-    inputSystem.setLaunchCallback([&](ecs::Entity projectile) {
+    // ground collider
+    auto groundObject = world.create();
+    auto& groundCollider = world.add<ecs::ColliderComponent>(groundObject);
+    groundCollider.collider = std::make_shared<BulletPhysic::collision::GroundCollider>(0.0f);
 
-        auto& renderableComponent = world.add<ecs::RenderableComponent>(projectile);
-        renderableComponent.model = &model;
-        renderableComponent.material.setShader(shader);
-        renderableComponent.material.setColor({1.0f, 0.5f, 0.0f});
-
-        firedProjectiles.push_back(projectile);
+    // input
+    ecs::systems::InputSystem inputSystem;
+    inputSystem.bind(BulletRender::utils::InputKey::SPACE, [&world]() {
+        objects::Projectile::launch(world);
     });
 
     // loop
@@ -98,8 +96,10 @@ int main()
         [&](float dt) {
             camera.update(BulletRender::app::Window::get(), dt);
 
-            inputSystem.update(BulletRender::app::Window::get());
-            ballisticSystem.update(world, dt);
+            BulletRender::utils::Input::instance().update(BulletRender::app::Window::get());
+
+            physicSystem.update(world, dt);
+            collisionSystem.update(world);
             trajectorySystem.update(world);
             renderSystem.rebuild(world);
         }

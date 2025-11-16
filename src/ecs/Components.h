@@ -5,11 +5,17 @@
 #pragma once
 
 #include "Ecs.h"
+
 #include "scene/Transform.h"
 #include "scene/Model.h"
 #include "render/Material.h"
 
 #include "dynamics/RigidBody.h"
+#include "collision/Collider.h"
+#include "math/Vec3.h"
+
+#include <memory>
+#include <vector>
 
 namespace BulletEngine {
 namespace ecs {
@@ -32,9 +38,19 @@ public:
 
 class TrajectoryComponent : public Component {
 public:
-    std::vector<glm::vec3> points;
-    glm::vec3 color{1.0f, 1.0f, 1.0f};
+    std::vector<BulletPhysic::math::Vec3> points;
+    BulletPhysic::math::Vec3 color{1.0f, 1.0f, 1.0f};
     float minSegment = 0.02f;
+};
+
+class ColliderComponent : public Component {
+public:
+    std::shared_ptr<BulletPhysic::collision::Collider> collider;
+
+    // debug visualization
+    bool isVisible = false;
+    BulletRender::scene::Model* model = nullptr;
+    BulletRender::render::Material material;
 };
 
 } // namespace ecs

@@ -40,8 +40,12 @@ public:
     {
         auto it = m_components.find(entity);
         if (it == m_components.end()) return nullptr;
-        for (auto& up : it->second) {
-            if (auto* p = dynamic_cast<C*>(up.get())) return p;
+        for (auto& up : it->second)
+        {
+            if (auto* p = dynamic_cast<C*>(up.get()))
+            {
+                return p;
+            }
         }
         return nullptr;
     }
