@@ -1,19 +1,19 @@
 /*
- * PhysicSystem.cpp
+ * PhysicsSystem.cpp
  */
 
-#include "PhysicSystem.h"
+#include "PhysicsSystem.h"
 
 namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-PhysicSystem::PhysicSystem(BulletPhysic::math::IIntegrator& integrator) : m_integrator(integrator)
-{
-    setRealismLevel(BulletPhysic::preset::RealismLevel::BASIC); // start with basic simulation
-}
+PhysicsSystem::PhysicsSystem(BulletPhysic::dynamics::PhysicsWorld& physicsWorld, BulletPhysic::math::IIntegrator& integrator)
+    : m_physicsWorld(physicsWorld)
+    , m_integrator(integrator)
+{}
 
-void PhysicSystem::update(World& world, float dt)
+void PhysicsSystem::update(World& world, float dt)
 {
     for (auto entity : world.entities())
     {
@@ -28,7 +28,7 @@ void PhysicSystem::update(World& world, float dt)
         // apply forces
         if (!rigidBodyComponent->body.isGrounded())
         {
-            m_integrator.step(rigidBodyComponent->body, &m_forceRegistry, dt);
+            m_integrator.step(rigidBodyComponent->body, &m_physicsWorld, dt);
         }
 
         // update transform if entity has one
@@ -68,20 +68,6 @@ void PhysicSystem::update(World& world, float dt)
 
             }
         }
-    }
-}
-
-void PhysicSystem::setRealismLevel(BulletPhysic::preset::RealismLevel level, float projectileArea)
-{
-    BulletPhysic::preset::PresetManager::configure(m_forceRegistry, level, projectileArea);
-}
-
-void PhysicSystem::setWindVelocity(const BulletPhysic::math::Vec3& windVel)
-{
-    auto wind = m_forceRegistry.getByName(std::string("Wind Drag"));
-    if (wind)
-    {
-        static_cast<BulletPhysic::dynamics::forces::WindDragForce*>(wind)->setWindVelocity(windVel);
     }
 }
 

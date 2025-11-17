@@ -18,11 +18,12 @@
 #include "math/Integrator.h"
 #include "collision/BoxCollider.h"
 #include "collision/GroundCollider.h"
+#include "PresetManager.h"
 
 // BulletEngine
 #include "ecs/Ecs.h"
 #include "ecs/Components.h"
-#include "ecs/systems/PhysicSystem.h"
+#include "ecs/systems/PhysicsSystem.h"
 #include "ecs/systems/RenderSystem.h"
 #include "ecs/systems/TrajectorySystem.h"
 #include "ecs/systems/InputSystem.h"
@@ -74,10 +75,13 @@ int main()
     ecs::systems::CollisionSystem collisionSystem;
     ecs::systems::TrajectorySystem trajectorySystem(lines);
 
+    // physics
+    BulletPhysic::dynamics::PhysicsWorld physicsWorld;
     BulletPhysic::math::EulerIntegrator euler;
-    ecs::systems::PhysicSystem physicSystem(euler);
-    physicSystem.setRealismLevel(BulletPhysic::preset::RealismLevel::WIND);
-    physicSystem.setWindVelocity({0.0f, 0.0f, 2.0f});
+    ecs::systems::PhysicsSystem physicsSystem(physicsWorld, euler);
+
+    // configure level of realism
+    BulletPhysic::preset::PresetManager::configure(physicsWorld, BulletPhysic::preset::Preset::WITH_WIND, {0.0f, 0.0f, 2.0f});
 
     // ground collider
     auto groundObject = world.create();
@@ -98,7 +102,7 @@ int main()
 
             BulletRender::utils::Input::instance().update(BulletRender::app::Window::get());
 
-            physicSystem.update(world, dt);
+            physicsSystem.update(world, dt);
             collisionSystem.update(world);
             trajectorySystem.update(world);
             renderSystem.rebuild(world);
