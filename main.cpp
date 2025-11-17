@@ -93,6 +93,9 @@ int main()
     inputSystem.bind(BulletRender::utils::InputKey::SPACE, [&world]() {
         objects::Projectile::launch(world);
     });
+    inputSystem.bind(BulletRender::utils::InputKey::ESCAPE, []() {
+        BulletRender::app::Window::setShouldClose(true);
+    });
 
     // loop
     BulletRender::app::Loop loop(scene);
