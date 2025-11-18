@@ -44,7 +44,7 @@ ecs::Entity Projectile::launch(ecs::World& world)
 
     // collider debug visibility
     // colliderComponent.isVisible = true;
-    // colliderComponent.model = new BulletRender::scene::BoxModel(projectile.m_colliderX, projectile.m_colliderY, projectile.m_colliderZ);
+    // colliderComponent.model = new BulletRender::scene::Box(projectile.m_colliderX, projectile.m_colliderY, projectile.m_colliderZ);
     // colliderComponent.material.setShader(shader);
     // colliderComponent.material.setColor({0.0f, 1.0f, 0.0f}); // green
 

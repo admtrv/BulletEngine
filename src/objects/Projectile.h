@@ -41,9 +41,9 @@ private:
 
 
     // collider dimensions
-    float m_colliderX = 0.41f;
-    float m_colliderY = 2.42f;
-    float m_colliderZ = 0.41f;
+    float m_colliderX = 0.56f;
+    float m_colliderY = 1.93f;
+    float m_colliderZ = 0.56f;
 
     // material color
     float m_colorR = 1.0f;
@@ -51,7 +51,7 @@ private:
     float m_colorB = 0.0f;
 
     // assets
-    std::string m_modelPath = "assets/models/bullet.obj";
+    std::string m_modelPath = "assets/models/shell.obj";
     std::string m_vertexShaderPath = "assets/shaders/normal.vert.glsl";
     std::string m_fragmentShaderPath = "assets/shaders/normal.frag.glsl";
 };

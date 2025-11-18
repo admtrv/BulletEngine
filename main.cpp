@@ -80,8 +80,12 @@ int main()
     BulletPhysic::math::EulerIntegrator euler;
     ecs::systems::PhysicsSystem physicsSystem(physicsWorld, euler);
 
-    // configure level of realism
-    BulletPhysic::preset::PresetManager::configure(physicsWorld, BulletPhysic::preset::Preset::WITH_WIND, {0.0f, 0.0f, 2.0f});
+    // configure physics world
+    BulletPhysic::preset::PresetManager::configure(physicsWorld, BulletPhysic::preset::Preset::CUSTOM);
+    physicsWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::Gravity>());
+    physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Atmosphere>());
+    physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Wind>(BulletPhysic::math::Vec3{0.0f, 0.0f, 2.0f}));
+    physicsWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::Drag>());
 
     // ground collider
     auto groundObject = world.create();
