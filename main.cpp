@@ -19,7 +19,13 @@
 #include "math/Angles.h"
 #include "collision/BoxCollider.h"
 #include "collision/GroundCollider.h"
-#include "PresetManager.h"
+#include "dynamics/PresetManager.h"
+#include "dynamics/environment/Atmosphere.h"
+#include "dynamics/environment/Geographic.h"
+#include "dynamics/environment/Humidity.h"
+#include "dynamics/forces/Coriolis.h"
+#include "dynamics/forces/Drag.h"
+#include "dynamics/forces/Gravity.h"
 
 // BulletEngine
 #include "ecs/Ecs.h"
@@ -82,7 +88,7 @@ int main()
     ecs::systems::PhysicsSystem physicsSystem(physicsWorld, euler);
 
     // configure physics world
-    BulletPhysic::preset::PresetManager::configure(physicsWorld, BulletPhysic::preset::Preset::CUSTOM);
+    BulletPhysic::dynamics::PresetManager::configure(physicsWorld, BulletPhysic::dynamics::Preset::CUSTOM);
     physicsWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::Gravity>());
     physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Atmosphere>(280.0f, 100000.0f));   // t_0 = 280 K, p_0 = 100.000 Pa
     physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Humidity>(60));                                             // relative humidity = 60%
