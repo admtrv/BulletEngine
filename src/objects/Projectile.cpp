@@ -17,14 +17,23 @@ ecs::Entity Projectile::launch(ecs::World& world)
 
     // transform
     auto& transformComponent = world.add<ecs::TransformComponent>(entity);
-    transformComponent.transform.setPosition({projectile.m_initialPosX, projectile.m_initialPosY, projectile.m_initialPosZ});
+    float modelScale = projectile.m_diameter / projectile.m_modelDiameter;
+    transformComponent.transform.setScale({modelScale, modelScale, modelScale});
+
+    float length = projectile.m_modelLength * modelScale;
 
     // trajectory
     world.add<ecs::TrajectoryComponent>(entity);
 
+    // projectile specs
+    BulletPhysic::dynamics::ProjectileRigidBody::ProjectileSpecs specs{};
+    specs.mass = projectile.m_mass;
+    specs.diameter = projectile.m_diameter;
+    specs.dragModel = projectile.m_dragModel;
+
     // rigid body
-    auto& rigidBodyComponent = world.add<ecs::RigidBodyComponent>(entity);
-    rigidBodyComponent.body.setMass(projectile.m_mass);
+    auto& rigidBodyComponent = world.add<ecs::ProjectileRigidBodyComponent>(entity);
+    rigidBodyComponent.body = BulletPhysic::dynamics::ProjectileRigidBody(specs);
     rigidBodyComponent.body.setPosition({projectile.m_initialPosX, projectile.m_initialPosY, projectile.m_initialPosZ});
     rigidBodyComponent.body.setVelocityFromAngles(projectile.m_launchSpeed, projectile.m_launchElevationDeg, projectile.m_launchAzimuthDeg);
 
@@ -40,11 +49,11 @@ ecs::Entity Projectile::launch(ecs::World& world)
 
     // collider
     auto& colliderComponent = world.add<ecs::ColliderComponent>(entity);
-    colliderComponent.collider = std::make_shared<BulletPhysic::collision::BoxCollider>(BulletPhysic::math::Vec3{projectile.m_colliderX, projectile.m_colliderY, projectile.m_colliderZ});
+    colliderComponent.collider = std::make_shared<BulletPhysic::collision::BoxCollider>(BulletPhysic::math::Vec3{projectile.m_diameter, length, projectile.m_diameter});
 
     // collider debug visibility
     // colliderComponent.isVisible = true;
-    // colliderComponent.model = new BulletRender::scene::Box(projectile.m_colliderX, projectile.m_colliderY, projectile.m_colliderZ);
+    // colliderComponent.model = new BulletRender::scene::Box(projectile.m_modelDiameter, projectile.m_modelLength,projectile.m_modelDiameter);
     // colliderComponent.material.setShader(shader);
     // colliderComponent.material.setColor({0.0f, 1.0f, 0.0f}); // green
 

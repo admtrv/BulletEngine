@@ -56,7 +56,7 @@ void CollisionSystem::update(World& world)
                 auto* colliderComponent = world.get<ColliderComponent>(entity);
                 if (colliderComponent && colliderComponent->collider.get() == otherCollider)
                 {
-                    auto* rigidBodyComponent = world.get<RigidBodyComponent>(entity);
+                    auto* rigidBodyComponent = world.get<ProjectileRigidBodyComponent>(entity);
                     if (rigidBodyComponent)
                     {
                         // ground collision detected

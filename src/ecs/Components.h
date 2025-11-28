@@ -36,6 +36,11 @@ public:
     BulletPhysic::dynamics::RigidBody body;
 };
 
+class ProjectileRigidBodyComponent : public Component {
+public:
+    BulletPhysic::dynamics::ProjectileRigidBody body;
+};
+
 class TrajectoryComponent : public Component {
 public:
     std::vector<BulletPhysic::math::Vec3> points;

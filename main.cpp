@@ -84,8 +84,8 @@ int main()
 
     // physics
     BulletPhysic::dynamics::PhysicsWorld physicsWorld;
-    BulletPhysic::math::EulerIntegrator euler;
-    ecs::systems::PhysicsSystem physicsSystem(physicsWorld, euler);
+    BulletPhysic::math::MidpointIntegrator integrator;
+    ecs::systems::PhysicsSystem physicsSystem(physicsWorld, integrator);
 
     // configure physics world
     BulletPhysic::dynamics::PresetManager::configure(physicsWorld, BulletPhysic::dynamics::Preset::CUSTOM);
@@ -94,7 +94,7 @@ int main()
     physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Humidity>(60));                                             // relative humidity = 60%
     physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Wind>(BulletPhysic::math::Vec3{0.0f, 0.0f, 2.0f}));   // wind velocity = 2 m/s
     physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Geographic>(BulletPhysic::math::deg2rad(48.1482), BulletPhysic::math::deg2rad(17.1067))); // Bratislava coordinates
-    physicsWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::drag::Drag>(BulletPhysic::dynamics::forces::drag::DragCurveModel::G7));// drag with G7 drag model
+    physicsWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::drag::Drag>());
     physicsWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::Coriolis>());
 
     // ground collider

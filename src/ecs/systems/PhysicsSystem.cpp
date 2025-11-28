@@ -18,7 +18,7 @@ void PhysicsSystem::update(World& world, float dt)
     for (auto entity : world.entities())
     {
         auto* transformComponent = world.get<TransformComponent>(entity);
-        auto* rigidBodyComponent = world.get<RigidBodyComponent>(entity);
+        auto* rigidBodyComponent = world.get<ProjectileRigidBodyComponent>(entity);
 
         if (!rigidBodyComponent)
         {
