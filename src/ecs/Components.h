@@ -38,7 +38,7 @@ public:
 
 class ProjectileRigidBodyComponent : public Component {
 public:
-    BulletPhysic::dynamics::ProjectileRigidBody body;
+    BulletPhysic::dynamics::projectile::ProjectileRigidBody body;
 };
 
 class TrajectoryComponent : public Component {

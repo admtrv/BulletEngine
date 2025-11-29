@@ -26,14 +26,14 @@ ecs::Entity Projectile::launch(ecs::World& world)
     world.add<ecs::TrajectoryComponent>(entity);
 
     // projectile specs
-    BulletPhysic::dynamics::ProjectileSpecs specs{};
+    BulletPhysic::dynamics::projectile::ProjectileSpecs specs{};
     specs.mass = projectile.m_mass;
     specs.diameter = projectile.m_diameter;
     specs.dragModel = projectile.m_dragModel;
 
     // rigid body
     auto& rigidBodyComponent = world.add<ecs::ProjectileRigidBodyComponent>(entity);
-    rigidBodyComponent.body = BulletPhysic::dynamics::ProjectileRigidBody(specs);
+    rigidBodyComponent.body = BulletPhysic::dynamics::projectile::ProjectileRigidBody(specs);
     rigidBodyComponent.body.setPosition({projectile.m_initialPosX, projectile.m_initialPosY, projectile.m_initialPosZ});
     rigidBodyComponent.body.setVelocityFromAngles(projectile.m_launchSpeed, projectile.m_launchElevationDeg, projectile.m_launchAzimuthDeg);
 
