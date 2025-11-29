@@ -88,8 +88,8 @@ int main()
 
     // configure physics world
     physicsWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::Gravity>());
-    physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Atmosphere>(280.0f, 100000.0f));   // t_0 = 280 K, p_0 = 100.000 Pa
-    physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Humidity>(60));                                             // relative humidity = 60%
+    physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Atmosphere>(280.0f, 100000.0f));                      // t_0 = 280 K, p_0 = 100.000 Pa
+    physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Humidity>(60));                                       // relative humidity = 60%
     physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Wind>(BulletPhysic::math::Vec3{0.0f, 0.0f, 2.0f}));   // wind velocity = 2 m/s
     physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Geographic>(BulletPhysic::math::deg2rad(48.1482), BulletPhysic::math::deg2rad(17.1067))); // Bratislava coordinates
     physicsWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::drag::Drag>());

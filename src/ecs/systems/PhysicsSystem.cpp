@@ -3,6 +3,8 @@
  */
 
 #include "PhysicsSystem.h"
+#include <cstdio>
+#include <vector>
 
 namespace BulletEngine {
 namespace ecs {
@@ -12,6 +14,33 @@ PhysicsSystem::PhysicsSystem(BulletPhysic::dynamics::PhysicsWorld& physicsWorld,
     : m_physicsWorld(physicsWorld)
     , m_integrator(integrator)
 {}
+
+void printForces(const BulletPhysic::dynamics::PhysicsWorld& world)
+{
+    std::printf("\r");
+
+    // collect active forces
+    std::vector<std::pair<std::string, float>> forces;
+    for (const auto& force : world.getForces())
+    {
+        if (force && force->isActive())
+        {
+            float magnitude = force->getForce().length();
+            forces.push_back({force->getSymbol(), magnitude});
+        }
+    }
+
+    // print forces
+    for (size_t i = 0; i < forces.size(); i++)
+    {
+        std::printf("%s = %.8f N", forces[i].first.c_str(), forces[i].second);
+        if (i < forces.size() - 1)
+        {
+            std::printf(", ");
+        }
+    }
+    std::fflush(stdout);
+}
 
 void PhysicsSystem::update(World& world, float dt)
 {
@@ -29,6 +58,9 @@ void PhysicsSystem::update(World& world, float dt)
         if (!rigidBodyComponent->body.isGrounded())
         {
             m_integrator.step(rigidBodyComponent->body, &m_physicsWorld, dt);
+
+            // print all forces
+            printForces(m_physicsWorld);
         }
 
         // update transform if entity has one
