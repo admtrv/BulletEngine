@@ -26,7 +26,7 @@ ecs::Entity Projectile::launch(ecs::World& world)
     world.add<ecs::TrajectoryComponent>(entity);
 
     // projectile specs
-    BulletPhysic::dynamics::ProjectileRigidBody::ProjectileSpecs specs{};
+    BulletPhysic::dynamics::ProjectileSpecs specs{};
     specs.mass = projectile.m_mass;
     specs.diameter = projectile.m_diameter;
     specs.dragModel = projectile.m_dragModel;
