@@ -34,6 +34,7 @@
 #include "ecs/systems/TrajectorySystem.h"
 #include "ecs/systems/InputSystem.h"
 #include "ecs/systems/CollisionSystem.h"
+#include "ecs/systems/ImGuiSystem.h"
 #include "objects/Projectile.h"
 
 using namespace BulletEngine;
@@ -85,6 +86,7 @@ int main()
     BulletPhysic::dynamics::PhysicsWorld physicsWorld;
     BulletPhysic::math::MidpointIntegrator integrator;
     ecs::systems::PhysicsSystem physicsSystem(physicsWorld, integrator);
+    ecs::systems::ImGuiSystem imguiSystem(physicsWorld);
 
     // configure physics world
     physicsWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::Gravity>());
@@ -121,6 +123,7 @@ int main()
             collisionSystem.update(world);
             trajectorySystem.update(world);
             renderSystem.rebuild(world);
+            imguiSystem.render();
         }
     );
 
