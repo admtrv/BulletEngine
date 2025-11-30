@@ -3,46 +3,91 @@
  */
 
 #include "ImGuiSystem.h"
+#include "ecs/Components.h"
 
 namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-ImGuiSystem::ImGuiSystem(BulletPhysic::dynamics::PhysicsWorld& physicsWorld)
-    : m_physicsWorld(physicsWorld)
+ImGuiSystem::ImGuiSystem(BulletPhysic::dynamics::PhysicsWorld& physicsWorld, BulletRender::scene::Camera& camera, World& world)
+    : m_physicsWorld(physicsWorld), m_camera(camera), m_world(world)
 {}
 
-void ImGuiSystem::render()
+static void renderDebugWindow(BulletRender::scene::Camera& camera, float dt)
 {
-    ImGui::Begin("Forces");
+    ImGui::Begin("Debug");
 
-    ImGui::BeginTable("ForcesTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg);
+    float fps = dt > 0.0f ? 1.0f / dt : 0.0f;
+    ImGui::Text("FPS: %.1f", fps);
 
-    ImGui::TableSetupColumn("Name");
-    ImGui::TableSetupColumn("Symbol");
-    ImGui::TableSetupColumn("Magnitude (N)");
-    ImGui::TableHeadersRow();
+    ImGui::Separator();
 
-    for (const auto& force : m_physicsWorld.getForces())
+    glm::vec3 camPos = camera.position();
+    ImGui::Text("Position:");
+    ImGui::Text("   X: %.4f", camPos.x);
+    ImGui::Text("   Y: %.4f", camPos.y);
+    ImGui::Text("   Z: %.4f", camPos.z);
+
+    ImGui::End();
+}
+
+static void renderProjectileWindow(BulletPhysic::dynamics::PhysicsWorld& physicsWorld, World& world)
+{
+    ImGui::Begin("Projectile");
+
+    // find last active projectile
+    bool foundProjectile = false;
+    Entity lastProjectile;
+    for (const auto& entity : world.entities())
     {
-        if (force && force->isActive())
+        if (world.has<ProjectileRigidBodyComponent>(entity) && world.has<TransformComponent>(entity))
         {
-            float magnitude = force->getForce().length();
-
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%s", force->getName().c_str());
-
-            ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%s", force->getSymbol().c_str());
-
-            ImGui::TableSetColumnIndex(2);
-            ImGui::Text("%.8f", magnitude);
+            lastProjectile = entity;
+            foundProjectile = true;
         }
     }
 
-    ImGui::EndTable();
+    if (foundProjectile)
+    {
+        const auto& transform = world.get<TransformComponent>(lastProjectile);
+        glm::vec3 pos = transform->transform.getPosition();
+
+        ImGui::Text("Position:");
+        ImGui::Text("   X: %.4f", pos.x);
+        ImGui::Text("   Y: %.4f", pos.y);
+        ImGui::Text("   Z: %.4f", pos.z);
+
+        ImGui::Separator();
+
+        ImGui::Text("Forces:");
+        for (const auto& force : physicsWorld.getForces())
+        {
+            if (force && force->isActive())
+            {
+                float magnitude = force->getForce().length();
+                ImGui::Text("   %s: %.8f N", force->getSymbol().c_str(), magnitude);
+            }
+        }
+    }
+    else
+    {
+        ImGui::Text("No active projectile");
+    }
+
     ImGui::End();
+}
+
+void ImGuiSystem::render(float dt)
+{
+    if (m_showDebug)
+    {
+        renderDebugWindow(m_camera, dt);
+    }
+
+    if (m_showProjectile)
+    {
+        renderProjectileWindow(m_physicsWorld, m_world);
+    }
 }
 
 } // namespace systems

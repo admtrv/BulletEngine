@@ -55,6 +55,9 @@ private:
     std::string m_modelPath = "assets/models/g7.obj";
     std::string m_vertexShaderPath = "assets/shaders/normal.vert.glsl";
     std::string m_fragmentShaderPath = "assets/shaders/normal.frag.glsl";
+
+    // collider
+    bool m_showCollider = false;
 };
 
 } // namespace objects

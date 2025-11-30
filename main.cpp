@@ -7,6 +7,7 @@
 #include "app/Loop.h"
 #include "render/passes/Grid.h"
 #include "render/passes/WorldAxis.h"
+#include "render/passes/Fog.h"
 #include "render/Renderer.h"
 #include "render/Shader.h"
 #include "scene/Scene.h"
@@ -49,7 +50,8 @@ int main()
     }
 
     // renderer
-    BulletRender::render::Renderer::init();
+    BulletRender::render::RenderConfig renderCfg{{0.05f, 0.05f, 0.08f, 1.0f}};
+    BulletRender::render::Renderer::init(renderCfg);
 
     // grid
     auto grid = std::make_shared<BulletRender::render::Grid>();
@@ -74,6 +76,10 @@ int main()
     BulletRender::scene::DirectionalLight light;
     scene.setLight(&light);
 
+    // fog
+    auto fog = std::make_shared<BulletRender::render::Fog>(true, 10.0f, 90.0f);
+    BulletRender::render::Renderer::registerPostPass(fog);
+
     // ecs
     ecs::World world;
 
@@ -86,7 +92,7 @@ int main()
     BulletPhysic::dynamics::PhysicsWorld physicsWorld;
     BulletPhysic::math::MidpointIntegrator integrator;
     ecs::systems::PhysicsSystem physicsSystem(physicsWorld, integrator);
-    ecs::systems::ImGuiSystem imguiSystem(physicsWorld);
+    ecs::systems::ImGuiSystem imguiSystem(physicsWorld, camera, world);
 
     // configure physics world
     physicsWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::Gravity>());
@@ -123,7 +129,7 @@ int main()
             collisionSystem.update(world);
             trajectorySystem.update(world);
             renderSystem.rebuild(world);
-            imguiSystem.render();
+            imguiSystem.render(dt);
         }
     );
 

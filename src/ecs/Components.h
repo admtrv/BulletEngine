@@ -38,6 +38,9 @@ public:
 
 class ProjectileRigidBodyComponent : public Component {
 public:
+    ProjectileRigidBodyComponent() = default;
+    explicit ProjectileRigidBodyComponent(const BulletPhysic::dynamics::projectile::ProjectileSpecs& specs) : body(specs) {}
+
     BulletPhysic::dynamics::projectile::ProjectileRigidBody body;
 };
 
