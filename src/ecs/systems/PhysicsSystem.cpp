@@ -27,7 +27,7 @@ void PhysicsSystem::update(World& world, float dt)
         }
 
         // apply forces
-        if (!rigidBodyComponent->body.isGrounded())
+        if (!rigidBodyComponent->isGrounded)
         {
             m_integrator.step(rigidBodyComponent->body, &m_physicsWorld, dt);
         }
@@ -35,15 +35,15 @@ void PhysicsSystem::update(World& world, float dt)
         // update transform if entity has one
         if (transformComponent)
         {
-            const auto& p = rigidBodyComponent->body.position();
-            const auto& v = rigidBodyComponent->body.velocity();
+            const auto& p = rigidBodyComponent->body.getPosition();
+            const auto& v = rigidBodyComponent->body.getVelocity();
 
             // update position
             transformComponent->transform.setPosition({p.x, p.y, p.z});
 
             // update orientation based on velocity
             float velLen2 = v.x*v.x + v.y*v.y + v.z*v.z;
-            if (velLen2 > 1e-6f && !rigidBodyComponent->body.isGrounded())
+            if (velLen2 > 1e-6f && !rigidBodyComponent->isGrounded)
             {
                 transformComponent->transform.rotateFromDirection({0.0f, 1.0f, 0.0f}, {v.x, v.y, v.z});
             }
@@ -53,7 +53,7 @@ void PhysicsSystem::update(World& world, float dt)
         auto* colliderComponent = world.get<ColliderComponent>(entity);
         if (colliderComponent && colliderComponent->collider && transformComponent)
         {
-            const auto& p = rigidBodyComponent->body.position();
+            const auto& p = rigidBodyComponent->body.getPosition();
             colliderComponent->collider->setPosition(p);
 
             // sync orientation for box colliders

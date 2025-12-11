@@ -43,7 +43,7 @@ using namespace BulletEngine;
 int main()
 {
     // window
-    BulletRender::app::WindowConfig windowCfg{800, 600, "Demo", true};
+    BulletRender::app::WindowConfig windowCfg{800, 600, "Demo", true, true};
     if (!BulletRender::app::Window::init(windowCfg))
     {
         return -1;

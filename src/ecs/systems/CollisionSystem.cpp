@@ -61,7 +61,7 @@ void CollisionSystem::update(World& world)
                     {
                         // ground collision detected
                         rigidBodyComponent->body.setVelocity({0.0f, 0.0f, 0.0f});
-                        rigidBodyComponent->body.setGrounded(true);
+                        rigidBodyComponent->isGrounded = true;
                     }
                     break;
                 }

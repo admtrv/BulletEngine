@@ -54,6 +54,13 @@ add_custom_command(TARGET ${BIN_NAME} POST_BUILD
     COMMENT "Copying BulletRender assets..."
 )
 
+add_custom_command(TARGET ${BIN_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/BulletPhysic/assets
+            $<TARGET_FILE_DIR:${BIN_NAME}>/assets
+    COMMENT "Copying BulletPhysic assets..."
+)
+
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/assets)
     add_custom_command(TARGET ${BIN_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory

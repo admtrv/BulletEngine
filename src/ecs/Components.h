@@ -10,7 +10,7 @@
 #include "scene/Model.h"
 #include "render/Material.h"
 
-#include "dynamics/RigidBody.h"
+#include "dynamics/PhysicsBody.h"
 #include "collision/Collider.h"
 #include "math/Vec3.h"
 
@@ -42,6 +42,7 @@ public:
     explicit ProjectileRigidBodyComponent(const BulletPhysic::dynamics::projectile::ProjectileSpecs& specs) : body(specs) {}
 
     BulletPhysic::dynamics::projectile::ProjectileRigidBody body;
+    bool isGrounded = false;
 };
 
 class TrajectoryComponent : public Component {
