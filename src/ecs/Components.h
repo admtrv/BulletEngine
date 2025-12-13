@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Ecs.h"
+#include "ecs/Ecs.h"
 
 #include "scene/Transform.h"
 #include "scene/Model.h"
@@ -33,23 +33,10 @@ public:
 
 class RigidBodyComponent : public Component {
 public:
-    BulletPhysic::dynamics::RigidBody body;
-};
+    RigidBodyComponent() : body(std::make_unique<BulletPhysic::dynamics::RigidBody>()) {}
+    virtual ~RigidBodyComponent() = default;
 
-class ProjectileRigidBodyComponent : public Component {
-public:
-    ProjectileRigidBodyComponent() = default;
-    explicit ProjectileRigidBodyComponent(const BulletPhysic::dynamics::projectile::ProjectileSpecs& specs) : body(specs) {}
-
-    BulletPhysic::dynamics::projectile::ProjectileRigidBody body;
-    bool isGrounded = false;
-};
-
-class TrajectoryComponent : public Component {
-public:
-    std::vector<BulletPhysic::math::Vec3> points;
-    BulletPhysic::math::Vec3 color{1.0f, 1.0f, 1.0f};
-    float minSegment = 0.02f;
+    std::unique_ptr<BulletPhysic::dynamics::RigidBody> body;
 };
 
 class ColliderComponent : public Component {

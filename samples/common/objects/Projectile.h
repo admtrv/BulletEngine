@@ -6,19 +6,17 @@
 
 #include "ecs/Ecs.h"
 #include "ecs/Components.h"
-
 #include "scene/Model.h"
 #include "render/Shader.h"
-
 #include "collision/BoxCollider.h"
 #include "dynamics/PhysicsWorld.h"
 #include "dynamics/forces/drag/DragModel.h"
+#include "common/Components.h"
 
 #include <vector>
 
 namespace BulletEngine {
 namespace objects {
-
 
 // projectile abstract entity factory
 class Projectile {

@@ -6,8 +6,8 @@
 
 #include "ecs/Ecs.h"
 #include "ecs/Components.h"
-
 #include "render/passes/Lines.h"
+#include "common/Components.h"
 
 #include <cmath>
 

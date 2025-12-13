@@ -31,8 +31,8 @@ ecs::Entity Projectile::launch(ecs::World& world)
 
     // rigid body
     auto& rigidBodyComponent = world.add<ecs::ProjectileRigidBodyComponent>(entity, specs);
-    rigidBodyComponent.body.setPosition({projectile.m_initialPosX, projectile.m_initialPosY, projectile.m_initialPosZ});
-    rigidBodyComponent.body.setVelocityFromAngles(projectile.m_launchSpeed, projectile.m_launchElevationDeg, projectile.m_launchAzimuthDeg);
+    rigidBodyComponent.getProjectileBody().setPosition({projectile.m_initialPosX, projectile.m_initialPosY, projectile.m_initialPosZ});
+    rigidBodyComponent.getProjectileBody().setVelocityFromAngles(projectile.m_launchSpeed, projectile.m_launchElevationDeg, projectile.m_launchAzimuthDeg);
 
     // trajectory
     auto& trajectoryComponent = world.add<ecs::TrajectoryComponent>(entity);

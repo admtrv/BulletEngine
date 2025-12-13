@@ -14,6 +14,7 @@
 #include "scene/Model.h"
 #include "scene/Camera.h"
 #include "scene/Light.h"
+#include "imgui.h"
 
 // BulletPhysic
 #include "math/Integrator.h"
@@ -29,21 +30,95 @@
 
 // BulletEngine
 #include "ecs/Ecs.h"
-#include "ecs/Components.h"
-#include "ecs/systems/PhysicsSystem.h"
 #include "ecs/systems/RenderSystem.h"
-#include "ecs/systems/TrajectorySystem.h"
 #include "ecs/systems/InputSystem.h"
-#include "ecs/systems/CollisionSystem.h"
 #include "ecs/systems/ImGuiSystem.h"
-#include "objects/Projectile.h"
+
+// common
+#include "common/Components.h"
+#include "common/systems/CollisionSystem.h"
+#include "common/systems/TrajectorySystem.h"
+#include "common/objects/Projectile.h"
+
+// local
+#include "PhysicsSystem.h"
 
 using namespace BulletEngine;
+
+using RenderSystem = ecs::systems::RenderSystemBase;
+using ImGuiSystem = ecs::systems::ImGuiSystemBase;
+
+// imgui display functions
+void setupDebugDisplay(ImGuiSystem& imgui, BulletRender::scene::Camera& camera, float& dt)
+{
+    imgui.add([&camera, &dt]() {
+        ImGui::Begin("Debug");
+
+        float fps = dt > 0.0f ? 1.0f / dt : 0.0f;
+        ImGui::Text("FPS: %.1f", fps);
+
+        ImGui::Separator();
+
+        auto p = camera.position();
+        ImGui::Text("Camera:");
+        ImGui::Text("   X: %.2f", p.x);
+        ImGui::Text("   Y: %.2f", p.y);
+        ImGui::Text("   Z: %.2f", p.z);
+
+        ImGui::End();
+    });
+}
+
+void setupProjectileDisplay(ImGuiSystem& imgui, ecs::World& world, BulletPhysic::dynamics::PhysicsWorld& physicsWorld)
+{
+    imgui.add([&world, &physicsWorld]() {
+        ImGui::Begin("Projectile");
+
+        // find last projectile
+        ecs::Entity lastProjectile = 0;
+        for (const auto& entity : world.entities())
+        {
+            if (world.has<ecs::ProjectileRigidBodyComponent>(entity) && world.has<ecs::TransformComponent>(entity))
+            {
+                lastProjectile = entity;
+            }
+        }
+
+        if (lastProjectile != 0)
+        {
+            auto* transform = world.get<ecs::TransformComponent>(lastProjectile);
+            auto pos = transform->transform.getPosition();
+
+            ImGui::Text("Position:");
+            ImGui::Text("   X: %.3f", pos.x);
+            ImGui::Text("   Y: %.3f", pos.y);
+            ImGui::Text("   Z: %.3f", pos.z);
+
+            ImGui::Separator();
+
+            ImGui::Text("Forces:");
+            for (const auto& force : physicsWorld.getForces())
+            {
+                if (force && force->isActive())
+                {
+                    float magnitude = force->getForce().length();
+                    ImGui::Text("   %s: %.8f N", force->getSymbol().c_str(), magnitude);
+                }
+            }
+        }
+        else
+        {
+            ImGui::Text("No active projectile");
+        }
+
+        ImGui::End();
+    });
+}
 
 int main()
 {
     // window
-    BulletRender::app::WindowConfig windowCfg{800, 600, "Demo", true, true};
+    BulletRender::app::WindowConfig windowCfg{800, 600, "Projectile Basic Demo", true, true};
     if (!BulletRender::app::Window::init(windowCfg))
     {
         return -1;
@@ -84,7 +159,7 @@ int main()
     ecs::World world;
 
     // systems
-    ecs::systems::RenderSystem renderSystem(scene);
+    RenderSystem renderSystem(scene);
     ecs::systems::CollisionSystem collisionSystem;
     ecs::systems::TrajectorySystem trajectorySystem(lines);
 
@@ -92,7 +167,6 @@ int main()
     BulletPhysic::dynamics::PhysicsWorld physicsWorld;
     BulletPhysic::math::MidpointIntegrator integrator;
     ecs::systems::PhysicsSystem physicsSystem(physicsWorld, integrator);
-    ecs::systems::ImGuiSystem imguiSystem(physicsWorld, camera, world);
 
     // configure physics world
     physicsWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::Gravity>());
@@ -117,10 +191,18 @@ int main()
         BulletRender::app::Window::setShouldClose(true);
     });
 
+    // imgui
+    ImGuiSystem imguiSystem;
+    float lastDt = 0.0f;
+    setupDebugDisplay(imguiSystem, camera, lastDt);
+    setupProjectileDisplay(imguiSystem, world, physicsWorld);
+
     // loop
     BulletRender::app::Loop loop(scene);
     loop.run(
         [&](float dt) {
+            lastDt = dt;
+
             camera.update(BulletRender::app::Window::get(), dt);
 
             BulletRender::utils::Input::instance().update(BulletRender::app::Window::get());
@@ -128,8 +210,9 @@ int main()
             physicsSystem.update(world, dt);
             collisionSystem.update(world);
             trajectorySystem.update(world);
-            renderSystem.rebuild(world);
-            imguiSystem.render(dt);
+
+            renderSystem.render(world);
+            imguiSystem.render();
         }
     );
 

@@ -4,29 +4,19 @@
 
 #pragma once
 
-#include "dynamics/PhysicsWorld.h"
-#include "scene/Camera.h"
-#include "ecs/Ecs.h"
-
-#include "imgui.h"
+#include <functional>
 
 namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-class ImGuiSystem {
+class ImGuiSystemBase {
 public:
-    explicit ImGuiSystem(BulletPhysic::dynamics::PhysicsWorld& physicsWorld, BulletRender::scene::Camera& camera, World& world);
-
-    void render(float dt);
+    void add(const std::function<void()>& display);
+    void render();
 
 private:
-    BulletPhysic::dynamics::PhysicsWorld& m_physicsWorld;
-    BulletRender::scene::Camera& m_camera;
-    World& m_world;
-
-    bool m_showDebug = true;
-    bool m_showProjectile = true;
+    std::vector<std::function<void()>> m_displays;
 };
 
 } // namespace systems

@@ -13,18 +13,24 @@
 #include "dynamics/environment/Wind.h"
 
 #include <cmath>
+#include <vector>
 
 namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-class PhysicsSystem {
+class PhysicsSystemBase {
 public:
-    PhysicsSystem(BulletPhysic::dynamics::PhysicsWorld& physicsWorld, BulletPhysic::math::IIntegrator& integrator);
+    PhysicsSystemBase(BulletPhysic::dynamics::PhysicsWorld& physicsWorld, BulletPhysic::math::IIntegrator& integrator);
+    virtual ~PhysicsSystemBase() = default;
 
     void update(World& world, float dt);
 
-private:
+protected:
+    // hooks
+    virtual bool beforeIntegrate(World&, Entity, RigidBodyComponent&, float) {return true;}
+    virtual void afterIntegrate(World&, Entity, RigidBodyComponent&, float) {}
+
     BulletPhysic::dynamics::PhysicsWorld& m_physicsWorld;
     BulletPhysic::math::IIntegrator& m_integrator;
 };

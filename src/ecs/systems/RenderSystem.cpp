@@ -8,7 +8,9 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-void RenderSystem::rebuild(World& world)
+RenderSystemBase::RenderSystemBase(BulletRender::scene::Scene& scene) : m_scene(scene) {}
+
+void RenderSystemBase::render(World& world)
 {
     m_scene.clear();
 
@@ -26,18 +28,22 @@ void RenderSystem::rebuild(World& world)
             object->getMaterial().setColor(renderableComponent->material.getColor());
 
             object->getTransform().setMatrix(transformComponent->transform.getMatrix());
+
+            onObjectRender(world, entity, *object);
         }
 
         // render colliders
         auto* colliderComponent = world.get<ColliderComponent>(entity);
         if (transformComponent && colliderComponent && colliderComponent->isVisible && colliderComponent->model)
         {
-            auto* colliderObject = m_scene.addObject(colliderComponent->model);
+            auto* collider = m_scene.addObject(colliderComponent->model);
 
-            colliderObject->getMaterial().setShader(colliderComponent->material.getShader());
-            colliderObject->getMaterial().setColor(colliderComponent->material.getColor());
+            collider->getMaterial().setShader(colliderComponent->material.getShader());
+            collider->getMaterial().setColor(colliderComponent->material.getColor());
 
-            colliderObject->getTransform().setMatrix(transformComponent->transform.getMatrix());
+            collider->getTransform().setMatrix(transformComponent->transform.getMatrix());
+
+            onColliderRender(world, entity, *collider);
         }
     }
 }

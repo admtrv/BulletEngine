@@ -7,8 +7,6 @@
 #include "ecs/Ecs.h"
 #include "ecs/Components.h"
 
-#include "collision/GroundCollider.h"
-#include "collision/BoxCollider.h"
 #include "collision/CollisionDetection.h"
 
 #include <memory>
@@ -17,13 +15,17 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-class CollisionSystem {
+class CollisionSystemBase {
 public:
-    CollisionSystem();
+    CollisionSystemBase();
+    virtual ~CollisionSystemBase() = default;
 
     void update(World& world);
 
-private:
+protected:
+    // hooks
+    virtual void onCollision(World&, Entity, Entity, const BulletPhysic::collision::Manifold&) {}
+
     std::unique_ptr<BulletPhysic::collision::CollisionDetection> m_collisionDetector;
 };
 
