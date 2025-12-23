@@ -24,7 +24,7 @@ ecs::Entity Projectile::launch(ecs::World& world)
     transformComponent.transform.setScale({modelScale, modelScale, modelScale});
 
     // projectile specs
-    BulletPhysic::dynamics::projectile::ProjectileSpecs specs{};
+    BulletPhysics::dynamics::projectile::ProjectileSpecs specs{};
     specs.mass = projectile.m_mass;
     specs.diameter = projectile.m_diameter;
     specs.dragModel = projectile.m_dragModel;
@@ -50,7 +50,7 @@ ecs::Entity Projectile::launch(ecs::World& world)
 
     // collider
     auto& colliderComponent = world.add<ecs::ColliderComponent>(entity);
-    colliderComponent.collider = std::make_shared<BulletPhysic::collision::BoxCollider>(BulletPhysic::math::Vec3{projectile.m_diameter, length, projectile.m_diameter});
+    colliderComponent.collider = std::make_shared<BulletPhysics::collision::BoxCollider>(BulletPhysics::math::Vec3{projectile.m_diameter, length, projectile.m_diameter});
 
     // collider debug visibility
     if (projectile.m_showCollider)

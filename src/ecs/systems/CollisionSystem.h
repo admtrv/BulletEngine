@@ -24,9 +24,9 @@ public:
 
 protected:
     // hooks
-    virtual void onCollision(World&, Entity, Entity, const BulletPhysic::collision::Manifold&) {}
+    virtual void onCollision(World&, Entity, Entity, const BulletPhysics::collision::Manifold&) {}
 
-    std::unique_ptr<BulletPhysic::collision::CollisionDetection> m_collisionDetector;
+    std::unique_ptr<BulletPhysics::collision::CollisionDetection> m_collisionDetector;
 };
 
 } // namespace systems

@@ -22,14 +22,14 @@ endif()
 set(BULLET_RENDER_BUILD_APP OFF CACHE BOOL "" FORCE)    # disable demo compilation within BulletRender
 add_subdirectory(BulletRender)
 
-# connect BulletPhysic library
-add_subdirectory(BulletPhysic)
+# connect BulletPhysics library
+add_subdirectory(BulletPhysics)
 
 # BulletEngine library
 file(GLOB_RECURSE BULLET_ENGINE_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.cpp")
 add_library(BulletEngine STATIC ${BULLET_ENGINE_SOURCES})
 target_include_directories(BulletEngine PUBLIC ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(BulletEngine PUBLIC BulletRender BulletPhysic)
+target_link_libraries(BulletEngine PUBLIC BulletRender BulletPhysics)
 
 # samples/common
 file(GLOB_RECURSE SAMPLES_COMMON_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/samples/common/*.cpp")
@@ -56,9 +56,9 @@ function(add_sample SAMPLE_NAME SAMPLE_DIR)
 
     add_custom_command(TARGET ${SAMPLE_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-                ${CMAKE_CURRENT_SOURCE_DIR}/BulletPhysic/assets
+                ${CMAKE_CURRENT_SOURCE_DIR}/BulletPhysics/assets
                 $<TARGET_FILE_DIR:${SAMPLE_NAME}>/assets
-        COMMENT "Copying BulletPhysic assets for ${SAMPLE_NAME}..."
+        COMMENT "Copying BulletPhysics assets for ${SAMPLE_NAME}..."
     )
 
     if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/assets)

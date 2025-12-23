@@ -8,7 +8,7 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-void CollisionSystem::onCollision(World& world, Entity entityA, Entity entityB, const BulletPhysic::collision::Manifold& manifold)
+void CollisionSystem::onCollision(World& world, Entity entityA, Entity entityB, const BulletPhysics::collision::Manifold& manifold)
 {
     // determine which is ground and which is projectile
     Entity groundEntity = 0;
@@ -23,12 +23,12 @@ void CollisionSystem::onCollision(World& world, Entity entityA, Entity entityB, 
     }
 
     // check which one is ground
-    if (colliderA->collider->getShape() == BulletPhysic::collision::CollisionShape::Ground)
+    if (colliderA->collider->getShape() == BulletPhysics::collision::CollisionShape::Ground)
     {
         groundEntity = entityA;
         projectileEntity = entityB;
     }
-    else if (colliderB->collider->getShape() == BulletPhysic::collision::CollisionShape::Ground)
+    else if (colliderB->collider->getShape() == BulletPhysics::collision::CollisionShape::Ground)
     {
         groundEntity = entityB;
         projectileEntity = entityA;

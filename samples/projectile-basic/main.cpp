@@ -16,7 +16,7 @@
 #include "scene/Light.h"
 #include "imgui.h"
 
-// BulletPhysic
+// BulletPhysics
 #include "math/Integrator.h"
 #include "math/Angles.h"
 #include "collision/BoxCollider.h"
@@ -69,7 +69,7 @@ void setupDebugDisplay(ImGuiSystem& imgui, BulletRender::scene::Camera& camera, 
     });
 }
 
-void setupProjectileDisplay(ImGuiSystem& imgui, ecs::World& world, BulletPhysic::dynamics::PhysicsWorld& physicsWorld)
+void setupProjectileDisplay(ImGuiSystem& imgui, ecs::World& world, BulletPhysics::dynamics::PhysicsWorld& physicsWorld)
 {
     imgui.add([&world, &physicsWorld]() {
         ImGui::Begin("Projectile");
@@ -164,23 +164,23 @@ int main()
     ecs::systems::TrajectorySystem trajectorySystem(lines);
 
     // physics
-    BulletPhysic::dynamics::PhysicsWorld physicsWorld;
-    BulletPhysic::math::MidpointIntegrator integrator;
+    BulletPhysics::dynamics::PhysicsWorld physicsWorld;
+    BulletPhysics::math::MidpointIntegrator integrator;
     ecs::systems::PhysicsSystem physicsSystem(physicsWorld, integrator);
 
     // configure physics world
-    physicsWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::Gravity>());
-    physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Atmosphere>(280.0f, 100000.0f));                      // t_0 = 280 K, p_0 = 100.000 Pa
-    physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Humidity>(60));                                       // relative humidity = 60%
-    physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Wind>(BulletPhysic::math::Vec3{0.0f, 0.0f, 2.0f}));   // wind velocity = 2 m/s
-    physicsWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Geographic>(BulletPhysic::math::deg2rad(48.1482), BulletPhysic::math::deg2rad(17.1067))); // Bratislava coordinates
-    physicsWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::drag::Drag>());
-    physicsWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::Coriolis>());
+    physicsWorld.addForce(std::make_unique<BulletPhysics::dynamics::forces::Gravity>());
+    physicsWorld.addEnvironment(std::make_unique<BulletPhysics::dynamics::environment::Atmosphere>(280.0f, 100000.0f));                      // t_0 = 280 K, p_0 = 100.000 Pa
+    physicsWorld.addEnvironment(std::make_unique<BulletPhysics::dynamics::environment::Humidity>(60));                                       // relative humidity = 60%
+    physicsWorld.addEnvironment(std::make_unique<BulletPhysics::dynamics::environment::Wind>(BulletPhysics::math::Vec3{0.0f, 0.0f, 2.0f}));   // wind velocity = 2 m/s
+    physicsWorld.addEnvironment(std::make_unique<BulletPhysics::dynamics::environment::Geographic>(BulletPhysics::math::deg2rad(48.1482), BulletPhysics::math::deg2rad(17.1067))); // Bratislava coordinates
+    physicsWorld.addForce(std::make_unique<BulletPhysics::dynamics::forces::drag::Drag>());
+    physicsWorld.addForce(std::make_unique<BulletPhysics::dynamics::forces::Coriolis>());
 
     // ground collider
     auto groundObject = world.create();
     auto& groundCollider = world.add<ecs::ColliderComponent>(groundObject);
-    groundCollider.collider = std::make_shared<BulletPhysic::collision::GroundCollider>(0.0f);
+    groundCollider.collider = std::make_shared<BulletPhysics::collision::GroundCollider>(0.0f);
 
     // input
     ecs::systems::InputSystem inputSystem;

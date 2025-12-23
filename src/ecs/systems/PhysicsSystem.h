@@ -21,7 +21,7 @@ namespace systems {
 
 class PhysicsSystemBase {
 public:
-    PhysicsSystemBase(BulletPhysic::dynamics::PhysicsWorld& physicsWorld, BulletPhysic::math::IIntegrator& integrator);
+    PhysicsSystemBase(BulletPhysics::dynamics::PhysicsWorld& physicsWorld, BulletPhysics::math::IIntegrator& integrator);
     virtual ~PhysicsSystemBase() = default;
 
     void update(World& world, float dt);
@@ -31,8 +31,8 @@ protected:
     virtual bool beforeIntegrate(World&, Entity, RigidBodyComponent&, float) {return true;}
     virtual void afterIntegrate(World&, Entity, RigidBodyComponent&, float) {}
 
-    BulletPhysic::dynamics::PhysicsWorld& m_physicsWorld;
-    BulletPhysic::math::IIntegrator& m_integrator;
+    BulletPhysics::dynamics::PhysicsWorld& m_physicsWorld;
+    BulletPhysics::math::IIntegrator& m_integrator;
 };
 
 } // namespace systems

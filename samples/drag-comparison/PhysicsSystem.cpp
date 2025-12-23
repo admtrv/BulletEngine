@@ -62,13 +62,13 @@ void PhysicsSystem::afterIntegrate(ecs::World& world, ecs::Entity entity, ecs::R
     auto* colliderComponent = world.get<ecs::ColliderComponent>(entity);
     if (colliderComponent && colliderComponent->collider && transformComponent)
     {
-        if (colliderComponent->collider->getShape() == BulletPhysic::collision::CollisionShape::Box)
+        if (colliderComponent->collider->getShape() == BulletPhysics::collision::CollisionShape::Box)
         {
-            auto* boxCollider = static_cast<BulletPhysic::collision::BoxCollider*>(colliderComponent->collider.get());
+            auto* boxCollider = static_cast<BulletPhysics::collision::BoxCollider*>(colliderComponent->collider.get());
 
-            auto axisX = reinterpret_cast<const BulletPhysic::math::Vec3&>(transformComponent->transform.getMatrix()[0]);
-            auto axisY = reinterpret_cast<const BulletPhysic::math::Vec3&>(transformComponent->transform.getMatrix()[1]);
-            auto axisZ = reinterpret_cast<const BulletPhysic::math::Vec3&>(transformComponent->transform.getMatrix()[2]);
+            auto axisX = reinterpret_cast<const BulletPhysics::math::Vec3&>(transformComponent->transform.getMatrix()[0]);
+            auto axisY = reinterpret_cast<const BulletPhysics::math::Vec3&>(transformComponent->transform.getMatrix()[1]);
+            auto axisZ = reinterpret_cast<const BulletPhysics::math::Vec3&>(transformComponent->transform.getMatrix()[2]);
 
             boxCollider->setAxes(axisX, axisY, axisZ);
         }

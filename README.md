@@ -8,8 +8,8 @@
 
 <p align="center">
 
-  <a href="https://github.com/admtrv/BulletPhysic">
-    <img src="assets/images/BulletPhysic.png" alt="BulletPhysic Logo" height="70">
+  <a href="https://github.com/admtrv/BulletPhysics">
+    <img src="assets/images/BulletPhysics.png" alt="BulletPhysics Logo" height="70">
   </a>
 
   <a href="https://github.com/admtrv/BulletRender">

@@ -8,14 +8,14 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-CollisionSystemBase::CollisionSystemBase() : m_collisionDetector(std::make_unique<BulletPhysic::collision::CollisionDetection>()) {}
+CollisionSystemBase::CollisionSystemBase() : m_collisionDetector(std::make_unique<BulletPhysics::collision::CollisionDetection>()) {}
 
 void CollisionSystemBase::update(World& world)
 {
     // register all colliders
     m_collisionDetector->clear();
 
-    std::unordered_map<BulletPhysic::collision::Collider*, Entity> colliderToEntity;    // map collider -> entity
+    std::unordered_map<BulletPhysics::collision::Collider*, Entity> colliderToEntity;    // map collider -> entity
 
     for (auto entity : world.entities())
     {
@@ -29,7 +29,7 @@ void CollisionSystemBase::update(World& world)
     }
 
     // detect collisions
-    std::vector<BulletPhysic::collision::Manifold> manifolds;
+    std::vector<BulletPhysics::collision::Manifold> manifolds;
     m_collisionDetector->detect(manifolds);
 
     // handle collisions

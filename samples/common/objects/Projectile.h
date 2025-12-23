@@ -29,7 +29,7 @@ private:
     // physics
     float m_mass = 0.01f;
     float m_diameter = 0.00762f;
-    BulletPhysic::dynamics::forces::drag::DragCurveModel m_dragModel = BulletPhysic::dynamics::forces::drag::DragCurveModel::G7;
+    BulletPhysics::dynamics::forces::drag::DragCurveModel m_dragModel = BulletPhysics::dynamics::forces::drag::DragCurveModel::G7;
 
     float m_modelDiameter = 1.0f;
     float m_modelLength = 3.32f;

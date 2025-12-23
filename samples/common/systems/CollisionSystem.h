@@ -16,7 +16,7 @@ public:
     using CollisionSystemBase::CollisionSystemBase;
 
 protected:
-    void onCollision(World& world, Entity entityA, Entity entityB, const BulletPhysic::collision::Manifold& manifold) override;
+    void onCollision(World& world, Entity entityA, Entity entityB, const BulletPhysics::collision::Manifold& manifold) override;
 };
 
 } // namespace systems

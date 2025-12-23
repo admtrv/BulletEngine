@@ -13,7 +13,7 @@ namespace BulletEngine {
 
 class PhysicsSystem : public ecs::systems::PhysicsSystemBase {
 public:
-    PhysicsSystem(BulletPhysic::dynamics::PhysicsWorld& physicsWorld, BulletPhysic::math::IIntegrator& integrator, ecs::Entity* targetProjectileId)
+    PhysicsSystem(BulletPhysics::dynamics::PhysicsWorld& physicsWorld, BulletPhysics::math::IIntegrator& integrator, ecs::Entity* targetProjectileId)
         : PhysicsSystemBase(physicsWorld, integrator), m_targetId(targetProjectileId)
     {}
 

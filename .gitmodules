@@ -1,6 +1,6 @@
-[submodule "BulletPhysic"]
-	path = BulletPhysic
-	url = https://github.com/admtrv/BulletPhysic.git
+[submodule "BulletPhysics"]
+	path = BulletPhysics
+	url = https://github.com/admtrv/BulletPhysics.git
 [submodule "BulletRender"]
 	path = BulletRender
 	url = https://github.com/admtrv/BulletRender.git

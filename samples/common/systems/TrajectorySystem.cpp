@@ -20,7 +20,7 @@ void TrajectorySystem::update(World& world)
         }
 
         auto pos = transformComponent->transform.getPosition();
-        BulletPhysic::math::Vec3 p{pos.x, pos.y, pos.z};
+        BulletPhysics::math::Vec3 p{pos.x, pos.y, pos.z};
 
         // calculate distance to last point
         float distToLast = 0.0f;

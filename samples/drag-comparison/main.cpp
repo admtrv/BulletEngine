@@ -16,7 +16,7 @@
 #include "scene/Light.h"
 #include "imgui.h"
 
-// BulletPhysic
+// BulletPhysics
 #include "math/Integrator.h"
 #include "math/Angles.h"
 #include "collision/BoxCollider.h"
@@ -48,8 +48,8 @@ using RenderSystem = ecs::systems::RenderSystemBase;
 using ImGuiSystem = ecs::systems::ImGuiSystemBase;
 
 // colors
-const BulletPhysic::math::Vec3 RED_COLOR{1.0f, 0.2f, 0.2f};
-const BulletPhysic::math::Vec3 BLUE_COLOR{0.2f, 0.4f, 1.0f};
+const BulletPhysics::math::Vec3 RED_COLOR{1.0f, 0.2f, 0.2f};
+const BulletPhysics::math::Vec3 BLUE_COLOR{0.2f, 0.4f, 1.0f};
 
 // entity IDs
 ecs::Entity gravityProjectileId = 0;
@@ -200,27 +200,27 @@ int main()
     ecs::systems::TrajectorySystem trajectorySystem(lines);
 
     // integrator
-    BulletPhysic::math::MidpointIntegrator integrator;
+    BulletPhysics::math::MidpointIntegrator integrator;
 
     // physics worlds
     // gravity only
-    BulletPhysic::dynamics::PhysicsWorld gravityWorld;
-    gravityWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::Gravity>());
+    BulletPhysics::dynamics::PhysicsWorld gravityWorld;
+    gravityWorld.addForce(std::make_unique<BulletPhysics::dynamics::forces::Gravity>());
     PhysicsSystem gravityPhysicsSystem(gravityWorld, integrator, &gravityProjectileId);
 
     // with drag
-    BulletPhysic::dynamics::PhysicsWorld dragWorld;
-    dragWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::Gravity>());
-    dragWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Atmosphere>(280.0f, 100000.0f));
-    dragWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Humidity>(60));
-    dragWorld.addEnvironment(std::make_unique<BulletPhysic::dynamics::environment::Wind>(BulletPhysic::math::Vec3{0.0f, 0.0f, 2.0f}));
-    dragWorld.addForce(std::make_unique<BulletPhysic::dynamics::forces::drag::Drag>());
+    BulletPhysics::dynamics::PhysicsWorld dragWorld;
+    dragWorld.addForce(std::make_unique<BulletPhysics::dynamics::forces::Gravity>());
+    dragWorld.addEnvironment(std::make_unique<BulletPhysics::dynamics::environment::Atmosphere>(280.0f, 100000.0f));
+    dragWorld.addEnvironment(std::make_unique<BulletPhysics::dynamics::environment::Humidity>(60));
+    dragWorld.addEnvironment(std::make_unique<BulletPhysics::dynamics::environment::Wind>(BulletPhysics::math::Vec3{0.0f, 0.0f, 2.0f}));
+    dragWorld.addForce(std::make_unique<BulletPhysics::dynamics::forces::drag::Drag>());
     PhysicsSystem dragPhysicsSystem(dragWorld, integrator, &dragProjectileId);
 
     // ground collider
     auto groundObject = world.create();
     auto& groundCollider = world.add<ecs::ColliderComponent>(groundObject);
-    groundCollider.collider = std::make_shared<BulletPhysic::collision::GroundCollider>(0.0f);
+    groundCollider.collider = std::make_shared<BulletPhysics::collision::GroundCollider>(0.0f);
 
     // input
     ecs::systems::InputSystem inputSystem;

@@ -33,15 +33,15 @@ public:
 
 class RigidBodyComponent : public Component {
 public:
-    RigidBodyComponent() : body(std::make_unique<BulletPhysic::dynamics::RigidBody>()) {}
+    RigidBodyComponent() : body(std::make_unique<BulletPhysics::dynamics::RigidBody>()) {}
     virtual ~RigidBodyComponent() = default;
 
-    std::unique_ptr<BulletPhysic::dynamics::RigidBody> body;
+    std::unique_ptr<BulletPhysics::dynamics::RigidBody> body;
 };
 
 class ColliderComponent : public Component {
 public:
-    std::shared_ptr<BulletPhysic::collision::Collider> collider;
+    std::shared_ptr<BulletPhysics::collision::Collider> collider;
 
     // debug visualization
     bool isVisible = false;
