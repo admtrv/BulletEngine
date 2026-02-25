@@ -22,10 +22,13 @@ namespace objects {
 class Projectile {
 public:
     static ecs::Entity launch(ecs::World& world);
+    static ecs::Entity launch(ecs::World& world, const BulletPhysics::math::Vec3& position, float speed, float elevation, float azimuth);
 
     static std::vector<ecs::Entity> fired;
 
 private:
+    ecs::Entity create(ecs::World& world);
+
     // physics
     float m_mass = 0.01f;
     float m_diameter = 0.00762f;

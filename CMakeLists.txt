@@ -74,3 +74,4 @@ endfunction()
 # add all samples
 add_sample(ProjectileBasic "${CMAKE_SOURCE_DIR}/samples/projectile-basic")
 add_sample(DragComparison "${CMAKE_SOURCE_DIR}/samples/drag-comparison")
+add_sample(TerminalBallistics "${CMAKE_SOURCE_DIR}/samples/terminal-ballistics")
