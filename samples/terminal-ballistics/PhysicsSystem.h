@@ -7,6 +7,7 @@
 #include "ecs/systems/PhysicsSystem.h"
 #include "collision/BoxCollider.h"
 #include "common/Components.h"
+#include "Components.h"
 
 namespace BulletEngine {
 namespace ecs {

@@ -26,7 +26,7 @@ class EnergyTrajectoryComponent : public Component {
 public:
     std::vector<EnergyTrajectoryPoint> points;
     float initialEnergy = 0.0f;
-    float minSegment = 0.02f;
+    float minSegment = 0.005f;
 };
 
 } // namespace ecs

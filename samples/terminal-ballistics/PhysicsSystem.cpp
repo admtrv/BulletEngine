@@ -34,8 +34,11 @@ void PhysicsSystem::afterIntegrate(World& world, Entity entity, RigidBodyCompone
     }
 
     // update orientation based on velocity
+    auto* impactState = world.get<ImpactStateComponent>(entity);
+    bool impacted = impactState && impactState->hasImpacted;
+
     auto* transformComponent = world.get<TransformComponent>(entity);
-    if (transformComponent && !projectileComponent->isGrounded)
+    if (transformComponent && !impacted)
     {
         const auto& v = rigidBody.body->getVelocity();
         float velLen2 = v.x*v.x + v.y*v.y + v.z*v.z;

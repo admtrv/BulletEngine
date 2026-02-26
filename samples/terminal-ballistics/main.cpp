@@ -282,7 +282,7 @@ int main()
         auto mat = BulletPhysics::collision::terminal::materials::Wood();
         float gap = 1.0f;
 
-        for (int i = 0; i < 6; ++i)
+        for (int i = 0; i < 4; ++i)
         {
             float x = 5.0f + static_cast<float>(i) * (wallThickness + gap);
             createWall(world,{x, 1.5f, LANE_MULTILAYER},{wallThickness, wallHeight, wallWidth}, mat, woodColor, wallShader);
@@ -333,6 +333,7 @@ int main()
             {
                 physicsSystem.update(world, PHYSICS_DT);
                 collisionSystem.update(world);
+                trajectorySystem.update(world);
                 physicsAccumulator -= PHYSICS_DT;
                 ++steps;
             }
@@ -342,7 +343,6 @@ int main()
             {
                 physicsAccumulator = 0.0f;
             }
-            trajectorySystem.update(world);
 
             renderSystem.render(world);
             imguiSystem.render();
