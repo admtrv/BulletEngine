@@ -5,7 +5,7 @@
 #pragma once
 
 #include "ecs/systems/CollisionSystem.h"
-#include "collision/terminal/ImpactResolver.h"
+#include "collision/terminal/Impact.h"
 #include "common/Components.h"
 #include "Components.h"
 

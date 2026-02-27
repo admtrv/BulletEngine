@@ -22,7 +22,7 @@
 #include "collision/BoxCollider.h"
 #include "collision/GroundCollider.h"
 #include "collision/terminal/Material.h"
-#include "collision/terminal/ImpactResult.h"
+#include "collision/terminal/Impact.h"
 #include "dynamics/environment/Atmosphere.h"
 #include "dynamics/environment/Humidity.h"
 #include "dynamics/forces/drag/Drag.h"

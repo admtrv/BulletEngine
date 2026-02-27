@@ -50,8 +50,12 @@ void TerminalCollisionSystem::onCollision(World& world, Entity entityA, Entity e
 
     if (targetCollider->collider->getMaterial().has_value())
     {
-        auto result = BulletPhysics::collision::terminal::ImpactResolver::resolve(
-            projectileBody, manifold.info, *targetCollider->collider);
+        BulletPhysics::collision::terminal::ImpactInfo impactInfo;
+        impactInfo.normal = manifold.info.normal;
+        impactInfo.material = targetCollider->collider->getMaterial().value();
+        impactInfo.thickness = targetCollider->collider->computeThickness(projectileBody.getPosition(), projectileBody.getVelocity());
+
+        auto result = BulletPhysics::collision::terminal::Impact::resolve(projectileBody, impactInfo);
 
         switch (result.outcome)
         {
@@ -64,7 +68,9 @@ void TerminalCollisionSystem::onCollision(World& world, Entity entityA, Entity e
                 projectileBody.setPosition(pos);
 
                 auto* impactState = world.get<ImpactStateComponent>(projectileEntity);
-                if (impactState) impactState->hasImpacted = true;
+                if (impactState)
+                    impactState->hasImpacted = true;
+
                 break;
             }
             case BulletPhysics::collision::terminal::ImpactOutcome::Penetration:
@@ -77,22 +83,27 @@ void TerminalCollisionSystem::onCollision(World& world, Entity entityA, Entity e
                 projectileBody.setPosition(pos);
 
                 auto* impactState = world.get<ImpactStateComponent>(projectileEntity);
-                if (impactState) impactState->hasImpacted = true;
+                if (impactState)
+                    impactState->hasImpacted = true;
+
                 break;
             }
             case BulletPhysics::collision::terminal::ImpactOutcome::Embed:
             {
                 projectileBody.setVelocity({0.0f, 0.0f, 0.0f});
                 rigidBodyComponent->isGrounded = true;
+
                 auto* impactState = world.get<ImpactStateComponent>(projectileEntity);
-                if (impactState) impactState->hasImpacted = true;
+                if (impactState)
+                    impactState->hasImpacted = true;
+
                 break;
             }
         }
     }
     else
     {
-        // no material — fallback (stop projectile)
+        // no material, fallback (stop projectile)
         projectileBody.setVelocity({0.0f, 0.0f, 0.0f});
         rigidBodyComponent->isGrounded = true;
     }
