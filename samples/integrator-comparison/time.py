@@ -1,6 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
 
 WEIGHT = 600
 
@@ -10,7 +9,7 @@ plt.rcParams.update({
     "axes.titleweight": WEIGHT,
 })
 
-df = pd.read_csv("data.csv")
+df = pd.read_csv("data/time.csv")
 
 colors = {
     "euler":      "#f9c74f",
@@ -18,21 +17,27 @@ colors = {
     "rk4":        "#577590",
 }
 
-step_cols = {
-    "Euler":    "euler_step_ns",
-    "Midpoint": "midpoint_step_ns",
-    "RK4":      "rk4_step_ns",
+order = ["euler", "midpoint", "rk4"]
+
+pretty = {
+    "euler":    "Euler",
+    "midpoint": "Midpoint",
+    "rk4":      "RK4",
 }
 
-means_ns = {label: df[col].dropna().mean() for label, col in step_cols.items()}
+means_ns = (
+    df.groupby("integrator", as_index=True)["avg_step_ns"]
+      .mean()
+      .reindex(order)
+)
 
 plt.figure(figsize=(8.6, 5.2))
 ax = plt.gca()
 
 bars = ax.bar(
-    list(means_ns.keys()),
-    list(means_ns.values()),
-    color=[colors["euler"], colors["midpoint"], colors["rk4"]],
+    [pretty[i] for i in means_ns.index],
+    means_ns.values.tolist(),
+    color=[colors[i] for i in means_ns.index],
     zorder=3,
 )
 

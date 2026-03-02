@@ -32,6 +32,7 @@
 #include "dynamics/forces/Gravity.h"
 #include "dynamics/forces/Coriolis.h"
 #include "dynamics/forces/SpinDrift.h"
+#include "dynamics/environment/Wind.h"
 
 // BulletEngine
 #include "ecs/Ecs.h"
@@ -59,11 +60,13 @@ const BulletPhysics::math::Vec3 COLOR_IDEAL {1.0f, 1.0f, 1.0f};
 const BulletPhysics::math::Vec3 COLOR_DRAG {0.2f, 0.6f, 1.0f};
 const BulletPhysics::math::Vec3 COLOR_CORIOLIS {0.2f, 1.0f, 0.4f};
 const BulletPhysics::math::Vec3 COLOR_SPIN {1.0f, 0.4f, 0.2f};
+const BulletPhysics::math::Vec3 COLOR_WIND {0.8f, 0.2f, 1.0f};
 
 ecs::Entity idealId = 0;
 ecs::Entity dragId = 0;
 ecs::Entity coriolisId = 0;
 ecs::Entity spinId = 0;
+ecs::Entity windId = 0;
 
 struct FlightStats
 {
@@ -77,6 +80,7 @@ FlightStats idealStats;
 FlightStats dragStats;
 FlightStats coriolisStats;
 FlightStats spinStats;
+FlightStats windStats;
 
 void collectStats(FlightStats& stats, const char* label, const BulletPhysics::math::Vec3& pos, float elapsed, bool grounded)
 {
@@ -106,17 +110,20 @@ void launchAll(ecs::World& world, float& elapsed)
     dragStats = {};
     coriolisStats = {};
     spinStats = {};
+    windStats = {};
     elapsed = 0.0f;
 
     idealId = objects::Projectile::launch(world, {0.0f, 1.5f, 0.0f}, LAUNCH_SPEED, 0.0f, 90.0f);
     dragId = objects::Projectile::launch(world, {0.0f, 1.5f, 0.0f}, LAUNCH_SPEED, 0.0f, 90.0f);
     coriolisId = objects::Projectile::launch(world, {0.0f, 1.5f, 0.0f}, LAUNCH_SPEED, 0.0f, 90.0f);
     spinId = objects::Projectile::launch(world, {0.0f, 1.5f, 0.0f}, LAUNCH_SPEED, 0.0f, 90.0f);
+    windId = objects::Projectile::launch(world, {0.0f, 1.5f, 0.0f}, LAUNCH_SPEED, 0.0f, 90.0f);
 
     world.get<ecs::TrajectoryComponent>(idealId)->color = COLOR_IDEAL;
     world.get<ecs::TrajectoryComponent>(dragId)->color = COLOR_DRAG;
     world.get<ecs::TrajectoryComponent>(coriolisId)->color = COLOR_CORIOLIS;
     world.get<ecs::TrajectoryComponent>(spinId)->color = COLOR_SPIN;
+    world.get<ecs::TrajectoryComponent>(windId)->color = COLOR_WIND;
 }
 
 void setupDebugDisplay(ImGuiSystem& imgui, BulletRender::scene::Camera& camera, float& dt)
@@ -208,6 +215,18 @@ int main()
     BulletPhysics::dynamics::forces::SpinDrift::addTo(spinWorld);
     PhysicsSystem spinPhysics(spinWorld, integrator, &spinId);
 
+    // 5. g + drag + coriolis + spin + wind
+    BulletPhysics::dynamics::PhysicsWorld windWorld;
+    windWorld.addForce(std::make_unique<BulletPhysics::dynamics::forces::Gravity>());
+    windWorld.addEnvironment(std::make_unique<BulletPhysics::dynamics::environment::Atmosphere>(280.0f, 100000.0f)); // t_0 = 280 K, p_0 = 100.000 Pa
+    windWorld.addEnvironment(std::make_unique<BulletPhysics::dynamics::environment::Humidity>(60));                  // relative humidity = 60%
+    windWorld.addEnvironment(std::make_unique<BulletPhysics::dynamics::environment::Geographic>(BulletPhysics::math::deg2rad(48.1482), BulletPhysics::math::deg2rad(17.1067))); // Bratislava coordinates
+    windWorld.addEnvironment(std::make_unique<BulletPhysics::dynamics::environment::Wind>(BulletPhysics::math::Vec3{0.0f, 0.0f, 10.0f})); // 10 m/s crosswind
+    windWorld.addForce(std::make_unique<BulletPhysics::dynamics::forces::drag::Drag>());
+    windWorld.addForce(std::make_unique<BulletPhysics::dynamics::forces::Coriolis>());
+    BulletPhysics::dynamics::forces::SpinDrift::addTo(windWorld);
+    PhysicsSystem windPhysics(windWorld, integrator, &windId);
+
     // ground
     auto groundObject = world.create();
     world.add<ecs::ColliderComponent>(groundObject).collider =
@@ -240,6 +259,7 @@ int main()
         dragPhysics.update(world, dt);
         coriolisPhysics.update(world, dt);
         spinPhysics.update(world, dt);
+        windPhysics.update(world, dt);
 
         auto gather = [&](ecs::Entity id, FlightStats& stats, const char* label) {
             if (id == 0 || !world.has<ecs::ProjectileRigidBodyComponent>(id))
@@ -257,6 +277,7 @@ int main()
         gather(dragId, dragStats, "G + Drag");
         gather(coriolisId, coriolisStats, "G + Drag + Coriolis");
         gather(spinId, spinStats, "G + Drag + Coriolis + Spin");
+        gather(windId, windStats, "G + Drag + Coriolis + Spin + Wind");
 
         collisionSystem.update(world);
         trajectorySystem.update(world);

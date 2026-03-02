@@ -15,6 +15,9 @@
 #include <cmath>
 #include <vector>
 #include <chrono>
+#include <algorithm>
+#include <random>
+#include <cstdint>
 
 using namespace BulletPhysics;
 using namespace BulletPhysics::math;
@@ -30,6 +33,10 @@ static constexpr float INIT_VY = 30.0f;
 static constexpr float G = 9.80665f;
 static constexpr float K = 2.0f;
 static constexpr float DT = 0.25f;
+
+// measurement controls
+static constexpr int REPS = 15;
+static constexpr int WARMUP_STEPS = 64;
 
 // linear drag: F = -k * v
 class LinearDrag : public IForce
@@ -53,7 +60,6 @@ struct Point
     float x, y;
 };
 
-// analytical solution with linear drag and gravity
 static Point analytical(float t)
 {
     float km = K / MASS;
@@ -61,7 +67,6 @@ static Point analytical(float t)
 
     float x = (INIT_VX / K) * (1.0f - ekt);
     float y = (INIT_VY / K + G * MASS / (K * K)) * (1.0f - ekt) - (G * MASS / K) * t;
-
     return {x, y};
 }
 
@@ -71,16 +76,39 @@ struct SimResult
     std::vector<long long> stepTimesNs;
 };
 
-static SimResult simulate(IIntegrator& integrator)
+// crude cache thrash
+static inline void thrashCache()
 {
-    PhysicsWorld world;
+    static std::vector<std::uint8_t> buf(64 * 1024 * 1024, 1); // 64 MB
+    volatile std::uint64_t sum = 0;
+    for (size_t i = 0; i < buf.size(); i += 64) sum += buf[i];
+    (void)sum;
+}
+
+static void initWorldAndBody(PhysicsWorld& world, RigidBody& body)
+{
+    world = PhysicsWorld{};
     world.addForce(std::make_unique<Gravity>());
     world.addForce(std::make_unique<LinearDrag>());
 
-    RigidBody body;
+    body = RigidBody{};
     body.setMass(MASS);
     body.setPosition({INIT_X, INIT_Y, 0.0f});
     body.setVelocity({INIT_VX, INIT_VY, 0.0f});
+}
+
+static SimResult simulateOne(IIntegrator& integrator, bool measure)
+{
+    PhysicsWorld world;
+    RigidBody body;
+    initWorldAndBody(world, body);
+
+    // warmup: do a few steps to stabilize branches / icache for THIS integrator+world
+    for (int i = 0; i < WARMUP_STEPS; ++i)
+        integrator.step(body, &world, DT);
+
+    // reset to identical initial state for actual simulation
+    initWorldAndBody(world, body);
 
     std::vector<Point> points;
     std::vector<long long> times;
@@ -93,17 +121,36 @@ static SimResult simulate(IIntegrator& integrator)
         if (pos.y <= 0.0f && points.size() > 1)
             break;
 
-        auto t0 = std::chrono::high_resolution_clock::now();
-        integrator.step(body, &world, DT);
-        auto t1 = std::chrono::high_resolution_clock::now();
-
-        times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
+        if (measure)
+        {
+            auto t0 = std::chrono::high_resolution_clock::now();
+            integrator.step(body, &world, DT);
+            auto t1 = std::chrono::high_resolution_clock::now();
+            times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
+        }
+        else
+        {
+            integrator.step(body, &world, DT);
+        }
     }
 
     return {points, times};
 }
 
-// ./IntegratorComparison > data.csv
+static double avgNs(const std::vector<long long>& v)
+{
+    if (v.empty())
+        return 0.0;
+
+    long double s = 0.0;
+
+    for (auto x : v)
+        s += (long double)x;
+
+    return (double)(s / (long double)v.size());
+}
+
+// ./IntegratorComparison > trajectory.csv 2> time.csv
 
 int main()
 {
@@ -111,29 +158,70 @@ int main()
     MidpointIntegrator midpoint;
     RK4Integrator rk4;
 
-    auto eulerRes = simulate(euler);
-    auto midpointRes = simulate(midpoint);
-    auto rk4Res = simulate(rk4);
+    struct Entry { int id; const char* name; IIntegrator* integ; };
+    std::vector<Entry> entries = {
+        {0, "euler", &euler},
+        {1, "midpoint", &midpoint},
+        {2, "rk4", &rk4},
+    };
 
-    std::cout << "euler_x,euler_y,midpoint_x,midpoint_y,rk4_x,rk4_y,analytical_x,analytical_y,euler_step_ns,midpoint_step_ns,rk4_step_ns\n";
+    // reference runs for trajectory export (no timing)
+    thrashCache();
+    auto eulerRef = simulateOne(euler, false);
+    thrashCache();
+    auto midpointRef = simulateOne(midpoint, false);
+    thrashCache();
+    auto rk4Ref = simulateOne(rk4, false);
+
+    std::vector<double> euler_avgs, midpoint_avgs, rk4_avgs;
+    euler_avgs.reserve(REPS);
+    midpoint_avgs.reserve(REPS);
+    rk4_avgs.reserve(REPS);
+
+    std::mt19937 rng(12345);
+
+    for (int rep = 0; rep < REPS; ++rep)
+    {
+        std::shuffle(entries.begin(), entries.end(), rng);
+
+        for (auto& e : entries)
+        {
+            thrashCache();
+            auto res = simulateOne(*e.integ, true);
+            double a = avgNs(res.stepTimesNs);
+
+            switch (e.id)
+            {
+                case 0: euler_avgs.push_back(a); break;
+                case 1: midpoint_avgs.push_back(a); break;
+                case 2: rk4_avgs.push_back(a); break;
+                default: break;
+            }
+        }
+    }
+
+    std::cout << "euler_x,euler_y,midpoint_x,midpoint_y,rk4_x,rk4_y,analytical_x,analytical_y\n";
     std::cout << std::fixed << std::setprecision(8);
 
-    int steps = static_cast<int>(std::min({eulerRes.points.size(), midpointRes.points.size(), rk4Res.points.size()}));
+    int steps = static_cast<int>(std::min({eulerRef.points.size(), midpointRef.points.size(), rk4Ref.points.size()}));
     for (int i = 0; i < steps; ++i)
     {
         float t = i * DT;
         auto an = analytical(t);
 
-        long long etns = i < (int)eulerRes.stepTimesNs.size() ? eulerRes.stepTimesNs[i] : 0;
-        long long mtns = i < (int)midpointRes.stepTimesNs.size() ? midpointRes.stepTimesNs[i] : 0;
-        long long rtns = i < (int)rk4Res.stepTimesNs.size() ? rk4Res.stepTimesNs[i] : 0;
-
-        std::cout << eulerRes.points[i].x    << "," << eulerRes.points[i].y    << ","
-                  << midpointRes.points[i].x << "," << midpointRes.points[i].y << ","
-                  << rk4Res.points[i].x      << "," << rk4Res.points[i].y      << ","
-                  << an.x << "," << an.y << ","
-                  << etns << "," << mtns << "," << rtns << "\n";
+        std::cout << eulerRef.points[i].x    << "," << eulerRef.points[i].y    << ","
+                  << midpointRef.points[i].x << "," << midpointRef.points[i].y << ","
+                  << rk4Ref.points[i].x      << "," << rk4Ref.points[i].y      << ","
+                  << an.x << "," << an.y << "\n";
     }
+
+    std::cerr << "integrator,rep,avg_step_ns\n";
+    for (int i = 0; i < (int)euler_avgs.size(); ++i)
+        std::cerr << "euler," << i << "," << euler_avgs[i] << "\n";
+    for (int i = 0; i < (int)midpoint_avgs.size(); ++i)
+        std::cerr << "midpoint," << i << "," << midpoint_avgs[i] << "\n";
+    for (int i = 0; i < (int)rk4_avgs.size(); ++i)
+        std::cerr << "rk4," << i << "," << rk4_avgs[i] << "\n";
 
     return 0;
 }

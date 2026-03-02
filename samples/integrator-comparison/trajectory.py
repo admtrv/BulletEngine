@@ -9,7 +9,7 @@ plt.rcParams.update({
     "axes.titleweight": WEIGHT,
 })
 
-df = pd.read_csv("data.csv")
+df = pd.read_csv("data/trajectory.csv")
 
 plt.figure(figsize=(8.6, 5.2))
 
