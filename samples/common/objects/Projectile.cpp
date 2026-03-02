@@ -32,6 +32,8 @@ ecs::Entity Projectile::create(ecs::World& world)
     specs.mass = m_mass;
     specs.diameter = m_diameter;
     specs.dragModel = m_dragModel;
+    specs.spinSpecs = BulletPhysics::dynamics::projectile::SpinSpecs{};
+    specs.spinSpecs->riflingSpecs = BulletPhysics::dynamics::projectile::RiflingSpecs{ m_riflingDirection, m_twistRate };
 
     // rigid body
     auto& rigidBodyComponent = world.add<ecs::ProjectileRigidBodyComponent>(entity, specs);

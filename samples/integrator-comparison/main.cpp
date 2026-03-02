@@ -111,9 +111,9 @@ int main()
     MidpointIntegrator midpoint;
     RK4Integrator rk4;
 
-    auto eulerRes    = simulate(euler);
+    auto eulerRes = simulate(euler);
     auto midpointRes = simulate(midpoint);
-    auto rk4Res      = simulate(rk4);
+    auto rk4Res = simulate(rk4);
 
     std::cout << "euler_x,euler_y,midpoint_x,midpoint_y,rk4_x,rk4_y,analytical_x,analytical_y,euler_step_ns,midpoint_step_ns,rk4_step_ns\n";
     std::cout << std::fixed << std::setprecision(8);
@@ -124,9 +124,9 @@ int main()
         float t = i * DT;
         auto an = analytical(t);
 
-        long long etns  = i < (int)eulerRes.stepTimesNs.size()    ? eulerRes.stepTimesNs[i]    : 0;
-        long long mtns  = i < (int)midpointRes.stepTimesNs.size() ? midpointRes.stepTimesNs[i] : 0;
-        long long rtns  = i < (int)rk4Res.stepTimesNs.size()      ? rk4Res.stepTimesNs[i]      : 0;
+        long long etns = i < (int)eulerRes.stepTimesNs.size() ? eulerRes.stepTimesNs[i] : 0;
+        long long mtns = i < (int)midpointRes.stepTimesNs.size() ? midpointRes.stepTimesNs[i] : 0;
+        long long rtns = i < (int)rk4Res.stepTimesNs.size() ? rk4Res.stepTimesNs[i] : 0;
 
         std::cout << eulerRes.points[i].x    << "," << eulerRes.points[i].y    << ","
                   << midpointRes.points[i].x << "," << midpointRes.points[i].y << ","
