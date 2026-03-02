@@ -25,14 +25,14 @@ using namespace BulletPhysics::dynamics;
 using namespace BulletPhysics::dynamics::forces;
 
 // simulation parameters
-static constexpr float MASS = 1.0f;
-static constexpr float INIT_X = 0.0f;
-static constexpr float INIT_Y = 0.0f;
-static constexpr float INIT_VX = 20.0f;
-static constexpr float INIT_VY = 30.0f;
-static constexpr float G = 9.80665f;
-static constexpr float K = 2.0f;
-static constexpr float DT = 0.25f;
+static constexpr double MASS = 1.0;
+static constexpr double INIT_X = 0.0;
+static constexpr double INIT_Y = 0.0;
+static constexpr double INIT_VX = 20.0;
+static constexpr double INIT_VY = 30.0;
+static constexpr double G = 9.80665;
+static constexpr double K = 2.0;
+static constexpr double DT = 0.25;
 
 // measurement controls
 static constexpr int REPS = 15;
@@ -42,7 +42,7 @@ static constexpr int WARMUP_STEPS = 64;
 class LinearDrag : public IForce
 {
 public:
-    void apply(IPhysicsBody& body, PhysicsContext& /*context*/, float /*dt*/) override
+    void apply(IPhysicsBody& body, PhysicsContext& /*context*/, double /*dt*/) override
     {
         body.addForce(-K * body.getVelocity());
     }
@@ -57,16 +57,16 @@ private:
 
 struct Point
 {
-    float x, y;
+    double x, y;
 };
 
-static Point analytical(float t)
+static Point analytical(double t)
 {
-    float km = K / MASS;
-    float ekt = std::exp(-km * t);
+    double km = K / MASS;
+    double ekt = std::exp(-km * t);
 
-    float x = (INIT_VX / K) * (1.0f - ekt);
-    float y = (INIT_VY / K + G * MASS / (K * K)) * (1.0f - ekt) - (G * MASS / K) * t;
+    double x = (INIT_VX / K) * (1.0 - ekt);
+    double y = (INIT_VY / K + G * MASS / (K * K)) * (1.0 - ekt) - (G * MASS / K) * t;
     return {x, y};
 }
 
@@ -93,8 +93,8 @@ static void initWorldAndBody(PhysicsWorld& world, RigidBody& body)
 
     body = RigidBody{};
     body.setMass(MASS);
-    body.setPosition({INIT_X, INIT_Y, 0.0f});
-    body.setVelocity({INIT_VX, INIT_VY, 0.0f});
+    body.setPosition({INIT_X, INIT_Y, 0.0});
+    body.setVelocity({INIT_VX, INIT_VY, 0.0});
 }
 
 static SimResult simulateOne(IIntegrator& integrator, bool measure)
@@ -118,7 +118,7 @@ static SimResult simulateOne(IIntegrator& integrator, bool measure)
         auto pos = body.getPosition();
         points.push_back({pos.x, pos.y});
 
-        if (pos.y <= 0.0f && points.size() > 1)
+        if (pos.y <= 0.0 && points.size() > 1)
             break;
 
         if (measure)
@@ -206,7 +206,7 @@ int main()
     int steps = static_cast<int>(std::min({eulerRef.points.size(), midpointRef.points.size(), rk4Ref.points.size()}));
     for (int i = 0; i < steps; ++i)
     {
-        float t = i * DT;
+        double t = i * DT;
         auto an = analytical(t);
 
         std::cout << eulerRef.points[i].x    << "," << eulerRef.points[i].y    << ","

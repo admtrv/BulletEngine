@@ -41,11 +41,11 @@ void PhysicsSystem::afterIntegrate(World& world, Entity entity, RigidBodyCompone
     if (transformComponent && !impacted)
     {
         const auto& v = rigidBody.body->getVelocity();
-        float velLen2 = v.x*v.x + v.y*v.y + v.z*v.z;
+        double velLen2 = v.x*v.x + v.y*v.y + v.z*v.z;
 
-        if (velLen2 > 1e-6f)
+        if (velLen2 > 1e-6)
         {
-            transformComponent->transform.rotateFromDirection({0.0f, 1.0f, 0.0f}, {v.x, v.y, v.z});
+            transformComponent->transform.rotateFromDirection({0.0f, 1.0f, 0.0f}, {static_cast<float>(v.x), static_cast<float>(v.y), static_cast<float>(v.z)});
         }
     }
 
@@ -57,9 +57,10 @@ void PhysicsSystem::afterIntegrate(World& world, Entity entity, RigidBodyCompone
         {
             auto* boxCollider = static_cast<BulletPhysics::collision::BoxCollider*>(colliderComponent->collider.get());
 
-            auto axisX = reinterpret_cast<const BulletPhysics::math::Vec3&>(transformComponent->transform.getMatrix()[0]);
-            auto axisY = reinterpret_cast<const BulletPhysics::math::Vec3&>(transformComponent->transform.getMatrix()[1]);
-            auto axisZ = reinterpret_cast<const BulletPhysics::math::Vec3&>(transformComponent->transform.getMatrix()[2]);
+            const auto& mat = transformComponent->transform.getMatrix();
+            BulletPhysics::math::Vec3 axisX{mat[0].x, mat[0].y, mat[0].z};
+            BulletPhysics::math::Vec3 axisY{mat[1].x, mat[1].y, mat[1].z};
+            BulletPhysics::math::Vec3 axisZ{mat[2].x, mat[2].y, mat[2].z};
 
             boxCollider->setAxes(axisX, axisY, axisZ);
         }

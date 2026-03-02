@@ -27,8 +27,8 @@ using namespace BulletPhysics::dynamics;
 using namespace BulletPhysics::dynamics::forces;
 using namespace BulletPhysics::dynamics::environment;
 
-static constexpr float LAUNCH_SPEED = 750.0f;
-static constexpr float DT = 0.001f;
+static constexpr double LAUNCH_SPEED = 750.0;
+static constexpr double DT = 0.001;
 
 // measurement params
 static constexpr int WARMUP_STEPS = 2000;
@@ -38,18 +38,18 @@ static constexpr int REPS = 9;
 static projectile::ProjectileRigidBody makeBody()
 {
     projectile::ProjectileSpecs specs{};
-    specs.mass = 0.01f;
-    specs.diameter = 0.00762f;
+    specs.mass = 0.01;
+    specs.diameter = 0.00762;
     specs.dragModel = drag::DragCurveModel::G7;
     specs.spinSpecs = projectile::SpinSpecs{};
     specs.spinSpecs->riflingSpecs = projectile::RiflingSpecs{
         projectile::RiflingSpecs::Direction::RIGHT,
-        12.0f
+        12.0
     };
 
     projectile::ProjectileRigidBody body(specs);
-    body.setPosition({0.0f, 1.5f, 0.0f});
-    body.setVelocityFromAngles(LAUNCH_SPEED, 0.0f, 90.0f);
+    body.setPosition({0.0, 1.5, 0.0});
+    body.setVelocityFromAngles(LAUNCH_SPEED, 0.0, 90.0);
     return body;
 }
 
@@ -95,7 +95,7 @@ static void runOneConfig(const char* config, PhysicsWorld& world, IIntegrator& i
     std::cout << config << "," << rep << "," << MEASURE_STEPS << "," << avg_step_ns << "\n";
 }
 
-// ./CostComparison > data.csv
+// ./CostComparison > midpoint.csv
 
 int main()
 {
@@ -108,14 +108,14 @@ int main()
     // 2. g + drag
     PhysicsWorld dragWorld;
     dragWorld.addForce(std::make_unique<Gravity>());
-    dragWorld.addEnvironment(std::make_unique<Atmosphere>(280.0f, 100000.0f)); // t_0 = 280 K, p_0 = 100.000 Pa
+    dragWorld.addEnvironment(std::make_unique<Atmosphere>(280.0, 100000.0)); // t_0 = 280 K, p_0 = 100.000 Pa
     dragWorld.addEnvironment(std::make_unique<Humidity>(60));                  // relative humidity = 60%
     dragWorld.addForce(std::make_unique<drag::Drag>());
 
     // 3. g + drag + coriolis
     PhysicsWorld coriolisWorld;
     coriolisWorld.addForce(std::make_unique<Gravity>());
-    coriolisWorld.addEnvironment(std::make_unique<Atmosphere>(280.0f, 100000.0f)); // t_0 = 280 K, p_0 = 100.000 Pa
+    coriolisWorld.addEnvironment(std::make_unique<Atmosphere>(280.0, 100000.0)); // t_0 = 280 K, p_0 = 100.000 Pa
     coriolisWorld.addEnvironment(std::make_unique<Humidity>(60));                  // relative humidity = 60%
     coriolisWorld.addEnvironment(std::make_unique<Geographic>(deg2rad(48.1482), deg2rad(17.1067))); // Bratislava coordinates
     coriolisWorld.addForce(std::make_unique<drag::Drag>());
@@ -124,7 +124,7 @@ int main()
     // 4. g + drag + coriolis + spin
     PhysicsWorld spinWorld;
     spinWorld.addForce(std::make_unique<Gravity>());
-    spinWorld.addEnvironment(std::make_unique<Atmosphere>(280.0f, 100000.0f)); // t_0 = 280 K, p_0 = 100.000 Pa
+    spinWorld.addEnvironment(std::make_unique<Atmosphere>(280.0, 100000.0)); // t_0 = 280 K, p_0 = 100.000 Pa
     spinWorld.addEnvironment(std::make_unique<Humidity>(60));                  // relative humidity = 60%
     spinWorld.addEnvironment(std::make_unique<Geographic>(deg2rad(48.1482), deg2rad(17.1067))); // Bratislava coordinates
     spinWorld.addForce(std::make_unique<drag::Drag>());

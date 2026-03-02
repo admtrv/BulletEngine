@@ -43,7 +43,7 @@ void CollisionSystem::onCollision(World& world, Entity entityA, Entity entityB, 
     if (rigidBodyComponent)
     {
         // stop projectile and mark as grounded
-        rigidBodyComponent->getProjectileBody().setVelocity({0.0f, 0.0f, 0.0f});
+        rigidBodyComponent->getProjectileBody().setVelocity({0.0, 0.0, 0.0});
         rigidBodyComponent->isGrounded = true;
     }
 }

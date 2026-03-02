@@ -17,7 +17,6 @@ glm::vec3 EnergyTrajectorySystem::energyToColor(float ratio)
     // 0.0 -> green (0, 1, 0)
 
     ratio = std::clamp(ratio, 0.0f, 1.0f);
-    // ratio = ratio * ratio; // quadratic falloff
 
     float r, g;
 
@@ -57,9 +56,9 @@ void EnergyTrajectorySystem::update(World& world)
 
         // calculate current kinetic energy
         auto vel = rigidBodyComponent->body->getVelocity();
-        float speed = vel.length();
-        float mass = rigidBodyComponent->getProjectileBody().getMass();
-        float energy = 0.5f * mass * speed * speed;
+        double speed = vel.length();
+        double mass = rigidBodyComponent->getProjectileBody().getMass();
+        double energy = 0.5 * mass * speed * speed;
 
         // record initial energy on first point
         if (trajectoryComponent->points.empty())
@@ -68,13 +67,13 @@ void EnergyTrajectorySystem::update(World& world)
         }
 
         // check distance to last point
-        float distToLast = 0.0f;
+        double distToLast = 0.0;
         if (!trajectoryComponent->points.empty())
         {
             const auto& last = trajectoryComponent->points.back().position;
-            float dx = p.x - last.x;
-            float dy = p.y - last.y;
-            float dz = p.z - last.z;
+            double dx = p.x - last.x;
+            double dy = p.y - last.y;
+            double dz = p.z - last.z;
             distToLast = std::sqrt(dx * dx + dy * dy + dz * dz);
         }
 
@@ -86,8 +85,8 @@ void EnergyTrajectorySystem::update(World& world)
         // render segments with energy-based color
         if (trajectoryComponent->points.size() >= 2 && m_lines)
         {
-            float initE = trajectoryComponent->initialEnergy;
-            if (initE < 1e-9f) initE = 1.0f;
+            double initE = trajectoryComponent->initialEnergy;
+            if (initE < 1e-9) initE = 1.0;
 
             for (size_t i = 0; i + 1 < trajectoryComponent->points.size(); ++i)
             {
@@ -95,12 +94,12 @@ void EnergyTrajectorySystem::update(World& world)
                 const auto& b = trajectoryComponent->points[i + 1];
 
                 // average energy of segment endpoints for smooth color
-                float avgEnergy = (a.energy + b.energy) * 0.5f;
-                float ratio = avgEnergy / initE;
+                double avgEnergy = (a.energy + b.energy) * 0.5;
+                float ratio = static_cast<float>(avgEnergy / initE);
 
                 glm::vec3 color = energyToColor(ratio);
-                glm::vec3 pa{a.position.x, a.position.y, a.position.z};
-                glm::vec3 pb{b.position.x, b.position.y, b.position.z};
+                glm::vec3 pa{static_cast<float>(a.position.x), static_cast<float>(a.position.y), static_cast<float>(a.position.z)};
+                glm::vec3 pb{static_cast<float>(b.position.x), static_cast<float>(b.position.y), static_cast<float>(b.position.z)};
 
                 m_lines->addLine(pa, pb, color);
             }

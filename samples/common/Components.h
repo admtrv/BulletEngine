@@ -39,8 +39,8 @@ public:
     explicit TrajectoryComponent(const BulletPhysics::math::Vec3& color) : color(color) {}
 
     std::vector<BulletPhysics::math::Vec3> points;
-    BulletPhysics::math::Vec3 color{1.0f, 1.0f, 1.0f};
-    float minSegment = 0.02f;
+    BulletPhysics::math::Vec3 color{1.0, 1.0, 1.0};
+    double minSegment = 0.02;
 };
 
 } // namespace ecs

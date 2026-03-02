@@ -64,7 +64,7 @@ void TerminalCollisionSystem::onCollision(World& world, Entity entityA, Entity e
                 projectileBody.setVelocity(result.residualVelocity);
 
                 auto pos = projectileBody.getPosition();
-                pos += manifold.info.normal * (manifold.info.penetration + 0.001f);
+                pos += manifold.info.normal * (manifold.info.penetration + 0.001);
                 projectileBody.setPosition(pos);
 
                 auto* impactState = world.get<ImpactStateComponent>(projectileEntity);
@@ -79,7 +79,7 @@ void TerminalCollisionSystem::onCollision(World& world, Entity entityA, Entity e
 
                 auto pos = projectileBody.getPosition();
                 auto vel = result.residualVelocity.normalized();
-                pos += vel * (manifold.info.penetration + 0.05f);
+                pos += vel * (manifold.info.penetration + 0.05);
                 projectileBody.setPosition(pos);
 
                 auto* impactState = world.get<ImpactStateComponent>(projectileEntity);
@@ -90,7 +90,7 @@ void TerminalCollisionSystem::onCollision(World& world, Entity entityA, Entity e
             }
             case BulletPhysics::collision::terminal::ImpactOutcome::Embed:
             {
-                projectileBody.setVelocity({0.0f, 0.0f, 0.0f});
+                projectileBody.setVelocity({0.0, 0.0, 0.0});
                 rigidBodyComponent->isGrounded = true;
 
                 auto* impactState = world.get<ImpactStateComponent>(projectileEntity);
@@ -104,7 +104,7 @@ void TerminalCollisionSystem::onCollision(World& world, Entity entityA, Entity e
     else
     {
         // no material, fallback (stop projectile)
-        projectileBody.setVelocity({0.0f, 0.0f, 0.0f});
+        projectileBody.setVelocity({0.0, 0.0, 0.0});
         rigidBodyComponent->isGrounded = true;
     }
 }

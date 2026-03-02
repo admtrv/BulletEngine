@@ -28,7 +28,7 @@ void PhysicsSystemBase::update(World& world, float dt)
         // apply forces
         if (beforeIntegrate(world, entity, *rigidBodyComponent, dt))
         {
-            m_integrator.step(*rigidBodyComponent->body, &m_physicsWorld, dt);
+            m_integrator.step(*rigidBodyComponent->body, &m_physicsWorld, static_cast<double>(dt));
         }
 
         afterIntegrate(world, entity, *rigidBodyComponent, dt);
@@ -37,7 +37,7 @@ void PhysicsSystemBase::update(World& world, float dt)
         if (transformComponent)
         {
             const auto& p = rigidBodyComponent->body->getPosition();
-            transformComponent->transform.setPosition({p.x, p.y, p.z});
+            transformComponent->transform.setPosition({static_cast<float>(p.x), static_cast<float>(p.y), static_cast<float>(p.z)});
         }
 
         // update collider

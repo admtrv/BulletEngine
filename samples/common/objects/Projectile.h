@@ -22,7 +22,7 @@ namespace objects {
 class Projectile {
 public:
     static ecs::Entity launch(ecs::World& world);
-    static ecs::Entity launch(ecs::World& world, const BulletPhysics::math::Vec3& position, float speed, float elevation, float azimuth);
+    static ecs::Entity launch(ecs::World& world, const BulletPhysics::math::Vec3& position, double speed, double elevation, double azimuth);
 
     static std::vector<ecs::Entity> fired;
 

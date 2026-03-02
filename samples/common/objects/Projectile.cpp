@@ -72,7 +72,7 @@ ecs::Entity Projectile::create(ecs::World& world)
     return entity;
 }
 
-ecs::Entity Projectile::launch(ecs::World& world, const BulletPhysics::math::Vec3& position, float speed, float elevation, float azimuth)
+ecs::Entity Projectile::launch(ecs::World& world, const BulletPhysics::math::Vec3& position, double speed, double elevation, double azimuth)
 {
     Projectile projectile;
 

@@ -19,14 +19,14 @@ public:
 
 struct EnergyTrajectoryPoint {
     BulletPhysics::math::Vec3 position;
-    float energy;
+    double energy;
 };
 
 class EnergyTrajectoryComponent : public Component {
 public:
     std::vector<EnergyTrajectoryPoint> points;
-    float initialEnergy = 0.0f;
-    float minSegment = 0.005f;
+    double initialEnergy = 0.0;
+    double minSegment = 0.005;
 };
 
 } // namespace ecs
