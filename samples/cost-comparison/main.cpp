@@ -99,7 +99,7 @@ static void runOneConfig(const char* config, PhysicsWorld& world, IIntegrator& i
 
 int main()
 {
-    MidpointIntegrator integrator;
+    EulerIntegrator integrator;
 
     // 1. g only
     PhysicsWorld idealWorld;
