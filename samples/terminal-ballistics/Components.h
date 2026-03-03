@@ -15,6 +15,7 @@ namespace ecs {
 class ImpactStateComponent : public Component {
 public:
     bool hasImpacted = false;
+    Entity lastImpactTarget = 0;
 };
 
 struct EnergyTrajectoryPoint {

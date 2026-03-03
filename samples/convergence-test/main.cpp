@@ -36,6 +36,7 @@ static const std::vector<double> TEST_DT = {
     0.0025,
     0.00125,
     0.000625,
+    0.0003125
 };
 
 // linear drag: F = -k * v

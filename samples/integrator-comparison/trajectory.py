@@ -32,7 +32,7 @@ labels = {
     "euler":      "Euler",
     "midpoint":   "Midpoint",
     "rk4":        "RK4",
-    "analytical": "Exact Solution",
+    "analytical": "Analytical Solution",
 }
 
 draw_order = ["euler", "midpoint", "analytical", "rk4"]
@@ -57,7 +57,7 @@ for tick in ax.get_xticklabels() + ax.get_yticklabels():
 
 plt.grid(True, alpha=0.35, linewidth=1.0)
 
-desired_labels = ["Exact Solution", "Euler", "Midpoint", "RK4"]
+desired_labels = ["Analytical Solution", "Euler", "Midpoint", "RK4"]
 handles, current_labels = ax.get_legend_handles_labels()
 idx = [current_labels.index(lbl) for lbl in desired_labels]
 handles = [handles[i] for i in idx]

@@ -79,3 +79,4 @@ add_sample(IntegratorComparison "${CMAKE_SOURCE_DIR}/samples/integrator-comparis
 add_sample(CostComparison "${CMAKE_SOURCE_DIR}/samples/cost-comparison")
 add_sample(ConvergenceTest "${CMAKE_SOURCE_DIR}/samples/convergence-test")
 add_sample(AllocationTest "${CMAKE_SOURCE_DIR}/samples/allocation-test")
+add_sample(PerformanceBenchmark "${CMAKE_SOURCE_DIR}/samples/performance-benchmark")

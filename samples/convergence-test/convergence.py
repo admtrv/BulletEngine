@@ -65,7 +65,7 @@ ax.set_xlabel("dt, s")
 ax.set_ylabel("Error, m")
 
 # X: force ticks like TEST_DT and print them as decimals (no scientific notation)
-TEST_DT = [0.04, 0.02, 0.01, 0.005, 0.0025, 0.00125, 0.000625]
+TEST_DT = [0.04, 0.02, 0.01, 0.005, 0.0025, 0.00125, 0.000625, 0.0003125]
 
 def fmt_decimal(x, pos=None):
     return f"{x:.10f}".rstrip("0").rstrip(".")

@@ -4,6 +4,9 @@
 
 #include "CollisionSystem.h"
 
+#include <iostream>
+#include <cmath>
+
 namespace BulletEngine {
 namespace ecs {
 namespace systems {
@@ -48,6 +51,13 @@ void TerminalCollisionSystem::onCollision(World& world, Entity entityA, Entity e
     auto* targetCollider = world.get<ColliderComponent>(targetEntity);
     auto& projectileBody = rigidBodyComponent->getProjectileBody();
 
+    // skip repeated collisions with same target
+    auto* impactState = world.get<ImpactStateComponent>(projectileEntity);
+    if (impactState && impactState->lastImpactTarget == targetEntity)
+    {
+        return;
+    }
+
     if (targetCollider->collider->getMaterial().has_value())
     {
         BulletPhysics::collision::terminal::ImpactInfo impactInfo;
@@ -55,7 +65,35 @@ void TerminalCollisionSystem::onCollision(World& world, Entity entityA, Entity e
         impactInfo.material = targetCollider->collider->getMaterial().value();
         impactInfo.thickness = targetCollider->collider->computeThickness(projectileBody.getPosition(), projectileBody.getVelocity());
 
+        double speedBefore = projectileBody.getVelocity().length();
+        double mass = projectileBody.getMass();
+        double keBefore = 0.5 * mass * speedBefore * speedBefore;
+
         auto result = BulletPhysics::collision::terminal::Impact::resolve(projectileBody, impactInfo);
+
+        double speedAfter = result.residualVelocity.length();
+        double keAfter = 0.5 * mass * speedAfter * speedAfter;
+        double keLoss = (keBefore > 0.0) ? (1.0 - keAfter / keBefore) * 100.0 : 0.0;
+
+        const char* outcomeName = "";
+        switch (result.outcome)
+        {
+            case BulletPhysics::collision::terminal::ImpactOutcome::Ricochet:
+                outcomeName = "Ricochet";
+                break;
+            case BulletPhysics::collision::terminal::ImpactOutcome::Penetration:
+                outcomeName = "Penetration";
+                break;
+            case BulletPhysics::collision::terminal::ImpactOutcome::Embed:
+                outcomeName = "Embed";
+                break;
+        }
+
+        std::cout << "[Impact] " << outcomeName << " | "
+                  << "Material: " << impactInfo.material.name << " | "
+                  << "Speed: " << speedBefore << " -> " << speedAfter << " m/s | "
+                  << "Ek: " << keBefore << " -> " << keAfter << " J | "
+                  << "Loss: " << keLoss << "%\n";
 
         switch (result.outcome)
         {
@@ -67,9 +105,11 @@ void TerminalCollisionSystem::onCollision(World& world, Entity entityA, Entity e
                 pos += manifold.info.normal * (manifold.info.penetration + 0.001);
                 projectileBody.setPosition(pos);
 
-                auto* impactState = world.get<ImpactStateComponent>(projectileEntity);
                 if (impactState)
+                {
                     impactState->hasImpacted = true;
+                    impactState->lastImpactTarget = targetEntity;
+                }
 
                 break;
             }
@@ -82,9 +122,11 @@ void TerminalCollisionSystem::onCollision(World& world, Entity entityA, Entity e
                 pos += vel * (manifold.info.penetration + 0.05);
                 projectileBody.setPosition(pos);
 
-                auto* impactState = world.get<ImpactStateComponent>(projectileEntity);
                 if (impactState)
+                {
                     impactState->hasImpacted = true;
+                    impactState->lastImpactTarget = targetEntity;
+                }
 
                 break;
             }
@@ -93,9 +135,11 @@ void TerminalCollisionSystem::onCollision(World& world, Entity entityA, Entity e
                 projectileBody.setVelocity({0.0, 0.0, 0.0});
                 rigidBodyComponent->isGrounded = true;
 
-                auto* impactState = world.get<ImpactStateComponent>(projectileEntity);
                 if (impactState)
+                {
                     impactState->hasImpacted = true;
+                    impactState->lastImpactTarget = targetEntity;
+                }
 
                 break;
             }
