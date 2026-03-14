@@ -8,9 +8,9 @@
 #include "ecs/Components.h"
 
 #include "math/Integrator.h"
-#include "collision/BoxCollider.h"
-#include "dynamics/PhysicsWorld.h"
-#include "dynamics/environment/Wind.h"
+#include "builtin/collision/collider/BoxCollider.h"
+#include "ballistics/external/PhysicsWorld.h"
+#include "ballistics/external/environments/Wind.h"
 
 #include <cmath>
 #include <vector>
@@ -21,7 +21,7 @@ namespace systems {
 
 class PhysicsSystemBase {
 public:
-    PhysicsSystemBase(BulletPhysics::dynamics::PhysicsWorld& physicsWorld, BulletPhysics::math::IIntegrator& integrator);
+    PhysicsSystemBase(BulletPhysics::ballistics::external::PhysicsWorld& physicsWorld, BulletPhysics::math::IIntegrator& integrator);
     virtual ~PhysicsSystemBase() = default;
 
     void update(World& world, float dt);
@@ -31,7 +31,7 @@ protected:
     virtual bool beforeIntegrate(World&, Entity, RigidBodyComponent&, float) {return true;}
     virtual void afterIntegrate(World&, Entity, RigidBodyComponent&, float) {}
 
-    BulletPhysics::dynamics::PhysicsWorld& m_physicsWorld;
+    BulletPhysics::ballistics::external::PhysicsWorld& m_physicsWorld;
     BulletPhysics::math::IIntegrator& m_integrator;
 };
 

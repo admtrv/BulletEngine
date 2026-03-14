@@ -8,9 +8,9 @@
 #include "ecs/Components.h"
 #include "scene/Model.h"
 #include "render/Shader.h"
-#include "collision/BoxCollider.h"
-#include "dynamics/PhysicsWorld.h"
-#include "dynamics/forces/drag/DragModel.h"
+#include "builtin/collision/collider/BoxCollider.h"
+#include "ballistics/external/PhysicsWorld.h"
+#include "ballistics/external/forces/drag/DragModel.h"
 #include "common/Components.h"
 
 #include <vector>
@@ -32,9 +32,9 @@ private:
     // physics
     float m_mass = 0.01f;
     float m_diameter = 0.00762f;
-    BulletPhysics::dynamics::forces::drag::DragCurveModel m_dragModel = BulletPhysics::dynamics::forces::drag::DragCurveModel::G7;
+    BulletPhysics::ballistics::external::forces::drag::DragCurveModel m_dragModel = BulletPhysics::ballistics::external::forces::drag::DragCurveModel::G7;
 
-    BulletPhysics::dynamics::projectile::RiflingSpecs::Direction m_riflingDirection = BulletPhysics::dynamics::projectile::RiflingSpecs::Direction::RIGHT;
+    BulletPhysics::projectile::RiflingSpecs::Direction m_riflingDirection = BulletPhysics::projectile::RiflingSpecs::Direction::RIGHT;
     float m_twistRate = 12.0f;
 
     float m_modelDiameter = 1.0f;

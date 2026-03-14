@@ -19,14 +19,14 @@
 // BulletPhysics
 #include "math/Integrator.h"
 #include "math/Angles.h"
-#include "collision/BoxCollider.h"
-#include "collision/GroundCollider.h"
-#include "collision/terminal/Material.h"
-#include "collision/terminal/Impact.h"
-#include "dynamics/environment/Atmosphere.h"
-#include "dynamics/environment/Humidity.h"
-#include "dynamics/forces/drag/Drag.h"
-#include "dynamics/forces/Gravity.h"
+#include "builtin/collision/collider/BoxCollider.h"
+#include "builtin/collision/collider/GroundCollider.h"
+#include "ballistics/terminal/Material.h"
+#include "ballistics/terminal/Impact.h"
+#include "ballistics/external/environments/Atmosphere.h"
+#include "ballistics/external/environments/Humidity.h"
+#include "ballistics/external/forces/drag/Drag.h"
+#include "ballistics/external/forces/Gravity.h"
 
 // BulletEngine
 #include "ecs/Ecs.h"
@@ -166,7 +166,7 @@ void setupProjectileDisplay(ImGuiSystem& imgui, ecs::World& world)
 }
 
 // helper: create a wall entity
-void createWall(ecs::World& world, const BulletPhysics::math::Vec3& position, const BulletPhysics::math::Vec3& size, const BulletPhysics::collision::terminal::Material& material, const BulletPhysics::math::Vec3& color, std::shared_ptr<BulletRender::render::Shader> shader)
+void createWall(ecs::World& world, const BulletPhysics::math::Vec3& position, const BulletPhysics::math::Vec3& size, const BulletPhysics::ballistics::terminal::Material& material, const BulletPhysics::math::Vec3& color, std::shared_ptr<BulletRender::render::Shader> shader)
 {
     ecs::Entity entity = world.create();
 
@@ -179,7 +179,7 @@ void createWall(ecs::World& world, const BulletPhysics::math::Vec3& position, co
     renderable.material.setColor({color.x, color.y, color.z});
 
     auto& colliderComp = world.add<ecs::ColliderComponent>(entity);
-    auto boxCollider = std::make_shared<BulletPhysics::collision::BoxCollider>(size);
+    auto boxCollider = std::make_shared<BulletPhysics::builtin::collision::collider::BoxCollider>(size);
     boxCollider->setPosition(position);
     boxCollider->setMaterial(material);
     colliderComp.collider = boxCollider;
@@ -234,21 +234,21 @@ int main()
     ecs::systems::EnergyTrajectorySystem trajectorySystem(lines);
 
     // physics
-    BulletPhysics::dynamics::PhysicsWorld physicsWorld;
+    BulletPhysics::ballistics::external::PhysicsWorld physicsWorld;
     BulletPhysics::math::RK4Integrator integrator;
     ecs::systems::PhysicsSystem physicsSystem(physicsWorld, integrator);
 
     // configure physics world
-    physicsWorld.addForce(std::make_unique<BulletPhysics::dynamics::forces::Gravity>());
-    physicsWorld.addEnvironment(std::make_unique<BulletPhysics::dynamics::environment::Atmosphere>(280.0f, 100000.0f));
-    physicsWorld.addEnvironment(std::make_unique<BulletPhysics::dynamics::environment::Humidity>(60));
-    physicsWorld.addForce(std::make_unique<BulletPhysics::dynamics::forces::drag::Drag>());
+    physicsWorld.addForce(std::make_unique<BulletPhysics::ballistics::external::forces::Gravity>());
+    physicsWorld.addEnvironment(std::make_unique<BulletPhysics::ballistics::external::environments::Atmosphere>(280.0f, 100000.0f));
+    physicsWorld.addEnvironment(std::make_unique<BulletPhysics::ballistics::external::environments::Humidity>(60));
+    physicsWorld.addForce(std::make_unique<BulletPhysics::ballistics::external::forces::Drag>());
 
     // ground collider with Soil material
     auto groundObject = world.create();
     auto& groundCollider = world.add<ecs::ColliderComponent>(groundObject);
-    auto ground = std::make_shared<BulletPhysics::collision::GroundCollider>(0.0f);
-    ground->setMaterial(BulletPhysics::collision::terminal::materials::Soil());
+    auto ground = std::make_shared<BulletPhysics::builtin::collision::collider::GroundCollider>(0.0f);
+    ground->setMaterial(BulletPhysics::ballistics::terminal::materials::Soil());
     groundCollider.collider = ground;
 
     // shared shader for walls
@@ -267,19 +267,19 @@ int main()
 
     // lane 1: single wood wall
     {
-        auto mat = BulletPhysics::collision::terminal::materials::Wood();
+        auto mat = BulletPhysics::ballistics::terminal::materials::Wood();
         createWall(world,{5.0f, 1.5f, LANE_PENETRATION},{wallThickness, wallHeight, wallWidth}, mat, woodColor, wallShader);
     }
 
     // lane 2: concrete wall
     {
-        auto mat = BulletPhysics::collision::terminal::materials::Concrete();
+        auto mat = BulletPhysics::ballistics::terminal::materials::Concrete();
         createWall(world,{5.0f, 1.5f, LANE_EMBED},{wallThickness, wallHeight, wallWidth}, mat, concreteColor, wallShader);
     }
 
     // lane 3: wood walls in a row
     {
-        auto mat = BulletPhysics::collision::terminal::materials::Wood();
+        auto mat = BulletPhysics::ballistics::terminal::materials::Wood();
         float gap = 1.0f;
 
         for (int i = 0; i < 4; ++i)
@@ -291,7 +291,7 @@ int main()
 
     // lane 4: steel wall
     {
-        auto mat = BulletPhysics::collision::terminal::materials::Steel();
+        auto mat = BulletPhysics::ballistics::terminal::materials::Steel();
         createWall(world,{5.0f, 1.5f, LANE_RICOCHET},{wallWidth, wallHeight, wallThickness}, mat, steelColor, wallShader);
     }
 

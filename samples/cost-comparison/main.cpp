@@ -10,22 +10,23 @@
 // BulletPhysics
 #include "math/Integrator.h"
 #include "math/Angles.h"
-#include "dynamics/PhysicsBody.h"
-#include "dynamics/PhysicsWorld.h"
-#include "dynamics/forces/Gravity.h"
-#include "dynamics/forces/Coriolis.h"
-#include "dynamics/forces/SpinDrift.h"
-#include "dynamics/forces/drag/Drag.h"
-#include "dynamics/environment/Atmosphere.h"
-#include "dynamics/environment/Geographic.h"
-#include "dynamics/environment/Humidity.h"
-#include "dynamics/environment/Wind.h"
+#include "builtin/bodies/RigidBody.h"
+#include "ballistics/external/PhysicsWorld.h"
+#include "ballistics/external/forces/Gravity.h"
+#include "ballistics/external/forces/Coriolis.h"
+#include "ballistics/external/forces/SpinDrift.h"
+#include "ballistics/external/forces/drag/Drag.h"
+#include "ballistics/external/environments/Atmosphere.h"
+#include "ballistics/external/environments/Geographic.h"
+#include "ballistics/external/environments/Humidity.h"
+#include "ballistics/external/environments/Wind.h"
 
 using namespace BulletPhysics;
 using namespace BulletPhysics::math;
-using namespace BulletPhysics::dynamics;
-using namespace BulletPhysics::dynamics::forces;
-using namespace BulletPhysics::dynamics::environment;
+using namespace BulletPhysics::builtin::bodies;
+using namespace BulletPhysics::ballistics::external;
+using namespace BulletPhysics::ballistics::external::forces;
+using namespace BulletPhysics::ballistics::external::environments;
 
 static constexpr double LAUNCH_SPEED = 750.0;
 static constexpr double DT = 0.001;
@@ -35,19 +36,19 @@ static constexpr int WARMUP_STEPS = 2000;
 static constexpr int MEASURE_STEPS = 8000;
 static constexpr int REPS = 9;
 
-static projectile::ProjectileRigidBody makeBody()
+static ProjectileRigidBody makeBody()
 {
-    projectile::ProjectileSpecs specs{};
+    ::BulletPhysics::projectile::ProjectileSpecs specs{};
     specs.mass = 0.01;
     specs.diameter = 0.00762;
     specs.dragModel = drag::DragCurveModel::G7;
-    specs.spinSpecs = projectile::SpinSpecs{};
-    specs.spinSpecs->riflingSpecs = projectile::RiflingSpecs{
-        projectile::RiflingSpecs::Direction::RIGHT,
+    specs.spinSpecs = ::BulletPhysics::projectile::SpinSpecs{};
+    specs.spinSpecs->riflingSpecs = ::BulletPhysics::projectile::RiflingSpecs{
+        ::BulletPhysics::projectile::RiflingSpecs::Direction::RIGHT,
         12.0
     };
 
-    projectile::ProjectileRigidBody body(specs);
+    ProjectileRigidBody body(specs);
     body.setPosition({0.0, 1.5, 0.0});
     body.setVelocityFromAngles(LAUNCH_SPEED, 0.0, 90.0);
     return body;
@@ -110,7 +111,7 @@ int main()
     dragWorld.addForce(std::make_unique<Gravity>());
     dragWorld.addEnvironment(std::make_unique<Atmosphere>(280.0, 100000.0)); // t_0 = 280 K, p_0 = 100.000 Pa
     dragWorld.addEnvironment(std::make_unique<Humidity>(60));                  // relative humidity = 60%
-    dragWorld.addForce(std::make_unique<drag::Drag>());
+    dragWorld.addForce(std::make_unique<Drag>());
 
     // 3. g + drag + coriolis
     PhysicsWorld coriolisWorld;
@@ -118,7 +119,7 @@ int main()
     coriolisWorld.addEnvironment(std::make_unique<Atmosphere>(280.0, 100000.0)); // t_0 = 280 K, p_0 = 100.000 Pa
     coriolisWorld.addEnvironment(std::make_unique<Humidity>(60));                  // relative humidity = 60%
     coriolisWorld.addEnvironment(std::make_unique<Geographic>(deg2rad(48.1482), deg2rad(17.1067))); // Bratislava coordinates
-    coriolisWorld.addForce(std::make_unique<drag::Drag>());
+    coriolisWorld.addForce(std::make_unique<Drag>());
     coriolisWorld.addForce(std::make_unique<Coriolis>());
 
     // 4. g + drag + coriolis + spin
@@ -127,7 +128,7 @@ int main()
     spinWorld.addEnvironment(std::make_unique<Atmosphere>(280.0, 100000.0)); // t_0 = 280 K, p_0 = 100.000 Pa
     spinWorld.addEnvironment(std::make_unique<Humidity>(60));                  // relative humidity = 60%
     spinWorld.addEnvironment(std::make_unique<Geographic>(deg2rad(48.1482), deg2rad(17.1067))); // Bratislava coordinates
-    spinWorld.addForce(std::make_unique<drag::Drag>());
+    spinWorld.addForce(std::make_unique<Drag>());
     spinWorld.addForce(std::make_unique<Coriolis>());
     SpinDrift::addTo(spinWorld);
 

@@ -62,9 +62,9 @@ void PhysicsSystem::afterIntegrate(ecs::World& world, ecs::Entity entity, ecs::R
     auto* colliderComponent = world.get<ecs::ColliderComponent>(entity);
     if (colliderComponent && colliderComponent->collider && transformComponent)
     {
-        if (colliderComponent->collider->getShape() == BulletPhysics::collision::CollisionShape::Box)
+        if (colliderComponent->collider->getShape() == BulletPhysics::builtin::collision::collider::CollisionShape::Box)
         {
-            auto* boxCollider = static_cast<BulletPhysics::collision::BoxCollider*>(colliderComponent->collider.get());
+            auto* boxCollider = static_cast<BulletPhysics::builtin::collision::collider::BoxCollider*>(colliderComponent->collider.get());
 
             const auto& mat = transformComponent->transform.getMatrix();
             BulletPhysics::math::Vec3 axisX{mat[0].x, mat[0].y, mat[0].z};

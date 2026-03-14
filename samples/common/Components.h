@@ -8,7 +8,7 @@
 #include "ecs/Ecs.h"
 
 // BulletPhysics
-#include "dynamics/PhysicsBody.h"
+#include "builtin/bodies/RigidBody.h"
 #include "math/Vec3.h"
 
 #include <vector>
@@ -19,15 +19,15 @@ namespace ecs {
 class ProjectileRigidBodyComponent : public RigidBodyComponent {
 public:
     ProjectileRigidBodyComponent() = default;
-    explicit ProjectileRigidBodyComponent(const BulletPhysics::dynamics::projectile::ProjectileSpecs& specs) {
+    explicit ProjectileRigidBodyComponent(const BulletPhysics::projectile::ProjectileSpecs& specs) {
         // replace inherited body with projectile body polymorphically
-        body = std::make_unique<BulletPhysics::dynamics::projectile::ProjectileRigidBody>(specs);
+        body = std::make_unique<BulletPhysics::builtin::bodies::ProjectileRigidBody>(specs);
     }
 
     // helper to access body as projectile body
-    BulletPhysics::dynamics::projectile::ProjectileRigidBody& getProjectileBody()
+    BulletPhysics::builtin::bodies::ProjectileRigidBody& getProjectileBody()
     {
-        return static_cast<BulletPhysics::dynamics::projectile::ProjectileRigidBody&>(*body);
+        return static_cast<BulletPhysics::builtin::bodies::ProjectileRigidBody&>(*body);
     }
 
     bool isGrounded = false;

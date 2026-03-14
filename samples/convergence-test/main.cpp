@@ -9,15 +9,16 @@
 
 // BulletPhysics
 #include "math/Integrator.h"
-#include "dynamics/PhysicsBody.h"
-#include "dynamics/PhysicsWorld.h"
-#include "dynamics/forces/Gravity.h"
-#include "dynamics/forces/Force.h"
+#include "builtin/bodies/RigidBody.h"
+#include "ballistics/external/PhysicsWorld.h"
+#include "ballistics/external/forces/Gravity.h"
+#include "ballistics/external/forces/Force.h"
 
 using namespace BulletPhysics;
 using namespace BulletPhysics::math;
-using namespace BulletPhysics::dynamics;
-using namespace BulletPhysics::dynamics::forces;
+using namespace BulletPhysics::builtin::bodies;
+using namespace BulletPhysics::ballistics::external;
+using namespace BulletPhysics::ballistics::external::forces;
 
 // simulation parameters
 static constexpr double MASS = 1.0;
@@ -43,7 +44,7 @@ static const std::vector<double> TEST_DT = {
 class LinearDrag : public IForce
 {
 public:
-    void apply(IPhysicsBody& body, PhysicsContext& /*context*/, double /*dt*/) override
+    void apply(IPhysicsBody& body, PhysicsContext& /*context*/) override
     {
         body.addForce(-K * body.getVelocity());
     }

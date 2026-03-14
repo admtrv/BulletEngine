@@ -7,7 +7,7 @@
 #include "ecs/Ecs.h"
 #include "ecs/Components.h"
 
-#include "collision/CollisionDetection.h"
+#include "builtin/collision/Collision.h"
 
 #include <memory>
 
@@ -24,9 +24,9 @@ public:
 
 protected:
     // hooks
-    virtual void onCollision(World&, Entity, Entity, const BulletPhysics::collision::Manifold&) {}
+    virtual void onCollision(World&, Entity, Entity, const BulletPhysics::builtin::collision::Manifold&) {}
 
-    std::unique_ptr<BulletPhysics::collision::CollisionDetection> m_collisionDetector;
+    std::unique_ptr<BulletPhysics::builtin::collision::Collision> m_collisionDetector;
 };
 
 } // namespace systems

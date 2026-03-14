@@ -7,13 +7,13 @@
 #include "ecs/Ecs.h"
 #include "ecs/systems/PhysicsSystem.h"
 #include "common/Components.h"
-#include "collision/BoxCollider.h"
+#include "builtin/collision/collider/BoxCollider.h"
 
 namespace BulletEngine {
 
 class PhysicsSystem : public ecs::systems::PhysicsSystemBase {
 public:
-    PhysicsSystem(BulletPhysics::dynamics::PhysicsWorld& physicsWorld, BulletPhysics::math::IIntegrator& integrator, ecs::Entity* targetProjectileId)
+    PhysicsSystem(BulletPhysics::ballistics::external::PhysicsWorld& physicsWorld, BulletPhysics::math::IIntegrator& integrator, ecs::Entity* targetProjectileId)
         : PhysicsSystemBase(physicsWorld, integrator), m_targetId(targetProjectileId)
     {}
 

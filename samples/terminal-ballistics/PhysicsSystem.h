@@ -5,7 +5,7 @@
 #pragma once
 
 #include "ecs/systems/PhysicsSystem.h"
-#include "collision/BoxCollider.h"
+#include "builtin/collision/collider/BoxCollider.h"
 #include "common/Components.h"
 #include "Components.h"
 

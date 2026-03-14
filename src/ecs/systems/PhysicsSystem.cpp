@@ -8,7 +8,7 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-PhysicsSystemBase::PhysicsSystemBase(BulletPhysics::dynamics::PhysicsWorld& physicsWorld, BulletPhysics::math::IIntegrator& integrator)
+PhysicsSystemBase::PhysicsSystemBase(BulletPhysics::ballistics::external::PhysicsWorld& physicsWorld, BulletPhysics::math::IIntegrator& integrator)
     : m_physicsWorld(physicsWorld)
     , m_integrator(integrator)
 {}

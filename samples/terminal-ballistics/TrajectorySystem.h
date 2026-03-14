@@ -10,6 +10,7 @@
 #include "common/Components.h"
 #include "Components.h"
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
 

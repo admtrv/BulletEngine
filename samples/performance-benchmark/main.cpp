@@ -15,37 +15,38 @@
 // BulletPhysics
 #include "math/Integrator.h"
 #include "math/Angles.h"
-#include "dynamics/PhysicsBody.h"
-#include "dynamics/PhysicsWorld.h"
-#include "dynamics/forces/Gravity.h"
-#include "dynamics/forces/Coriolis.h"
-#include "dynamics/forces/drag/Drag.h"
-#include "dynamics/environment/Atmosphere.h"
-#include "dynamics/environment/Geographic.h"
-#include "dynamics/environment/Humidity.h"
+#include "builtin/bodies/RigidBody.h"
+#include "ballistics/external/PhysicsWorld.h"
+#include "ballistics/external/forces/Gravity.h"
+#include "ballistics/external/forces/Coriolis.h"
+#include "ballistics/external/forces/drag/Drag.h"
+#include "ballistics/external/environments/Atmosphere.h"
+#include "ballistics/external/environments/Geographic.h"
+#include "ballistics/external/environments/Humidity.h"
 
 using namespace BulletPhysics;
 using namespace BulletPhysics::math;
-using namespace BulletPhysics::dynamics;
-using namespace BulletPhysics::dynamics::forces;
-using namespace BulletPhysics::dynamics::environment;
+using namespace BulletPhysics::builtin::bodies;
+using namespace BulletPhysics::ballistics::external;
+using namespace BulletPhysics::ballistics::external::forces;
+using namespace BulletPhysics::ballistics::external::environments;
 
 static constexpr int BODY_COUNT = 1000;
 static constexpr double DT = 0.001;
 
-static projectile::ProjectileRigidBody makeBody(double speed, double elevation, double azimuth)
+static ProjectileRigidBody makeBody(double speed, double elevation, double azimuth)
 {
-    projectile::ProjectileSpecs specs{};
+    ::BulletPhysics::projectile::ProjectileSpecs specs{};
     specs.mass = 0.01;
     specs.diameter = 0.00762;
     specs.dragModel = drag::DragCurveModel::G7;
-    specs.spinSpecs = projectile::SpinSpecs{};
-    specs.spinSpecs->riflingSpecs = projectile::RiflingSpecs{
-        projectile::RiflingSpecs::Direction::RIGHT,
+    specs.spinSpecs = ::BulletPhysics::projectile::SpinSpecs{};
+    specs.spinSpecs->riflingSpecs = ::BulletPhysics::projectile::RiflingSpecs{
+        ::BulletPhysics::projectile::RiflingSpecs::Direction::RIGHT,
         12.0
     };
 
-    projectile::ProjectileRigidBody body(specs);
+    ProjectileRigidBody body(specs);
     body.setPosition({0.0, 1.5, 0.0});
     body.setVelocityFromAngles(speed, elevation, azimuth);
     return body;
@@ -76,7 +77,7 @@ int main()
     physicsWorld.addEnvironment(std::make_unique<Atmosphere>(280.0, 100000.0));
     physicsWorld.addEnvironment(std::make_unique<Humidity>(60));
     physicsWorld.addEnvironment(std::make_unique<Geographic>(deg2rad(48.1482), deg2rad(17.1067)));
-    physicsWorld.addForce(std::make_unique<drag::Drag>());
+    physicsWorld.addForce(std::make_unique<Drag>());
     physicsWorld.addForce(std::make_unique<Coriolis>());
 
     // integrator
@@ -85,7 +86,7 @@ int main()
     // create projectiles: same speed and elevation, spread azimuth evenly
     static constexpr double SPEED = 750.0;
     static constexpr double ELEVATION = 5.0;
-    std::vector<projectile::ProjectileRigidBody> bodies;
+    std::vector<ProjectileRigidBody> bodies;
     bodies.reserve(BODY_COUNT);
 
     for (int i = 0; i < BODY_COUNT; ++i)

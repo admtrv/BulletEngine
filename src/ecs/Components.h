@@ -10,8 +10,8 @@
 #include "scene/Model.h"
 #include "render/Material.h"
 
-#include "dynamics/PhysicsBody.h"
-#include "collision/Collider.h"
+#include "builtin/bodies/RigidBody.h"
+#include "builtin/collision/collider/Collider.h"
 #include "math/Vec3.h"
 
 #include <memory>
@@ -33,15 +33,15 @@ public:
 
 class RigidBodyComponent : public Component {
 public:
-    RigidBodyComponent() : body(std::make_unique<BulletPhysics::dynamics::RigidBody>()) {}
+    RigidBodyComponent() : body(std::make_unique<BulletPhysics::builtin::bodies::RigidBody>()) {}
     virtual ~RigidBodyComponent() = default;
 
-    std::unique_ptr<BulletPhysics::dynamics::RigidBody> body;
+    std::unique_ptr<BulletPhysics::builtin::bodies::RigidBody> body;
 };
 
 class ColliderComponent : public Component {
 public:
-    std::shared_ptr<BulletPhysics::collision::Collider> collider;
+    std::shared_ptr<BulletPhysics::builtin::collision::collider::Collider> collider;
 
     // debug visualization
     bool isVisible = false;

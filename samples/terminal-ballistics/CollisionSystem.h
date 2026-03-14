@@ -5,7 +5,7 @@
 #pragma once
 
 #include "ecs/systems/CollisionSystem.h"
-#include "collision/terminal/Impact.h"
+#include "ballistics/terminal/Impact.h"
 #include "common/Components.h"
 #include "Components.h"
 
@@ -18,7 +18,7 @@ public:
     using CollisionSystemBase::CollisionSystemBase;
 
 protected:
-    void onCollision(World& world, Entity entityA, Entity entityB, const BulletPhysics::collision::Manifold& manifold) override;
+    void onCollision(World& world, Entity entityA, Entity entityB, const BulletPhysics::builtin::collision::Manifold& manifold) override;
 };
 
 } // namespace systems

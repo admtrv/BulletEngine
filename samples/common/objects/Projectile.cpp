@@ -28,12 +28,12 @@ ecs::Entity Projectile::create(ecs::World& world)
     transformComponent.transform.setScale({modelScale, modelScale, modelScale});
 
     // projectile specs
-    BulletPhysics::dynamics::projectile::ProjectileSpecs specs{};
+    BulletPhysics::projectile::ProjectileSpecs specs{};
     specs.mass = m_mass;
     specs.diameter = m_diameter;
     specs.dragModel = m_dragModel;
-    specs.spinSpecs = BulletPhysics::dynamics::projectile::SpinSpecs{};
-    specs.spinSpecs->riflingSpecs = BulletPhysics::dynamics::projectile::RiflingSpecs{ m_riflingDirection, m_twistRate };
+    specs.spinSpecs = BulletPhysics::projectile::SpinSpecs{};
+    specs.spinSpecs->riflingSpecs = BulletPhysics::projectile::RiflingSpecs{ m_riflingDirection, m_twistRate };
 
     // rigid body
     auto& rigidBodyComponent = world.add<ecs::ProjectileRigidBodyComponent>(entity, specs);
@@ -56,7 +56,7 @@ ecs::Entity Projectile::create(ecs::World& world)
 
     // collider
     auto& colliderComponent = world.add<ecs::ColliderComponent>(entity);
-    colliderComponent.collider = std::make_shared<BulletPhysics::collision::BoxCollider>(BulletPhysics::math::Vec3{m_diameter, length, m_diameter});
+    colliderComponent.collider = std::make_shared<BulletPhysics::builtin::collision::collider::BoxCollider>(BulletPhysics::math::Vec3{m_diameter, length, m_diameter});
 
     // collider debug visibility
     if (m_showCollider)
