@@ -2,11 +2,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 WEIGHT = 600
+FONT_SIZE = 11
+TICK_SIZE = 11
+VALUE_SIZE = 11
 
 plt.rcParams.update({
     "font.weight": WEIGHT,
     "axes.labelweight": WEIGHT,
     "axes.titleweight": WEIGHT,
+    "axes.labelsize": FONT_SIZE,
+    "xtick.labelsize": TICK_SIZE,
+    "ytick.labelsize": TICK_SIZE,
 })
 
 df = pd.read_csv("data/time.csv")
@@ -41,7 +47,7 @@ bars = ax.bar(
     zorder=3,
 )
 
-ax.set_ylabel("Average step time, ns")
+ax.set_ylabel("Average step time [ns]")
 
 for tick in ax.get_xticklabels() + ax.get_yticklabels():
     tick.set_fontweight(WEIGHT)
@@ -57,6 +63,7 @@ for b in bars:
         ha="center",
         va="bottom",
         fontweight=WEIGHT,
+        fontsize=VALUE_SIZE,
     )
 
 plt.tight_layout()

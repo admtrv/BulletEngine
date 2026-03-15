@@ -9,79 +9,70 @@ namespace objects {
 
 std::vector<ecs::Entity> Projectile::fired;
 
-ecs::Entity Projectile::launch(ecs::World& world)
-{
-    Projectile projectile;
-    return projectile.create(world);
-}
-
-ecs::Entity Projectile::create(ecs::World& world)
+ecs::Entity Projectile::launch(ecs::World& world, const BulletPhysics::projectile::ProjectileSpecs& specs, const BulletPhysics::math::Vec3& position, double elevationDeg, double azimuthDeg, bool showCollider)
 {
     ecs::Entity entity = world.create();
 
-    // transform
-    auto& transformComponent = world.add<ecs::TransformComponent>(entity);
-
-    float modelScale = m_diameter / m_modelDiameter;
-    float length = m_modelLength * modelScale;
-
-    transformComponent.transform.setScale({modelScale, modelScale, modelScale});
-
-    // projectile specs
-    auto specs = BulletPhysics::projectile::ProjectileSpecs::create(m_mass, m_diameter)
-        .withDragModel(m_dragModel)
-        .withMuzzle(m_launchSpeed, m_riflingDirection, m_twistRate);
-
-    // rigid body
-    auto& rigidBodyComponent = world.add<ecs::ProjectileRigidBodyComponent>(entity, specs);
-    rigidBodyComponent.getProjectileBody().setPosition({m_initialPosX, m_initialPosY, m_initialPosZ});
-    rigidBodyComponent.getProjectileBody().setVelocityFromAngles(m_launchSpeed, m_launchElevationDeg, m_launchAzimuthDeg);
-
-    // trajectory
-    auto& trajectoryComponent = world.add<ecs::TrajectoryComponent>(entity);
-    trajectoryComponent.points.push_back({m_initialPosX, m_initialPosY, m_initialPosZ});
-
-    // assets
-    auto model = std::make_unique<BulletRender::scene::Model>(m_modelPath);
-    auto shader = std::make_shared<BulletRender::render::Shader>(m_vertexShaderPath, m_fragmentShaderPath);
-
-    // renderable
-    auto& renderableComponent = world.add<ecs::RenderableComponent>(entity);
-    renderableComponent.model = model.release();
-    renderableComponent.material.setShader(shader);
-    renderableComponent.material.setColor({m_colorR, m_colorG, m_colorB});
-
-    // collider
-    auto& colliderComponent = world.add<ecs::ColliderComponent>(entity);
-    colliderComponent.collider = std::make_shared<BulletPhysics::builtin::collision::collider::BoxCollider>(BulletPhysics::math::Vec3{m_diameter, length, m_diameter});
-
-    // collider debug visibility
-    if (m_showCollider)
-    {
-        colliderComponent.isVisible = true;
-        colliderComponent.model = new BulletRender::scene::Box(m_modelDiameter, m_modelLength, m_modelDiameter);
-        colliderComponent.material.setShader(shader);
-        colliderComponent.material.setColor({0.0f, 1.0f, 0.0f});
-    }
+    setupTransform(world, entity, specs.diameter);
+    setupRigidBody(world, entity, specs, position, elevationDeg, azimuthDeg);
+    setupTrajectory(world, entity, position);
+    setupRenderable(world, entity);
+    setupCollider(world, entity, specs.diameter, showCollider);
 
     fired.push_back(entity);
-
     return entity;
 }
 
-ecs::Entity Projectile::launch(ecs::World& world, const BulletPhysics::math::Vec3& position, double speed, double elevation, double azimuth)
+void Projectile::setupTransform(ecs::World& world, ecs::Entity entity, double diameter)
 {
-    Projectile projectile;
+    auto& transform = world.add<ecs::TransformComponent>(entity);
 
-    projectile.m_initialPosX = position.x;
-    projectile.m_initialPosY = position.y;
-    projectile.m_initialPosZ = position.z;
+    float modelScale = static_cast<float>(diameter / MODEL_DIAMETER);
+    transform.transform.setScale({modelScale, modelScale, modelScale});
+}
 
-    projectile.m_launchSpeed = speed;
-    projectile.m_launchElevationDeg = elevation;
-    projectile.m_launchAzimuthDeg = azimuth;
+void Projectile::setupRigidBody(ecs::World& world, ecs::Entity entity, const BulletPhysics::projectile::ProjectileSpecs& specs, const BulletPhysics::math::Vec3& position, double elevationDeg, double azimuthDeg)
+{
+    auto& rigidBody = world.add<ecs::ProjectileRigidBodyComponent>(entity, specs);
+    rigidBody.getProjectileBody().setPosition(position);
+    rigidBody.getProjectileBody().setAngles(elevationDeg, azimuthDeg);
+}
 
-    return projectile.create(world);
+void Projectile::setupTrajectory(ecs::World& world, ecs::Entity entity, const BulletPhysics::math::Vec3& position)
+{
+    auto& trajectory = world.add<ecs::TrajectoryComponent>(entity);
+    trajectory.points.push_back(position);
+}
+
+void Projectile::setupRenderable(ecs::World& world, ecs::Entity entity)
+{
+    auto model = std::make_unique<BulletRender::scene::Model>(MODEL_PATH);
+    auto shader = std::make_shared<BulletRender::render::Shader>(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
+
+    auto& renderable = world.add<ecs::RenderableComponent>(entity);
+    renderable.model = model.release();
+    renderable.material.setShader(shader);
+    renderable.material.setColor({COLOR_R, COLOR_G, COLOR_B});
+}
+
+void Projectile::setupCollider(ecs::World& world, ecs::Entity entity, double diameter, bool showCollider)
+{
+    float modelScale = static_cast<float>(diameter / MODEL_DIAMETER);
+    float length = static_cast<float>(MODEL_LENGTH * modelScale);
+    float d = static_cast<float>(diameter);
+
+    auto& collider = world.add<ecs::ColliderComponent>(entity);
+    collider.collider = std::make_shared<BulletPhysics::builtin::collision::collider::BoxCollider>(BulletPhysics::math::Vec3{d, length, d});
+
+    if (showCollider)
+    {
+        auto shader = std::make_shared<BulletRender::render::Shader>(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
+
+        collider.isVisible = true;
+        collider.model = new BulletRender::scene::Box(MODEL_DIAMETER, MODEL_LENGTH, MODEL_DIAMETER);
+        collider.material.setShader(shader);
+        collider.material.setColor({0.0f, 1.0f, 0.0f});
+    }
 }
 
 } // namespace objects

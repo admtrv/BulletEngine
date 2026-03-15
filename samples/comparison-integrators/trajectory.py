@@ -2,11 +2,18 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 WEIGHT = 600
+FONT_SIZE = 11
+TICK_SIZE = 11
+LEGEND_SIZE = 11
 
 plt.rcParams.update({
     "font.weight": WEIGHT,
     "axes.labelweight": WEIGHT,
     "axes.titleweight": WEIGHT,
+    "axes.labelsize": FONT_SIZE,
+    "xtick.labelsize": TICK_SIZE,
+    "ytick.labelsize": TICK_SIZE,
+    "legend.fontsize": LEGEND_SIZE,
 })
 
 df = pd.read_csv("data/trajectory.csv")
@@ -47,8 +54,8 @@ for name in draw_order:
         **styles[name]
     )
 
-plt.xlabel("x, m")
-plt.ylabel("y, m")
+plt.xlabel("Coordinate x [m]")
+plt.ylabel("Coordinate y [m]")
 
 ax = plt.gca()
 

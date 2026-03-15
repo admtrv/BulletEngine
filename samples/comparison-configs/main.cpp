@@ -58,7 +58,7 @@ static constexpr double PRESSURE = 100000.0;                        // Pa
 static constexpr double REL_HUMIDITY = 60.0;                        // %
 static constexpr double LATITUDE = 48.1482;                         // deg
 static constexpr double LONGITUDE = 17.1067;                        // deg
-static const BulletPhysics::math::Vec3 WIND = {0.0, 0.0, 10.0};     // m/s
+static const BulletPhysics::math::Vec3 WIND = {0.0, 0.0, -10.0};    // m/s
 
 // trajectory colors
 static const BulletPhysics::math::Vec3 COLOR_GRAVITY  {1.0f, 1.0f, 1.0f};
@@ -119,7 +119,10 @@ static void launchAll(ecs::World& world)
     for (auto& config : configs)
     {
         config.stats = {};
-        config.entityId = objects::Projectile::launch(world, {0.0f, 1.5f, 0.0f}, LAUNCH_SPEED, 0.0f, 90.0f);
+        auto specs = BulletPhysics::projectile::ProjectileSpecs::create(0.01, 0.00762)
+            .withDragModel(BulletPhysics::ballistics::external::forces::drag::DragCurveModel::G7)
+            .withMuzzle(LAUNCH_SPEED, BulletPhysics::projectile::Direction::RIGHT, 12.0);
+        config.entityId = objects::Projectile::launch(world, specs, {0.0, 1.5, 0.0}, 0.0, 90.0);
         world.get<ecs::TrajectoryComponent>(config.entityId)->color = config.color;
     }
 }

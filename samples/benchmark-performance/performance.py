@@ -3,11 +3,19 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 
 WEIGHT = 600
+FONT_SIZE = 11
+TICK_SIZE = 11
+LEGEND_SIZE = 11
+INSET_TICK_SIZE = 10
 
 plt.rcParams.update({
     "font.weight": WEIGHT,
     "axes.labelweight": WEIGHT,
     "axes.titleweight": WEIGHT,
+    "axes.labelsize": FONT_SIZE,
+    "xtick.labelsize": TICK_SIZE,
+    "ytick.labelsize": TICK_SIZE,
+    "legend.fontsize": LEGEND_SIZE,
 })
 
 files = {
@@ -58,7 +66,7 @@ for label in draw_order:
     )
 
 ax.set_xlabel("Step")
-ax.set_ylabel("Step time, ms")
+ax.set_ylabel("Step time [ms]")
 
 ax.ticklabel_format(axis="y", style="plain", useOffset=False)
 
@@ -99,7 +107,7 @@ axins.grid(True, axis="y", alpha=0.25, linewidth=0.8)
 
 for tick in axins.get_xticklabels() + axins.get_yticklabels():
     tick.set_fontweight(WEIGHT)
-    tick.set_fontsize(9)
+    tick.set_fontsize(INSET_TICK_SIZE)
 
 mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.45", lw=1.0)
 

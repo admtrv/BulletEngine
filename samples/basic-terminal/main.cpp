@@ -61,9 +61,12 @@ constexpr float LANE_EMBED = 1.0f;
 constexpr float LANE_MULTILAYER = -1.0f;
 constexpr float LANE_RICOCHET = -3.0f;
 
-ecs::Entity launchProjectile(ecs::World& world, const BulletPhysics::math::Vec3& position, float speed, float elevation, float azimuth)
+ecs::Entity launch(ecs::World& world, const BulletPhysics::math::Vec3& position, double speed, double elevation, double azimuth)
 {
-    ecs::Entity entity = objects::Projectile::launch(world, position, speed, elevation, azimuth);
+    auto specs = BulletPhysics::projectile::ProjectileSpecs::create(0.01, 0.00762)
+        .withDragModel(BulletPhysics::ballistics::external::forces::drag::DragCurveModel::G7)
+        .withMuzzle(speed, BulletPhysics::projectile::Direction::RIGHT, 12.0);
+    ecs::Entity entity = objects::Projectile::launch(world, specs, position, elevation, azimuth);
     world.add<ecs::EnergyTrajectoryComponent>(entity);
     world.add<ecs::ImpactStateComponent>(entity);
     return entity;
@@ -71,10 +74,10 @@ ecs::Entity launchProjectile(ecs::World& world, const BulletPhysics::math::Vec3&
 
 void launchAll(ecs::World& world)
 {
-    penetrationProjectileId = launchProjectile(world, {0.0f, 1.5f, LANE_PENETRATION}, 50.0f, 0.0f, 90.0f);
-    embedProjectileId = launchProjectile(world, {0.0f, 1.5f, LANE_EMBED}, 50.0f, 0.0f, 90.0f);
-    multilayerProjectileId = launchProjectile(world, {0.0f, 1.5f, LANE_MULTILAYER}, 50.0f, 0.0f, 90.0f);
-    ricochetProjectileId = launchProjectile(world, {0.0f, 1.5f, LANE_RICOCHET - 0.5f}, 15.0f, 0.0f, 85.0f);
+    penetrationProjectileId = launch(world, {0.0f, 1.5f, LANE_PENETRATION}, 50.0f, 0.0f, 90.0f);
+    embedProjectileId = launch(world, {0.0f, 1.5f, LANE_EMBED}, 50.0f, 0.0f, 90.0f);
+    multilayerProjectileId = launch(world, {0.0f, 1.5f, LANE_MULTILAYER}, 50.0f, 0.0f, 90.0f);
+    ricochetProjectileId = launch(world, {0.0f, 1.5f, LANE_RICOCHET - 0.5f}, 15.0f, 0.0f, 85.0f);
 }
 
 // imgui display functions

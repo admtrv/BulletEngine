@@ -9,59 +9,41 @@
 #include "scene/Model.h"
 #include "render/Shader.h"
 #include "builtin/collision/collider/BoxCollider.h"
-#include "ballistics/external/PhysicsWorld.h"
-#include "ballistics/external/forces/drag/DragModel.h"
 #include "common/Components.h"
+#include "PhysicsBody.h"
 
 #include <vector>
+#include <string>
 
 namespace BulletEngine {
 namespace objects {
 
-// projectile abstract entity factory
+// model defaults
+static constexpr double MODEL_DIAMETER = 1.0;
+static constexpr double MODEL_LENGTH = 3.32;
+
+static const std::string MODEL_PATH = "assets/models/g7.obj";
+static const std::string VERTEX_SHADER_PATH = "assets/shaders/normal.vert.glsl";
+static const std::string FRAGMENT_SHADER_PATH = "assets/shaders/normal.frag.glsl";
+
+// material defaults
+static constexpr float COLOR_R = 1.0f;
+static constexpr float COLOR_G = 0.5f;
+static constexpr float COLOR_B = 0.0f;
+
+// projectile entity factory
 class Projectile {
 public:
-    static ecs::Entity launch(ecs::World& world);
-    static ecs::Entity launch(ecs::World& world, const BulletPhysics::math::Vec3& position, double speed, double elevation, double azimuth);
+    static ecs::Entity launch(ecs::World& world, const BulletPhysics::projectile::ProjectileSpecs& specs, const BulletPhysics::math::Vec3& position, double elevationDeg, double azimuthDeg, bool showCollider = false);
 
     static std::vector<ecs::Entity> fired;
 
 private:
-    ecs::Entity create(ecs::World& world);
-
-    // physics
-    float m_mass = 0.01f;
-    float m_diameter = 0.00762f;
-    BulletPhysics::ballistics::external::forces::drag::DragCurveModel m_dragModel = BulletPhysics::ballistics::external::forces::drag::DragCurveModel::G7;
-
-    BulletPhysics::projectile::Direction m_riflingDirection = BulletPhysics::projectile::Direction::RIGHT;
-    float m_twistRate = 12.0f;
-
-    float m_modelDiameter = 1.0f;
-    float m_modelLength = 3.32f;
-
-    // initial position
-    float m_initialPosX = 0.0f;
-    float m_initialPosY = 1.5f;
-    float m_initialPosZ = 0.0f;
-
-    // launch parameters
-    float m_launchSpeed = 15.0f;
-    float m_launchElevationDeg = 25.0f;
-    float m_launchAzimuthDeg = 90.0f;
-
-    // material color
-    float m_colorR = 1.0f;
-    float m_colorG = 0.5f;
-    float m_colorB = 0.0f;
-
-    // assets
-    std::string m_modelPath = "assets/models/g7.obj";
-    std::string m_vertexShaderPath = "assets/shaders/normal.vert.glsl";
-    std::string m_fragmentShaderPath = "assets/shaders/normal.frag.glsl";
-
-    // collider
-    bool m_showCollider = false;
+    static void setupTransform(ecs::World& world, ecs::Entity entity, double diameter);
+    static void setupRigidBody(ecs::World& world, ecs::Entity entity, const BulletPhysics::projectile::ProjectileSpecs& specs, const BulletPhysics::math::Vec3& position, double elevationDeg, double azimuthDeg);
+    static void setupTrajectory(ecs::World& world, ecs::Entity entity, const BulletPhysics::math::Vec3& position);
+    static void setupRenderable(ecs::World& world, ecs::Entity entity);
+    static void setupCollider(ecs::World& world, ecs::Entity entity, double diameter, bool showCollider);
 };
 
 } // namespace objects

@@ -185,7 +185,10 @@ int main()
     // input
     ecs::systems::InputSystem inputSystem;
     inputSystem.bind(BulletRender::utils::InputKey::SPACE, [&world]() {
-        objects::Projectile::launch(world);
+        auto specs = BulletPhysics::projectile::ProjectileSpecs::create(0.01, 0.00762)
+            .withDragModel(BulletPhysics::ballistics::external::forces::drag::DragCurveModel::G7)
+            .withMuzzle(15.0, BulletPhysics::projectile::Direction::RIGHT, 12.0);
+        objects::Projectile::launch(world, specs, {0.0, 1.5, 0.0}, 25.0, 90.0);
     });
     inputSystem.bind(BulletRender::utils::InputKey::ESCAPE, []() {
         BulletRender::app::Window::setShouldClose(true);
