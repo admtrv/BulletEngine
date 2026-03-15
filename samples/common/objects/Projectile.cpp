@@ -28,12 +28,9 @@ ecs::Entity Projectile::create(ecs::World& world)
     transformComponent.transform.setScale({modelScale, modelScale, modelScale});
 
     // projectile specs
-    BulletPhysics::projectile::ProjectileSpecs specs{};
-    specs.mass = m_mass;
-    specs.diameter = m_diameter;
-    specs.dragModel = m_dragModel;
-    specs.spinSpecs = BulletPhysics::projectile::SpinSpecs{};
-    specs.spinSpecs->riflingSpecs = BulletPhysics::projectile::RiflingSpecs{ m_riflingDirection, m_twistRate };
+    auto specs = BulletPhysics::projectile::ProjectileSpecs::create(m_mass, m_diameter)
+        .withDragModel(m_dragModel)
+        .withMuzzle(m_launchSpeed, m_riflingDirection, m_twistRate);
 
     // rigid body
     auto& rigidBodyComponent = world.add<ecs::ProjectileRigidBodyComponent>(entity, specs);

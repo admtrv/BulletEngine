@@ -38,15 +38,9 @@ static constexpr int REPS = 9;
 
 static ProjectileRigidBody makeBody()
 {
-    ::BulletPhysics::projectile::ProjectileSpecs specs{};
-    specs.mass = 0.01;
-    specs.diameter = 0.00762;
-    specs.dragModel = drag::DragCurveModel::G7;
-    specs.spinSpecs = ::BulletPhysics::projectile::SpinSpecs{};
-    specs.spinSpecs->riflingSpecs = ::BulletPhysics::projectile::RiflingSpecs{
-        ::BulletPhysics::projectile::RiflingSpecs::Direction::RIGHT,
-        12.0
-    };
+    auto specs = ::BulletPhysics::projectile::ProjectileSpecs::create(0.01, 0.00762)
+        .withDragModel(drag::DragCurveModel::G7)
+        .withMuzzle(LAUNCH_SPEED, ::BulletPhysics::projectile::Direction::RIGHT, 12.0);
 
     ProjectileRigidBody body(specs);
     body.setPosition({0.0, 1.5, 0.0});

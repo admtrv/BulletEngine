@@ -34,7 +34,7 @@ private:
     float m_diameter = 0.00762f;
     BulletPhysics::ballistics::external::forces::drag::DragCurveModel m_dragModel = BulletPhysics::ballistics::external::forces::drag::DragCurveModel::G7;
 
-    BulletPhysics::projectile::RiflingSpecs::Direction m_riflingDirection = BulletPhysics::projectile::RiflingSpecs::Direction::RIGHT;
+    BulletPhysics::projectile::Direction m_riflingDirection = BulletPhysics::projectile::Direction::RIGHT;
     float m_twistRate = 12.0f;
 
     float m_modelDiameter = 1.0f;
