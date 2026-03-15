@@ -13,13 +13,6 @@ plt.rcParams.update({
 
 df = pd.read_csv("data/convergence.csv")
 
-method_key = {
-    "Euler": "euler",
-    "Midpoint": "midpoint",
-    "RK4": "rk4",
-}
-df["key"] = df["method"].map(method_key).fillna(df["method"].astype(str).str.lower())
-
 plt.figure(figsize=(8.6, 5.2))
 ax = plt.gca()
 
@@ -46,7 +39,7 @@ zorder = {"euler": 1, "midpoint": 2, "rk4": 3}
 
 # plot
 for key in draw_order:
-    sub = df[df["key"] == key].copy()
+    sub = df[df["method"] == key].copy()
     if sub.empty:
         continue
     sub = sub.sort_values("dt")

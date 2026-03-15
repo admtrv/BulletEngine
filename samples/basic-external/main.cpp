@@ -171,7 +171,7 @@ int main()
     // configure physics world
     physicsWorld.addForce(std::make_unique<BulletPhysics::ballistics::external::forces::Gravity>());
     physicsWorld.addEnvironment(std::make_unique<BulletPhysics::ballistics::external::environments::Atmosphere>(280.0, 100000.0));                      // t_0 = 280 K, p_0 = 100.000 Pa
-    physicsWorld.addEnvironment(std::make_unique<BulletPhysics::ballistics::external::environments::Humidity>(60));                                       // relative humidity = 60%
+    physicsWorld.addEnvironment(std::make_unique<BulletPhysics::ballistics::external::environments::Humidity>(60));                                     // relative humidity = 60%
     physicsWorld.addEnvironment(std::make_unique<BulletPhysics::ballistics::external::environments::Wind>(BulletPhysics::math::Vec3{0.0, 0.0, 2.0}));   // wind velocity = 2 m/s
     physicsWorld.addEnvironment(std::make_unique<BulletPhysics::ballistics::external::environments::Geographic>(BulletPhysics::math::deg2rad(48.1482), BulletPhysics::math::deg2rad(17.1067))); // Bratislava coordinates
     physicsWorld.addForce(std::make_unique<BulletPhysics::ballistics::external::forces::Drag>());

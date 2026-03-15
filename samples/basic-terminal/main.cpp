@@ -313,35 +313,21 @@ int main()
     // loop
     BulletRender::app::Loop loop(scene);
 
-    // fixed physics timestep
-    constexpr float PHYSICS_DT = 1.0f / 1000.0f;
-    constexpr int MAX_STEPS_PER_FRAME = 50;         // safety cap
-    float physicsAccumulator = 0.0f;
+    constexpr float PHYSICS_DT = 0.001f;
 
     loop.run(
         [&](float dt) {
             lastDt = dt;
 
             camera.update(BulletRender::app::Window::get(), dt);
-
             BulletRender::utils::Input::instance().update(BulletRender::app::Window::get());
 
-            // accumulate frame time, step physics at fixed rate
-            physicsAccumulator += dt;
-            int steps = 0;
-            while (physicsAccumulator >= PHYSICS_DT && steps < MAX_STEPS_PER_FRAME)
+            int steps = static_cast<int>(dt / PHYSICS_DT);
+            for (int i = 0; i < steps; ++i)
             {
                 physicsSystem.update(world, PHYSICS_DT);
                 collisionSystem.update(world);
                 trajectorySystem.update(world);
-                physicsAccumulator -= PHYSICS_DT;
-                ++steps;
-            }
-
-            // discard excess to prevent accumulator runaway
-            if (physicsAccumulator > PHYSICS_DT)
-            {
-                physicsAccumulator = 0.0f;
             }
 
             renderSystem.render(world);

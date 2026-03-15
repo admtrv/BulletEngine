@@ -5,7 +5,6 @@
 // std
 #include <iostream>
 #include <cstdlib>
-#include <cstdint>
 #include <atomic>
 #include <new>
 #include <vector>
@@ -25,14 +24,8 @@
 #include "ballistics/external/environments/Wind.h"
 
 using namespace BulletPhysics;
-using namespace BulletPhysics::math;
-using namespace BulletPhysics::builtin::bodies;
-using namespace BulletPhysics::ballistics::external;
-using namespace BulletPhysics::ballistics::external::forces;
-using namespace BulletPhysics::ballistics::external::environments;
 
 // allocation tracker
-
 static std::atomic<bool> g_tracking{false};
 static std::atomic<std::size_t> g_allocCount{0};
 static std::atomic<std::size_t> g_allocBytes{0};
@@ -92,39 +85,34 @@ static void stopTracking()
 }
 
 // simulation parameters
-
-static constexpr double LAUNCH_SPEED = 750.0;
 static constexpr double DT = 0.001;
 static constexpr int HOT_STEPS = 1000;
 static constexpr int BODY_COUNT = 8;
 
-static ProjectileRigidBody makeBody()
+static builtin::bodies::ProjectileRigidBody makeBody()
 {
     auto specs = projectile::ProjectileSpecs::create(0.01, 0.00762)
-        .withDragModel(drag::DragCurveModel::G7)
-        .withMuzzle(LAUNCH_SPEED, projectile::Direction::RIGHT, 12.0);
+        .withDragModel(ballistics::external::forces::drag::DragCurveModel::G7)
+        .withMuzzle(750.0, projectile::Direction::RIGHT, 12.0);
 
-    ProjectileRigidBody body(specs);
+    builtin::bodies::ProjectileRigidBody body(specs);
     body.setPosition({0.0, 1.5, 0.0});
-    body.setVelocityFromAngles(LAUNCH_SPEED, 0.0, 90.0);
+    body.setAngles(0.0, 90.0);
     return body;
 }
 
 struct TestResult
 {
     const char* integrator;
-    const char* config;
-    int bodies;
-    int steps;
     std::size_t allocations;
     std::size_t bytes;
     std::size_t frees;
 };
 
-static TestResult runTest(const char* integratorName, IIntegrator& integrator, const char* configName, PhysicsWorld& world)
+static TestResult runTest(const char* name, math::IIntegrator& integrator, ballistics::external::PhysicsWorld& world)
 {
     // setup phase (allocations allowed)
-    std::vector<ProjectileRigidBody> bodies;
+    std::vector<builtin::bodies::ProjectileRigidBody> bodies;
     bodies.reserve(BODY_COUNT);
     for (int i = 0; i < BODY_COUNT; ++i)
     {
@@ -145,56 +133,41 @@ static TestResult runTest(const char* integratorName, IIntegrator& integrator, c
     stopTracking();
 
     return {
-        integratorName,
-        configName,
-        BODY_COUNT,
-        HOT_STEPS,
+        name,
         g_allocCount.load(),
         g_allocBytes.load(),
         g_freeCount.load()
     };
 }
 
-// ./AllocationTest
-
 int main()
 {
     // integrators
-    EulerIntegrator euler;
-    MidpointIntegrator midpoint;
-    RK4Integrator rk4;
+    math::EulerIntegrator euler;
+    math::MidpointIntegrator midpoint;
+    math::RK4Integrator rk4;
 
-    // world configurations
-    // 1. gravity only
-    PhysicsWorld gravityWorld;
-    gravityWorld.addForce(std::make_unique<Gravity>());
+    // full world configuration
+    ballistics::external::PhysicsWorld world;
+    world.addEnvironment(std::make_unique<ballistics::external::environments::Atmosphere>(280.0, 100000.0));
+    world.addEnvironment(std::make_unique<ballistics::external::environments::Humidity>(60));
+    world.addEnvironment(std::make_unique<ballistics::external::environments::Geographic>(math::deg2rad(48.1482), math::deg2rad(17.1067)));
+    world.addEnvironment(std::make_unique<ballistics::external::environments::Wind>(math::Vec3{0.0, 0.0, 2.0}));
+    world.addForce(std::make_unique<ballistics::external::forces::Gravity>());
+    world.addForce(std::make_unique<ballistics::external::forces::Drag>());
+    world.addForce(std::make_unique<ballistics::external::forces::Coriolis>());
+    ballistics::external::forces::SpinDrift::addTo(world);
 
-    // 2. full config (gravity + drag + atmosphere + humidity + coriolis + spin)
-    PhysicsWorld fullWorld;
-    fullWorld.addForce(std::make_unique<Gravity>());
-    fullWorld.addEnvironment(std::make_unique<Atmosphere>(280.0, 100000.0));
-    fullWorld.addEnvironment(std::make_unique<Humidity>(60));
-    fullWorld.addEnvironment(std::make_unique<Geographic>(deg2rad(48.1482), deg2rad(17.1067)));
-    fullWorld.addForce(std::make_unique<Drag>());
-    fullWorld.addForce(std::make_unique<Coriolis>());
-    SpinDrift::addTo(fullWorld);
-
-    // test matrix
-    struct TestCase
+    struct TestEntry
     {
-        const char* integratorName;
-        IIntegrator* integrator;
-        const char* configName;
-        PhysicsWorld* world;
+        const char* name;
+        math::IIntegrator* integrator;
     };
 
-    std::vector<TestCase> tests = {
-        {"Euler",    &euler,    "gravity", &gravityWorld},
-        {"Euler",    &euler,    "full",    &fullWorld},
-        {"Midpoint", &midpoint, "gravity", &gravityWorld},
-        {"Midpoint", &midpoint, "full",    &fullWorld},
-        {"RK4",      &rk4,      "gravity", &gravityWorld},
-        {"RK4",      &rk4,      "full",    &fullWorld},
+    std::vector<TestEntry> tests = {
+        {"euler", &euler},
+        {"midpoint", &midpoint},
+        {"rk4", &rk4},
     };
 
     // run tests
@@ -203,19 +176,15 @@ int main()
 
     for (auto& test : tests)
     {
-        results.push_back(runTest(test.integratorName, *test.integrator, test.configName, *test.world));
+        results.push_back(runTest(test.name, *test.integrator, world));
     }
 
     // report
-    std::cout << "Bodies: " << BODY_COUNT << ", Steps: " << HOT_STEPS
-              << ", Total iterations: " << BODY_COUNT * HOT_STEPS << "\n\n";
+    std::cout << "bodies: " << BODY_COUNT << ", steps: " << HOT_STEPS << "\n\n";
 
-    std::cout << "integrator,config,allocations,bytes,frees" << "\n";
-
-    for (const auto& r : results)
+    for (const auto& result : results)
     {
-        std::cout << r.integrator << "," << r.config << ","
-                  << r.allocations << "," << r.bytes << "," << r.frees << "\n";
+        std::cout << result.integrator << ": " << result.allocations << " allocations, " << result.bytes << " bytes, " << result.frees << " frees\n";
     }
 
     return 0;
