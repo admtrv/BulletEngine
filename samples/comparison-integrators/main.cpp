@@ -20,6 +20,7 @@
 #include "ballistics/external/forces/Gravity.h"
 #include "ballistics/external/forces/Force.h"
 #include "ballistics/external/PhysicsContext.h"
+#include "geography/CoordinateMapping.h"
 
 using namespace BulletPhysics;
 
@@ -87,6 +88,7 @@ static void thrashCache()
 static void init(ballistics::external::PhysicsWorld& world, builtin::bodies::RigidBody& body)
 {
     world = ballistics::external::PhysicsWorld{};
+
     world.addForce(std::make_unique<ballistics::external::forces::Gravity>());
     world.addForce(std::make_unique<LinearDrag>());
 
@@ -151,6 +153,8 @@ static double average(const std::vector<long long>& samples)
 
 int main()
 {
+    geography::CoordinateMapping::set(geography::mappings::OpenGL());
+
     math::EulerIntegrator euler;
     math::MidpointIntegrator midpoint;
     math::RK4Integrator rk4;

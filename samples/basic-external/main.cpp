@@ -27,6 +27,7 @@
 #include "ballistics/external/forces/Coriolis.h"
 #include "ballistics/external/forces/drag/Drag.h"
 #include "ballistics/external/forces/Gravity.h"
+#include "geography/CoordinateMapping.h"
 
 // BulletEngine
 #include "ecs/Ecs.h"
@@ -117,6 +118,8 @@ void setupProjectileDisplay(ImGuiSystem& imgui, ecs::World& world, BulletPhysics
 
 int main()
 {
+    BulletPhysics::geography::CoordinateMapping::set(BulletPhysics::geography::mappings::OpenGL());
+
     // window
     BulletRender::app::WindowConfig windowCfg{800, 600, "Projectile Basic Demo", true, true};
     if (!BulletRender::app::Window::init(windowCfg))

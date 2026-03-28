@@ -23,6 +23,7 @@
 #include "ballistics/external/environments/Atmosphere.h"
 #include "ballistics/external/environments/Geographic.h"
 #include "ballistics/external/environments/Humidity.h"
+#include "geography/CoordinateMapping.h"
 
 using namespace BulletPhysics;
 
@@ -62,6 +63,8 @@ struct Sample
 
 int main()
 {
+    geography::CoordinateMapping::set(geography::mappings::OpenGL());
+
     // pin to CPU 0
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
@@ -77,6 +80,7 @@ int main()
 
     // physics world
     ballistics::external::PhysicsWorld physicsWorld;
+
     physicsWorld.addForce(std::make_unique<ballistics::external::forces::Gravity>());
     physicsWorld.addEnvironment(std::make_unique<ballistics::external::environments::Atmosphere>(TEMPERATURE, PRESSURE));
     physicsWorld.addEnvironment(std::make_unique<ballistics::external::environments::Humidity>(REL_HUMIDITY));

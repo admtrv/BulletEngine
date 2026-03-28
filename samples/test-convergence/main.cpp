@@ -14,6 +14,7 @@
 #include "ballistics/external/PhysicsWorld.h"
 #include "ballistics/external/forces/Gravity.h"
 #include "ballistics/external/forces/Force.h"
+#include "geography/CoordinateMapping.h"
 
 using namespace BulletPhysics;
 
@@ -71,6 +72,7 @@ static math::Vec3 analytical(double t)
 static math::Vec3 simulate(math::IIntegrator& integrator, double dt)
 {
     ballistics::external::PhysicsWorld world;
+
     world.addForce(std::make_unique<ballistics::external::forces::Gravity>());
     world.addForce(std::make_unique<LinearDrag>());
 
@@ -100,6 +102,8 @@ static double error(const math::Vec3& result, const math::Vec3& reference)
 
 int main()
 {
+    geography::CoordinateMapping::set(geography::mappings::OpenGL());
+
     math::Vec3 reference = analytical(DT);
 
     std::ofstream file((FILE_NAME.data()));

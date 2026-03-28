@@ -20,6 +20,7 @@
 #include "ballistics/external/environments/Atmosphere.h"
 #include "ballistics/external/environments/Geographic.h"
 #include "ballistics/external/environments/Humidity.h"
+#include "geography/CoordinateMapping.h"
 
 using namespace BulletPhysics;
 
@@ -88,12 +89,16 @@ static void runConfig(const char* config, ballistics::external::PhysicsWorld& wo
 
 int main()
 {
+    geography::CoordinateMapping::set(geography::mappings::OpenGL());
+
     // gravity only
     ballistics::external::PhysicsWorld gravityWorld;
+
     gravityWorld.addForce(std::make_unique<ballistics::external::forces::Gravity>());
 
     // + drag
     ballistics::external::PhysicsWorld dragWorld;
+
     dragWorld.addEnvironment(std::make_unique<ballistics::external::environments::Atmosphere>(TEMPERATURE, PRESSURE));
     dragWorld.addEnvironment(std::make_unique<ballistics::external::environments::Humidity>(REL_HUMIDITY));
     dragWorld.addForce(std::make_unique<ballistics::external::forces::Gravity>());
@@ -101,6 +106,7 @@ int main()
 
     // + coriolis
     ballistics::external::PhysicsWorld coriolisWorld;
+
     coriolisWorld.addEnvironment(std::make_unique<ballistics::external::environments::Atmosphere>(TEMPERATURE, PRESSURE));
     coriolisWorld.addEnvironment(std::make_unique<ballistics::external::environments::Humidity>(REL_HUMIDITY));
     coriolisWorld.addEnvironment(std::make_unique<ballistics::external::environments::Geographic>(math::deg2rad(LATITUDE), math::deg2rad(LONGITUDE)));
@@ -110,6 +116,7 @@ int main()
 
     // + spin
     ballistics::external::PhysicsWorld spinWorld;
+
     spinWorld.addEnvironment(std::make_unique<ballistics::external::environments::Atmosphere>(TEMPERATURE, PRESSURE));
     spinWorld.addEnvironment(std::make_unique<ballistics::external::environments::Humidity>(REL_HUMIDITY));
     spinWorld.addEnvironment(std::make_unique<ballistics::external::environments::Geographic>(math::deg2rad(LATITUDE), math::deg2rad(LONGITUDE)));

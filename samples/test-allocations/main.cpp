@@ -22,6 +22,7 @@
 #include "ballistics/external/environments/Geographic.h"
 #include "ballistics/external/environments/Humidity.h"
 #include "ballistics/external/environments/Wind.h"
+#include "geography/CoordinateMapping.h"
 
 using namespace BulletPhysics;
 
@@ -142,6 +143,8 @@ static TestResult runTest(const char* name, math::IIntegrator& integrator, balli
 
 int main()
 {
+    geography::CoordinateMapping::set(geography::mappings::OpenGL());
+
     // integrators
     math::EulerIntegrator euler;
     math::MidpointIntegrator midpoint;
@@ -149,6 +152,7 @@ int main()
 
     // full world configuration
     ballistics::external::PhysicsWorld world;
+
     world.addEnvironment(std::make_unique<ballistics::external::environments::Atmosphere>(280.0, 100000.0));
     world.addEnvironment(std::make_unique<ballistics::external::environments::Humidity>(60));
     world.addEnvironment(std::make_unique<ballistics::external::environments::Geographic>(math::deg2rad(48.1482), math::deg2rad(17.1067)));

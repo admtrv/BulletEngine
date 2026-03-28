@@ -30,6 +30,7 @@
 #include "ballistics/external/forces/Coriolis.h"
 #include "ballistics/external/forces/SpinDrift.h"
 #include "ballistics/external/forces/drag/Drag.h"
+#include "geography/CoordinateMapping.h"
 
 // BulletEngine
 #include "ecs/Ecs.h"
@@ -58,7 +59,7 @@ static constexpr double PRESSURE = 100000.0;                        // Pa
 static constexpr double REL_HUMIDITY = 60.0;                        // %
 static constexpr double LATITUDE = 48.1482;                         // deg
 static constexpr double LONGITUDE = 17.1067;                        // deg
-static const BulletPhysics::math::Vec3 WIND = {0.0, 0.0, -10.0};    // m/s
+static const BulletPhysics::math::Vec3 WIND = {0.0, 0.0, 10.0};     // m/s
 
 // trajectory colors
 static const BulletPhysics::math::Vec3 COLOR_GRAVITY  {1.0f, 1.0f, 1.0f};
@@ -149,6 +150,8 @@ void setupDebugDisplay(ImGuiSystem& imgui, BulletRender::scene::Camera& camera, 
 
 int main()
 {
+    BulletPhysics::geography::CoordinateMapping::set(BulletPhysics::geography::mappings::OpenGL());
+
     // window
     BulletRender::app::WindowConfig windowCfg{800, 600, "Config Comparison", true, true};
     if (!BulletRender::app::Window::init(windowCfg))

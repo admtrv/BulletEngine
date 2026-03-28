@@ -27,6 +27,7 @@
 #include "ballistics/external/environments/Humidity.h"
 #include "ballistics/external/forces/drag/Drag.h"
 #include "ballistics/external/forces/Gravity.h"
+#include "geography/CoordinateMapping.h"
 
 // BulletEngine
 #include "ecs/Ecs.h"
@@ -77,7 +78,7 @@ void launchAll(ecs::World& world)
     penetrationProjectileId = launch(world, {0.0f, 1.5f, LANE_PENETRATION}, 50.0f, 0.0f, 90.0f);
     embedProjectileId = launch(world, {0.0f, 1.5f, LANE_EMBED}, 50.0f, 0.0f, 90.0f);
     multilayerProjectileId = launch(world, {0.0f, 1.5f, LANE_MULTILAYER}, 50.0f, 0.0f, 90.0f);
-    ricochetProjectileId = launch(world, {0.0f, 1.5f, LANE_RICOCHET - 0.5f}, 15.0f, 0.0f, 85.0f);
+    ricochetProjectileId = launch(world, {0.0f, 1.5f, LANE_RICOCHET - 0.5f}, 15.0f, 0.0f, 95.0f);
 }
 
 // imgui display functions
@@ -190,6 +191,8 @@ void createWall(ecs::World& world, const BulletPhysics::math::Vec3& position, co
 
 int main()
 {
+    BulletPhysics::geography::CoordinateMapping::set(BulletPhysics::geography::mappings::OpenGL());
+
     // window
     BulletRender::app::WindowConfig windowCfg{800, 600, "Terminal Ballistics Demo", true, true};
     if (!BulletRender::app::Window::init(windowCfg))
