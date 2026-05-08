@@ -120,9 +120,7 @@ static void launchAll(ecs::World& world)
     for (auto& config : configs)
     {
         config.stats = {};
-        auto specs = BulletPhysics::projectile::ProjectileSpecs::create(0.01, 0.00762)
-            .withDragModel(BulletPhysics::ballistics::external::forces::drag::DragCurveModel::G7)
-            .withMuzzle(LAUNCH_SPEED, BulletPhysics::projectile::Direction::RIGHT, 12.0);
+        auto specs = BulletPhysics::projectile::presets::Nato762();
         config.entityId = objects::Projectile::launch(world, specs, {0.0, 1.5, 0.0}, 0.0, 90.0);
         world.get<ecs::TrajectoryComponent>(config.entityId)->color = config.color;
     }
