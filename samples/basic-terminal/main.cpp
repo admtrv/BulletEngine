@@ -92,7 +92,7 @@ void setupDebugDisplay(ImGuiSystem& imgui, BulletRender::scene::Camera& camera, 
 
         ImGui::Separator();
 
-        auto p = camera.position();
+        auto p = camera.getPosition();
         ImGui::Text("Camera:");
         ImGui::Text("   X: %.2f", p.x);
         ImGui::Text("   Y: %.2f", p.y);
@@ -170,7 +170,7 @@ void setupProjectileDisplay(ImGuiSystem& imgui, ecs::World& world)
 }
 
 // helper: create a wall entity
-void createWall(ecs::World& world, const BulletPhysics::math::Vec3& position, const BulletPhysics::math::Vec3& size, const BulletPhysics::ballistics::terminal::Material& material, const BulletPhysics::math::Vec3& color, std::shared_ptr<BulletRender::render::Shader> shader)
+void createWall(ecs::World& world, const BulletPhysics::math::Vec3& position, const BulletPhysics::math::Vec3& size, const BulletPhysics::ballistics::terminal::Material& material, const BulletPhysics::math::Vec3& color, std::shared_ptr<BulletRender::render::GraphicsShader> shader)
 {
     ecs::Entity entity = world.create();
 
@@ -224,8 +224,12 @@ int main()
     scene.setCamera(&camera);
 
     // light
+    BulletRender::scene::AmbientLight ambient;
+    ambient.setIntensity(0.2f);
+    scene.addLight(&ambient);
+
     BulletRender::scene::DirectionalLight light;
-    scene.setLight(&light);
+    scene.addLight(&light);
 
     // fog
     auto fog = std::make_shared<BulletRender::render::Fog>(true, 10.0f, 90.0f);
@@ -258,7 +262,7 @@ int main()
     groundCollider.collider = ground;
 
     // shared shader for walls
-    auto wallShader = std::make_shared<BulletRender::render::Shader>(
+    auto wallShader = std::make_shared<BulletRender::render::GraphicsShader>(
         "assets/shaders/normal.vert.glsl",
         "assets/shaders/normal.frag.glsl");
 

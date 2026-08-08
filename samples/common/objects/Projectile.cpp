@@ -47,7 +47,7 @@ void Projectile::setupTrajectory(ecs::World& world, ecs::Entity entity, const Bu
 void Projectile::setupRenderable(ecs::World& world, ecs::Entity entity)
 {
     auto model = std::make_unique<BulletRender::scene::Model>(MODEL_PATH);
-    auto shader = std::make_shared<BulletRender::render::Shader>(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
+    auto shader = std::make_shared<BulletRender::render::GraphicsShader>(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
 
     auto& renderable = world.add<ecs::RenderableComponent>(entity);
     renderable.model = model.release();
@@ -66,7 +66,7 @@ void Projectile::setupCollider(ecs::World& world, ecs::Entity entity, double dia
 
     if (showCollider)
     {
-        auto shader = std::make_shared<BulletRender::render::Shader>(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
+        auto shader = std::make_shared<BulletRender::render::GraphicsShader>(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
 
         collider.isVisible = true;
         collider.model = new BulletRender::scene::Box(MODEL_DIAMETER, MODEL_LENGTH, MODEL_DIAMETER);

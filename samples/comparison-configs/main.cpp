@@ -136,7 +136,7 @@ void setupDebugDisplay(ImGuiSystem& imgui, BulletRender::scene::Camera& camera, 
 
         ImGui::Separator();
 
-        auto p = camera.position();
+        auto p = camera.getPosition();
         ImGui::Text("Camera:");
         ImGui::Text("   X: %.2f", p.x);
         ImGui::Text("   Y: %.2f", p.y);
@@ -179,11 +179,15 @@ int main()
     scene.setCamera(&camera);
 
     // light
+    BulletRender::scene::AmbientLight ambient;
+    ambient.setIntensity(0.2f);
+    scene.addLight(&ambient);
+
     BulletRender::scene::DirectionalLight light;
-    scene.setLight(&light);
+    scene.addLight(&light);
 
     // fog
-    auto fog = std::make_shared<BulletRender::render::Fog>(true, 10.0f, 900.0f);
+    auto fog = std::make_shared<BulletRender::render::Fog>(true, 10.0f, 90.0f);
     BulletRender::render::Renderer::registerPostPass(fog);
 
     // ecs
