@@ -12,7 +12,7 @@ RenderSystemBase::RenderSystemBase(BulletRender::scene::Scene& scene) : m_scene(
 
 void RenderSystemBase::render(World& world)
 {
-    m_scene.clear();
+    m_scene.clearObjects();
 
     for (auto entity : world.entities())
     {
@@ -24,9 +24,7 @@ void RenderSystemBase::render(World& world)
         {
             auto* object = m_scene.addObject(renderableComponent->model);
 
-            object->getMaterial().setShader(renderableComponent->material.getShader());
-            object->getMaterial().setColor(renderableComponent->material.getColor());
-
+            object->getMaterial() = renderableComponent->material;
             object->getTransform().setMatrix(transformComponent->transform.getMatrix());
 
             onObjectRender(world, entity, *object);
@@ -38,9 +36,7 @@ void RenderSystemBase::render(World& world)
         {
             auto* collider = m_scene.addObject(colliderComponent->model);
 
-            collider->getMaterial().setShader(colliderComponent->material.getShader());
-            collider->getMaterial().setColor(colliderComponent->material.getColor());
-
+            collider->getMaterial() = colliderComponent->material;
             collider->getTransform().setMatrix(transformComponent->transform.getMatrix());
 
             onColliderRender(world, entity, *collider);

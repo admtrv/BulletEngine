@@ -28,7 +28,7 @@ void Projectile::setupTransform(ecs::World& world, ecs::Entity entity, double di
     auto& transform = world.add<ecs::TransformComponent>(entity);
 
     float modelScale = static_cast<float>(diameter / MODEL_DIAMETER);
-    transform.transform.setScale({modelScale, modelScale, modelScale});
+    transform.transform.setLocalScale(modelScale);
 }
 
 void Projectile::setupRigidBody(ecs::World& world, ecs::Entity entity, const BulletPhysics::projectile::ProjectileSpecs& specs, const BulletPhysics::math::Vec3& position, double elevationDeg, double azimuthDeg)
