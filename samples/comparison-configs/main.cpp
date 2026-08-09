@@ -176,7 +176,7 @@ int main()
 
     // camera
     BulletRender::scene::FlyCamera camera({0.0f, 1.5f, 5.0f});
-    scene.setCamera(&camera);
+    scene.setActiveCamera(&camera);
 
     // light
     BulletRender::scene::AmbientLight ambient;
