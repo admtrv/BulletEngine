@@ -54,7 +54,8 @@ void PhysicsSystem::afterIntegrate(ecs::World& world, ecs::Entity entity, ecs::R
 
         if (velLen2 > 1e-6)
         {
-            transformComponent->transform.rotateFromDirection({0.0f, 1.0f, 0.0f}, {static_cast<float>(v.x), static_cast<float>(v.y), static_cast<float>(v.z)});
+            const glm::vec3 direction = glm::normalize(glm::vec3(static_cast<float>(v.x), static_cast<float>(v.y), static_cast<float>(v.z)));
+            transformComponent->transform.setRotation(glm::rotation(glm::vec3(0.0f, 1.0f, 0.0f), direction));
         }
     }
 

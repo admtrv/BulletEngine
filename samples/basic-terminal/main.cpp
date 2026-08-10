@@ -220,16 +220,13 @@ int main()
     BulletRender::scene::Scene scene;
 
     // camera
-    BulletRender::scene::FlyCamera camera({3.0f, 3.0f, 8.0f});
-    scene.setActiveCamera(&camera);
+    BulletRender::scene::FlyCamera& camera = *scene.createCamera<BulletRender::scene::FlyCamera>(
+        glm::vec3{3.0f, 3.0f, 8.0f}
+    );
 
     // light
-    BulletRender::scene::AmbientLight ambient;
-    ambient.setIntensity(0.2f);
-    scene.addLight(&ambient);
-
-    BulletRender::scene::DirectionalLight light;
-    scene.addLight(&light);
+    scene.createLight<BulletRender::scene::AmbientLight>()->setIntensity(0.2f);
+    scene.createLight<BulletRender::scene::DirectionalLight>();
 
     // fog
     auto fog = std::make_shared<BulletRender::render::Fog>(true, 10.0f, 90.0f);
