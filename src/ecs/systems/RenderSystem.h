@@ -13,21 +13,15 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-class RenderSystemBase {
+class RenderSystem {
 public:
-    explicit RenderSystemBase(BulletRender::scene::Scene& scene);
-    virtual ~RenderSystemBase() = default;
+    explicit RenderSystem(BulletRender::scene::Scene& scene);
 
     void render(World& world);
 
-protected:
-    // hooks
-    virtual void onObjectRender(World&, Entity, BulletRender::scene::SceneObject&) {}
-    virtual void onColliderRender(World&, Entity, BulletRender::scene::SceneObject&) {}
-
+private:
     BulletRender::scene::Scene& m_scene;
 };
-
 
 } // namespace systems
 } // namespace ecs

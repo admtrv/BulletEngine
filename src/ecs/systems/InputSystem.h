@@ -12,6 +12,7 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
+// key bindings
 class InputSystem {
 public:
     void bind(BulletRender::utils::InputKey key, const std::function<void()>& callback);

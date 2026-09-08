@@ -8,14 +8,14 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-void ImGuiSystemBase::add(const std::function<void()>& display)
+void ImGuiSystem::add(std::function<void()> display)
 {
     m_displays.push_back(std::move(display));
 }
 
-void ImGuiSystemBase::render()
+void ImGuiSystem::render()
 {
-    for (auto& display : m_displays)
+    for (const auto& display : m_displays)
     {
         display();
     }

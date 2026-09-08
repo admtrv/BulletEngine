@@ -4,6 +4,8 @@
 
 #include "Ecs.h"
 
+#include <algorithm>
+
 namespace BulletEngine {
 namespace ecs {
 
@@ -16,16 +18,33 @@ Entity World::create()
 
 void World::destroy(Entity entity)
 {
-    for (size_t i = 0; i < m_entities.size(); i++)
+    const auto it = std::find(m_entities.begin(), m_entities.end(), entity);
+
+    if (it == m_entities.end())
     {
-        if (m_entities[i] == entity)
-        {
-            m_entities[i] = m_entities.back();
-            m_entities.pop_back();
-            break;
-        }
+        return;
     }
-    m_components.erase(entity);
+
+    *it = m_entities.back();
+    m_entities.pop_back();
+
+    // out of the world at once, its components live until the frame ends
+    m_destroyed.push_back(entity);
+}
+
+void World::flush()
+{
+    for (Entity entity : m_destroyed)
+    {
+        m_components.erase(entity);
+    }
+
+    m_destroyed.clear();
+}
+
+bool World::isAlive(Entity entity) const
+{
+    return std::find(m_entities.begin(), m_entities.end(), entity) != m_entities.end();
 }
 
 } // namespace ecs

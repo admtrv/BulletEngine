@@ -5,14 +5,16 @@
 #pragma once
 
 #include <functional>
+#include <vector>
 
 namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-class ImGuiSystemBase {
+// panels drawn every frame
+class ImGuiSystem {
 public:
-    void add(const std::function<void()>& display);
+    void add(std::function<void()> display);
     void render();
 
 private:

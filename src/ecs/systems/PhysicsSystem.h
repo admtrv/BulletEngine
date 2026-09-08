@@ -7,32 +7,32 @@
 #include "ecs/Ecs.h"
 #include "ecs/Components.h"
 
-#include "math/Integrator.h"
-#include "builtin/collision/collider/BoxCollider.h"
-#include "ballistics/external/PhysicsWorld.h"
-#include "ballistics/external/environments/Wind.h"
+#include "dynamics/PhysicsWorld.h"
 
-#include <cmath>
 #include <vector>
 
 namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-class PhysicsSystemBase {
+class PhysicsSystem {
 public:
-    PhysicsSystemBase(BulletPhysics::ballistics::external::PhysicsWorld& physicsWorld, BulletPhysics::math::IIntegrator& integrator);
-    virtual ~PhysicsSystemBase() = default;
+    PhysicsSystem() = default;
 
     void update(World& world, float dt);
 
-protected:
-    // hooks
-    virtual bool beforeIntegrate(World&, Entity, RigidBodyComponent&, float) {return true;}
-    virtual void afterIntegrate(World&, Entity, RigidBodyComponent&, float) {}
+    // contacts
+    void setContactListener(BulletPhysics::dynamics::IContactListener* listener) { m_physicsWorld.setContactListener(listener); }   // not owned
+    const std::vector<BulletPhysics::collision::Manifold>& getContacts() const { return m_physicsWorld.getContacts(); }
 
-    BulletPhysics::ballistics::external::PhysicsWorld& m_physicsWorld;
-    BulletPhysics::math::IIntegrator& m_integrator;
+    // queries
+    bool raycast(const BulletPhysics::collision::Ray& ray, BulletPhysics::collision::RayHit& outHit) const { return m_physicsWorld.raycast(ray, outHit); }
+
+private:
+    void syncBodies(World& world);
+    void publishTransforms(World& world);
+
+    BulletPhysics::dynamics::PhysicsWorld m_physicsWorld;
 };
 
 } // namespace systems

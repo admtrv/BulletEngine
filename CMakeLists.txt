@@ -25,59 +25,25 @@ add_subdirectory(BulletRender)
 # connect BulletPhysics library
 add_subdirectory(BulletPhysics)
 
-# BulletEngine library
+# BulletEngine application
 file(GLOB_RECURSE BULLET_ENGINE_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.cpp")
-add_library(BulletEngine STATIC ${BULLET_ENGINE_SOURCES})
-target_include_directories(BulletEngine PUBLIC ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(BulletEngine PUBLIC BulletRender BulletPhysics)
+add_executable(BulletEngine ${CMAKE_SOURCE_DIR}/main.cpp ${BULLET_ENGINE_SOURCES})
+target_include_directories(BulletEngine PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(BulletEngine PRIVATE BulletRenderLib BulletPhysicsLib)
 
-# samples/common
-file(GLOB_RECURSE SAMPLES_COMMON_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/samples/common/*.cpp")
-add_library(SamplesCommon STATIC ${SAMPLES_COMMON_SOURCES})
-target_include_directories(SamplesCommon PUBLIC ${CMAKE_SOURCE_DIR}/samples)
-target_link_libraries(SamplesCommon PUBLIC BulletEngine)
+# copy resources
+add_custom_command(TARGET BulletEngine POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/BulletRender/assets
+            $<TARGET_FILE_DIR:BulletEngine>/assets
+    COMMENT "Copying BulletRender assets..."
+)
 
-# function to generate one sample
-function(add_sample SAMPLE_NAME SAMPLE_DIR)
-    file(GLOB_RECURSE SAMPLE_SOURCES CONFIGURE_DEPENDS "${SAMPLE_DIR}/*.cpp")
-
-    add_executable(${SAMPLE_NAME} ${SAMPLE_SOURCES})
-    target_include_directories(${SAMPLE_NAME} PRIVATE ${SAMPLE_DIR})
-    target_include_directories(${SAMPLE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/samples)
-    target_link_libraries(${SAMPLE_NAME} PRIVATE SamplesCommon)
-
-    # copy resources
-    add_custom_command(TARGET ${SAMPLE_NAME} POST_BUILD
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+    add_custom_command(TARGET BulletEngine POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-                ${CMAKE_CURRENT_SOURCE_DIR}/BulletRender/assets
-                $<TARGET_FILE_DIR:${SAMPLE_NAME}>/assets
-        COMMENT "Copying BulletRender assets for ${SAMPLE_NAME}..."
+                ${CMAKE_CURRENT_SOURCE_DIR}/assets
+                $<TARGET_FILE_DIR:BulletEngine>/assets
+        COMMENT "Copying BulletEngine assets..."
     )
-
-    add_custom_command(TARGET ${SAMPLE_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-                ${CMAKE_CURRENT_SOURCE_DIR}/BulletPhysics/assets
-                $<TARGET_FILE_DIR:${SAMPLE_NAME}>/assets
-        COMMENT "Copying BulletPhysics assets for ${SAMPLE_NAME}..."
-    )
-
-    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/assets)
-        add_custom_command(TARGET ${SAMPLE_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-                    ${CMAKE_CURRENT_SOURCE_DIR}/assets
-                    $<TARGET_FILE_DIR:${SAMPLE_NAME}>/assets
-            COMMENT "Copying BulletEngine assets for ${SAMPLE_NAME}..."
-        )
-    endif()
-endfunction()
-
-# add all samples
-add_sample(BasicExternal "${CMAKE_SOURCE_DIR}/samples/basic-external")
-add_sample(BasicTerminal "${CMAKE_SOURCE_DIR}/samples/basic-terminal")
-add_sample(ComparisonConfigs "${CMAKE_SOURCE_DIR}/samples/comparison-configs")
-add_sample(ComparisonCosts "${CMAKE_SOURCE_DIR}/samples/comparison-costs")
-add_sample(ComparisonIntegrators "${CMAKE_SOURCE_DIR}/samples/comparison-integrators")
-add_sample(ComparisonSanity "${CMAKE_SOURCE_DIR}/samples/comparison-sanity")
-add_sample(TestAllocations "${CMAKE_SOURCE_DIR}/samples/test-allocations")
-add_sample(TestConvergence "${CMAKE_SOURCE_DIR}/samples/test-convergence")
-add_sample(BenchmarkPerformance "${CMAKE_SOURCE_DIR}/samples/benchmark-performance")
+endif()

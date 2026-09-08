@@ -25,7 +25,12 @@ public:
     ~World() = default;
 
     Entity create();
+
+    // marked now and dropped by flush
     void destroy(Entity entity);
+    void flush();
+
+    bool isAlive(Entity entity) const;
 
     template<class C, class... Args>
     C& add(Entity entity, Args&&... args)
@@ -58,6 +63,7 @@ public:
 private:
     Entity m_nextId = 1;
     std::vector<Entity> m_entities;
+    std::vector<Entity> m_destroyed;
     std::unordered_map<Entity, std::vector<std::unique_ptr<Component>>> m_components;
 };
 

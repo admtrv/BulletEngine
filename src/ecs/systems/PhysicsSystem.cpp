@@ -4,49 +4,84 @@
 
 #include "PhysicsSystem.h"
 
+#include <unordered_set>
+
 namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-PhysicsSystemBase::PhysicsSystemBase(BulletPhysics::ballistics::external::PhysicsWorld& physicsWorld, BulletPhysics::math::IIntegrator& integrator)
-    : m_physicsWorld(physicsWorld)
-    , m_integrator(integrator)
-{}
-
-void PhysicsSystemBase::update(World& world, float dt)
+void PhysicsSystem::update(World& world, float dt)
 {
+    syncBodies(world);
+
+    // physics keeps its own clock, frame time only says how much of it passed
+    m_physicsWorld.update(dt);
+
+    publishTransforms(world);
+}
+
+void PhysicsSystem::syncBodies(World& world)
+{
+    std::unordered_set<const BulletPhysics::dynamics::RigidBody*> alive;
+
     for (auto entity : world.entities())
     {
-        auto* transformComponent = world.get<TransformComponent>(entity);
         auto* rigidBodyComponent = world.get<RigidBodyComponent>(entity);
-
-        if (!rigidBodyComponent || !rigidBodyComponent->body)
+        if (!rigidBodyComponent)
         {
             continue;
         }
 
-        // apply forces
-        if (beforeIntegrate(world, entity, *rigidBodyComponent, dt))
-        {
-            m_integrator.step(*rigidBodyComponent->body, &m_physicsWorld, static_cast<double>(dt));
-        }
+        alive.insert(&rigidBodyComponent->body);
 
-        afterIntegrate(world, entity, *rigidBodyComponent, dt);
-
-        // update transform
-        if (transformComponent)
-        {
-            const auto& p = rigidBodyComponent->body->getPosition();
-            transformComponent->transform.setPosition({static_cast<float>(p.x), static_cast<float>(p.y), static_cast<float>(p.z)});
-        }
-
-        // update collider
         auto* colliderComponent = world.get<ColliderComponent>(entity);
-        if (colliderComponent && colliderComponent->collider && transformComponent)
+        auto* collider = colliderComponent ? colliderComponent->collider.get() : nullptr;
+
+        // the world takes each body once, a second call would list it twice
+        m_physicsWorld.addBody(&rigidBodyComponent->body, collider);
+    }
+
+    // a body whose entity is gone has nothing left to follow
+    const auto& bodies = m_physicsWorld.getBodies();
+
+    for (size_t i = bodies.size(); i > 0; i--)
+    {
+        auto* body = bodies[i - 1];
+
+        if (alive.count(body) == 0)
         {
-            const auto& p = rigidBodyComponent->body->getPosition();
-            colliderComponent->collider->setPosition(p);
+            m_physicsWorld.removeBody(body);
         }
+    }
+}
+
+void PhysicsSystem::publishTransforms(World& world)
+{
+    for (auto entity : world.entities())
+    {
+        auto* rigidBodyComponent = world.get<RigidBodyComponent>(entity);
+        auto* transformComponent = world.get<TransformComponent>(entity);
+
+        if (!rigidBodyComponent || !transformComponent)
+        {
+            continue;
+        }
+
+        const auto& position = rigidBodyComponent->body.getPosition();
+        const auto& orientation = rigidBodyComponent->body.getOrientation();
+
+        transformComponent->transform.setPosition({
+            static_cast<float>(position.x),
+            static_cast<float>(position.y),
+            static_cast<float>(position.z)
+        });
+
+        transformComponent->transform.setRotation({
+            static_cast<float>(orientation.w),
+            static_cast<float>(orientation.x),
+            static_cast<float>(orientation.y),
+            static_cast<float>(orientation.z)
+        });
     }
 }
 

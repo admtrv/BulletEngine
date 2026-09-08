@@ -10,12 +10,10 @@
 #include "scene/Model.h"
 #include "render/Material.h"
 
-#include "builtin/bodies/RigidBody.h"
-#include "builtin/collision/collider/Collider.h"
-#include "math/Vec3.h"
+#include "dynamics/body/RigidBody.h"
+#include "collision/collider/Collider.h"
 
 #include <memory>
-#include <vector>
 
 namespace BulletEngine {
 namespace ecs {
@@ -33,20 +31,12 @@ public:
 
 class RigidBodyComponent : public Component {
 public:
-    RigidBodyComponent() : body(std::make_unique<BulletPhysics::builtin::bodies::RigidBody>()) {}
-    virtual ~RigidBodyComponent() = default;
-
-    std::unique_ptr<BulletPhysics::builtin::bodies::RigidBody> body;
+    BulletPhysics::dynamics::RigidBody body;
 };
 
 class ColliderComponent : public Component {
 public:
-    std::shared_ptr<BulletPhysics::builtin::collision::collider::Collider> collider;
-
-    // debug visualization
-    bool isVisible = false;
-    BulletRender::scene::Model* model = nullptr;
-    BulletRender::render::Material material;
+    std::unique_ptr<BulletPhysics::collision::collider::Collider> collider;
 };
 
 } // namespace ecs
