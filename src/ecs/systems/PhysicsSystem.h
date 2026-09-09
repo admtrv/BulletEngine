@@ -19,7 +19,8 @@ class PhysicsSystem {
 public:
     PhysicsSystem() = default;
 
-    void update(World& world, float dt);
+    void update(World& world, float dt);    // own clock, runs as many steps as frame owes
+    void step(World& world, float dt);      // one step, paced from outside
 
     // contacts
     void setContactListener(BulletPhysics::dynamics::IContactListener* listener) { m_physicsWorld.setContactListener(listener); }   // not owned

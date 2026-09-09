@@ -20,6 +20,15 @@ void PhysicsSystem::update(World& world, float dt)
     publishTransforms(world);
 }
 
+void PhysicsSystem::step(World& world, float dt)
+{
+    syncBodies(world);
+
+    m_physicsWorld.step(dt);
+
+    publishTransforms(world);
+}
+
 void PhysicsSystem::syncBodies(World& world)
 {
     std::unordered_set<const BulletPhysics::dynamics::RigidBody*> alive;

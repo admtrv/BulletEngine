@@ -24,6 +24,7 @@
 #include "dynamics/body/Inertia.h"
 
 // BulletEngine
+#include "app/Application.h"
 #include "ecs/Ecs.h"
 #include "ecs/Components.h"
 #include "ecs/systems/PhysicsSystem.h"
@@ -188,6 +189,33 @@ int main()
     ecs::systems::DebugDrawSystem debugDrawSystem(lines);
     ecs::systems::CursorDragSystem cursorDragSystem(camera, physicsSystem);
 
+    // phases
+    app::Application app;
+    app.setWorld(&world);
+
+    app::Scheduler& scheduler = app.getScheduler();
+
+    scheduler.add(app::Phase::PreUpdate, [&camera](const app::FrameContext& frame) {
+        camera.update(frame.deltaTime);
+        BulletRender::utils::Input::instance().update();
+    }, 0, "input");
+
+    scheduler.add(app::Phase::FixedUpdate, [&physicsSystem](const app::FrameContext& frame) {
+        physicsSystem.step(*frame.world, frame.fixedDeltaTime);
+    }, 0, "physics");
+
+    scheduler.add(app::Phase::PostUpdate, [&cursorDragSystem](const app::FrameContext&) {
+        cursorDragSystem.update();
+    }, 0, "cursor drag");
+
+    scheduler.add(app::Phase::Render, [&renderSystem](const app::FrameContext& frame) {
+        renderSystem.render(*frame.world);
+    }, 0, "scene");
+
+    scheduler.add(app::Phase::Render, [&debugDrawSystem, &physicsSystem](const app::FrameContext& frame) {
+        debugDrawSystem.draw(*frame.world, physicsSystem.getContacts());
+    }, 10, "debug draw");
+
     // input
     ecs::systems::InputSystem inputSystem;
     inputSystem.bind(BulletRender::utils::InputKey::ESCAPE, []() {
@@ -224,17 +252,9 @@ int main()
         [&](float dt) {
             lastDt = dt;
 
-            camera.update(dt);
-            BulletRender::utils::Input::instance().update();
-
-            cursorDragSystem.update();
-            physicsSystem.update(world, dt);
-
-            renderSystem.render(world);
-            debugDrawSystem.draw(world, physicsSystem.getContacts());
+            app.tick(dt);
             imguiSystem.render();
 
-            // every system has had its look, whatever was destroyed can go now
             world.flush();
         }
     );
