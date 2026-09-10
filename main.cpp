@@ -12,7 +12,7 @@
 #include "render/Renderer.h"
 #include "render/Shader.h"
 #include "scene/Scene.h"
-#include "scene/Model.h"
+#include "scene/models/Model.h"
 #include "scene/Camera.h"
 #include "scene/Light.h"
 #include "imgui.h"
@@ -25,6 +25,8 @@
 
 // BulletEngine
 #include "app/Application.h"
+#include "assets/Loaders.h"
+#include "assets/Registry.h"
 #include "ecs/Ecs.h"
 #include "ecs/Components.h"
 #include "ecs/systems/PhysicsSystem.h"
@@ -60,7 +62,7 @@ struct BodyDesc {
     bp::math::Quat orientation{};
 };
 
-static ecs::Entity spawnBody(ecs::World& world, const BodyDesc& desc, BulletRender::scene::Model* model, const std::shared_ptr<BulletRender::render::GraphicsShader>& shader)
+static ecs::Entity spawnBody(ecs::World& world, const BodyDesc& desc, const assets::Handle<BulletRender::scene::Model>& model, const std::shared_ptr<BulletRender::render::GraphicsShader>& shader)
 {
     auto entity = world.create();
 
@@ -83,7 +85,7 @@ static ecs::Entity spawnBody(ecs::World& world, const BodyDesc& desc, BulletRend
     return entity;
 }
 
-static ecs::Entity spawnCube(ecs::World& world, const BodyDesc& desc, BulletRender::scene::Model* model, const std::shared_ptr<BulletRender::render::GraphicsShader>& shader)
+static ecs::Entity spawnCube(ecs::World& world, const BodyDesc& desc, const assets::Handle<BulletRender::scene::Model>& model, const std::shared_ptr<BulletRender::render::GraphicsShader>& shader)
 {
     const bp::math::Vec3 size{CUBE_SIZE, CUBE_SIZE, CUBE_SIZE};
 
@@ -97,7 +99,7 @@ static ecs::Entity spawnCube(ecs::World& world, const BodyDesc& desc, BulletRend
     return entity;
 }
 
-static ecs::Entity spawnBall(ecs::World& world, const BodyDesc& desc, BulletRender::scene::Model* model, const std::shared_ptr<BulletRender::render::GraphicsShader>& shader)
+static ecs::Entity spawnBall(ecs::World& world, const BodyDesc& desc, const assets::Handle<BulletRender::scene::Model>& model, const std::shared_ptr<BulletRender::render::GraphicsShader>& shader)
 {
     auto entity = spawnBody(world, desc, model, shader);
     world.get<ecs::RigidBodyComponent>(entity)->body.setInverseInertiaLocal(bpd::inertia::sphere(1.0, BALL_RADIUS));
@@ -144,8 +146,10 @@ int main()
     // shared shader and models
     auto shader = std::make_shared<BulletRender::render::GraphicsShader>(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
 
-    BulletRender::scene::Box cubeModel(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE);
-    BulletRender::scene::Sphere ballModel(BALL_RADIUS, 32, 16);
+    assets::registerLoaders();
+
+    auto cubeModel = assets::Registry::instance().load<BulletRender::scene::Model>("box:1,1,1");
+    auto ballModel = assets::Registry::instance().load<BulletRender::scene::Model>("sphere:0.5,32,16");
 
     // ecs
     ecs::World world;
@@ -162,26 +166,26 @@ int main()
     }
 
     // scenario 1: dropped cube
-    spawnCube(world, {.position = {-7.5, DROP_HEIGHT, 0.0}, .color = {0.9f, 0.4f, 0.4f}}, &cubeModel, shader);
+    spawnCube(world, {.position = {-7.5, DROP_HEIGHT, 0.0}, .color = {0.9f, 0.4f, 0.4f}}, cubeModel, shader);
 
     // scenario 2: dropped ball
-    spawnBall(world, {.position = {-4.5, DROP_HEIGHT, 0.0}, .color = {0.4f, 0.9f, 0.5f}, .material = bpc::materials::Rubber()}, &ballModel, shader);
+    spawnBall(world, {.position = {-4.5, DROP_HEIGHT, 0.0}, .color = {0.4f, 0.9f, 0.5f}, .material = bpc::materials::Rubber()}, ballModel, shader);
 
     // scenario 3: pushed cube
-    spawnCube(world, {.position = {-1.5, 0.5, 0.0}, .color = {0.4f, 0.5f, 0.9f}, .material = bpc::materials::Ice(), .velocity = {0.0, 0.0, 5.0}}, &cubeModel, shader);
+    spawnCube(world, {.position = {-1.5, 0.5, 0.0}, .color = {0.4f, 0.5f, 0.9f}, .material = bpc::materials::Ice(), .velocity = {0.0, 0.0, 5.0}}, cubeModel, shader);
 
     // scenario 4: pushed cube
-    spawnBall(world, {.position = {1.5, BALL_RADIUS, 0.0}, .color = {0.9f, 0.9f, 0.4f}, .material = bpc::materials::Wood(), .velocity = {0.0, 0.0, 1.5}}, &ballModel, shader);
+    spawnBall(world, {.position = {1.5, BALL_RADIUS, 0.0}, .color = {0.9f, 0.9f, 0.4f}, .material = bpc::materials::Wood(), .velocity = {0.0, 0.0, 1.5}}, ballModel, shader);
 
     // scenario 5: stack
     for (int i = 0; i < 4; i++)
     {
-        spawnCube(world, {.position = {4.5, 0.5 + i * 1.05, 0.0}, .color = {0.9f, 0.3f + i * 0.1f, 0.5f}}, &cubeModel, shader);
+        spawnCube(world, {.position = {4.5, 0.5 + i * 1.05, 0.0}, .color = {0.9f, 0.3f + i * 0.1f, 0.5f}}, cubeModel, shader);
     }
 
     // scenario 6: asimmetric fall
-    spawnCube(world, {.position = {7.5, 0.5, 0.0}, .color = {0.9f, 0.6f, 0.3f}, .orientation = bp::math::Quat::fromAxisAngle({0.0, 1.0, 0.0}, 0.785)}, &cubeModel, shader);
-    spawnCube(world, {.position = {7.5, DROP_HEIGHT, 0.0}, .color = {0.7f, 0.4f, 0.9f}, .orientation = bp::math::Quat::fromAxisAngle({1.0, 1.0, 0.0}, 0.9)}, &cubeModel, shader);
+    spawnCube(world, {.position = {7.5, 0.5, 0.0}, .color = {0.9f, 0.6f, 0.3f}, .orientation = bp::math::Quat::fromAxisAngle({0.0, 1.0, 0.0}, 0.785)}, cubeModel, shader);
+    spawnCube(world, {.position = {7.5, DROP_HEIGHT, 0.0}, .color = {0.7f, 0.4f, 0.9f}, .orientation = bp::math::Quat::fromAxisAngle({1.0, 1.0, 0.0}, 0.9)}, cubeModel, shader);
 
     // systems
     ecs::systems::PhysicsSystem physicsSystem;

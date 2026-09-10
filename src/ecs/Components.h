@@ -4,10 +4,11 @@
 
 #pragma once
 
+#include "assets/Handle.h"
 #include "ecs/Ecs.h"
 
 #include "scene/Transform.h"
-#include "scene/Model.h"
+#include "scene/models/Model.h"
 #include "render/Material.h"
 
 #include "dynamics/body/RigidBody.h"
@@ -25,7 +26,7 @@ public:
 
 class RenderableComponent : public Component {
 public:
-    BulletRender::scene::Model* model = nullptr;
+    assets::Handle<BulletRender::scene::Model> model;
     BulletRender::render::Material material;
 };
 

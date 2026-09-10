@@ -24,7 +24,7 @@ void RenderSystem::render(World& world)
             continue;
         }
 
-        auto* object = m_scene.addObject(renderableComponent->model);
+        auto* object = m_scene.addObject(renderableComponent->model.getShared());
 
         object->getMaterial() = renderableComponent->material;
         object->getTransform().setMatrix(transformComponent->transform.getMatrix());
