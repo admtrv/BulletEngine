@@ -24,30 +24,32 @@ enum class FieldKind : uint8_t {
 // named entry of a type
 class Field {
 public:
+    // accessors
     using Getter = std::function<Value(const void*)>;
     using Setter = std::function<void(void*, const Value&)>;
-
-    // resolves nested object and its concrete type
     using Resolver = std::function<void*(const void*, const Type**)>;
+    using Builder = std::function<void*(void*, const Type&)>;
 
     Field(std::string name, ValueType type, Getter getter, Setter setter)
         : m_name(std::move(name)), m_type(type), m_getter(std::move(getter)), m_setter(std::move(setter)) {}
 
-    Field(std::string name, Resolver resolver)
-        : m_name(std::move(name)), m_kind(FieldKind::Object), m_resolver(std::move(resolver)) {}
+    Field(std::string name, Resolver resolver, Builder builder = nullptr)
+        : m_name(std::move(name)), m_kind(FieldKind::Object), m_resolver(std::move(resolver)), m_builder(std::move(builder)) {}
 
+    // identity
     const std::string& getName() const { return m_name; }
     FieldKind getKind() const { return m_kind; }
     ValueType getType() const { return m_type; }
 
-    // value access
+    // value
     Value get(const void* instance) const { return m_getter ? m_getter(instance) : Value{}; }
     void set(void* instance, const Value& value) const { if (m_setter) m_setter(instance, value); }
-
     bool isReadOnly() const { return m_kind == FieldKind::Value && !m_setter; }
 
-    // object access
+    // object
     void* resolve(const void* instance, const Type** outType) const { return m_resolver ? m_resolver(instance, outType) : nullptr; }
+    void* build(void* instance, const Type& type) const { return m_builder ? m_builder(instance, type) : nullptr; }
+    bool isBuildable() const { return m_builder != nullptr; }
 
 private:
     std::string m_name;
@@ -57,6 +59,7 @@ private:
     Getter m_getter;
     Setter m_setter;
     Resolver m_resolver;
+    Builder m_builder;
 };
 
 // registered type

@@ -33,7 +33,7 @@ void PhysicsSystem::syncBodies(World& world)
 {
     std::unordered_set<const BulletPhysics::dynamics::RigidBody*> alive;
 
-    for (auto entity : world.entities())
+    for (auto entity : world.getEntities())
     {
         auto* rigidBodyComponent = world.get<RigidBodyComponent>(entity);
         if (!rigidBodyComponent)
@@ -66,7 +66,7 @@ void PhysicsSystem::syncBodies(World& world)
 
 void PhysicsSystem::publishTransforms(World& world)
 {
-    for (auto entity : world.entities())
+    for (auto entity : world.getEntities())
     {
         auto* rigidBodyComponent = world.get<RigidBodyComponent>(entity);
         auto* transformComponent = world.get<TransformComponent>(entity);

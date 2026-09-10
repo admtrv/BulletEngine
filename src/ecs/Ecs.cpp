@@ -42,6 +42,21 @@ void World::flush()
     m_destroyed.clear();
 }
 
+const std::vector<std::unique_ptr<Component>>& World::getComponents(Entity entity) const
+{
+    static const std::vector<std::unique_ptr<Component>> empty;
+
+    const auto it = m_components.find(entity);
+    return it != m_components.end() ? it->second : empty;
+}
+
+Component& World::attach(Entity entity, std::unique_ptr<Component> component)
+{
+    auto& vec = m_components[entity];
+    vec.push_back(std::move(component));
+    return *vec.back();
+}
+
 bool World::isAlive(Entity entity) const
 {
     return std::find(m_entities.begin(), m_entities.end(), entity) != m_entities.end();

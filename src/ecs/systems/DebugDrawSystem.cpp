@@ -56,7 +56,7 @@ void DebugDrawSystem::draw(World& world, const std::vector<BulletPhysics::collis
 
 void DebugDrawSystem::drawColliders(World& world)
 {
-    for (auto entity : world.entities())
+    for (auto entity : world.getEntities())
     {
         auto* colliderComponent = world.get<ColliderComponent>(entity);
         if (!colliderComponent || !colliderComponent->collider)
@@ -102,7 +102,7 @@ void DebugDrawSystem::drawColliders(World& world)
 
 void DebugDrawSystem::drawVelocities(World& world)
 {
-    for (auto entity : world.entities())
+    for (auto entity : world.getEntities())
     {
         auto* rigidBodyComponent = world.get<RigidBodyComponent>(entity);
         if (!rigidBodyComponent)

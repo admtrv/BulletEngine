@@ -14,7 +14,7 @@ void RenderSystem::render(World& world)
 {
     m_scene.clearObjects();
 
-    for (auto entity : world.entities())
+    for (auto entity : world.getEntities())
     {
         auto* transformComponent = world.get<TransformComponent>(entity);
         auto* renderableComponent = world.get<RenderableComponent>(entity);

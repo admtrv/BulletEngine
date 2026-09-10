@@ -58,7 +58,11 @@ public:
     template<class C>
     bool has(Entity entity) { return get<C>(entity) != nullptr; }
 
-    const std::vector<Entity>& entities() const { return m_entities; }
+    const std::vector<Entity>& getEntities() const { return m_entities; }
+
+    const std::vector<std::unique_ptr<Component>>& getComponents(Entity entity) const;
+
+    Component& attach(Entity entity, std::unique_ptr<Component> component);
 
 private:
     Entity m_nextId = 1;

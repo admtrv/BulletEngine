@@ -120,6 +120,15 @@ Field makeObjectField(std::string name, P C::* member)
             }
 
             return const_cast<void*>(static_cast<const void*>(object));
+        },
+        [member](void* instance, const Type& type) -> void* {
+            auto& pointer = static_cast<C*>(instance)->*member;
+
+            using Held = typename P::element_type;
+            auto* made = static_cast<Held*>(type.create());
+
+            pointer.reset(made);
+            return made;
         }
     );
 }
