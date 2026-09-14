@@ -23,13 +23,10 @@
 
 namespace BulletEngine {
 namespace interface {
-namespace {
 
 constexpr const char* ENTITY_DRAG_TYPE = "BE_ENTITY";
 constexpr int MAX_TREE_DEPTH = 64;
 constexpr double SPHERE_RADIUS = 0.5;
-
-} // namespace
 
 void Editor::drawHierarchy()
 {

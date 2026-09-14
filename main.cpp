@@ -34,6 +34,7 @@
 #include "ecs/systems/PickSystem.h"
 #include "ecs/systems/RenderSystem.h"
 #include "interface/Editor.h"
+#include "io/Log.h"
 
 #include <memory>
 
@@ -51,6 +52,9 @@ static const std::string SCENE_PATH = "scene.txt";
 
 int main()
 {
+    // the streams reach the editor from here on, the terminal still gets them
+    io::Log::instance().capture();
+
     // window
     br::app::Loop::setDocking(true);
     br::render::Renderer::setOffscreen(true);
@@ -212,5 +216,7 @@ int main()
 
     br::render::Renderer::shutdown();
     br::app::Window::shutdown();
+
+    io::Log::instance().release();
     return 0;
 }

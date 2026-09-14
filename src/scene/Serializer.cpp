@@ -12,12 +12,11 @@
 
 namespace BulletEngine {
 namespace scene {
-namespace {
 
 constexpr const char* VERSION_NODE = "version";
 constexpr const char* ENTITY_NODE = "entity";
 
-void saveValue(Node& node, const reflect::Field& field, const void* instance)
+static void saveValue(Node& node, const reflect::Field& field, const void* instance)
 {
     const reflect::Value value = field.get(instance);
 
@@ -35,7 +34,7 @@ void saveValue(Node& node, const reflect::Field& field, const void* instance)
     }
 }
 
-void loadValue(const Node& node, const reflect::Field& field, void* instance)
+static void loadValue(const Node& node, const reflect::Field& field, void* instance)
 {
     const std::string& text = node.getValue();
 
@@ -52,8 +51,6 @@ void loadValue(const Node& node, const reflect::Field& field, void* instance)
         default: break;
     }
 }
-
-} // namespace
 
 void saveObject(Node& node, const reflect::Type& type, const void* instance)
 {

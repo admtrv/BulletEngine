@@ -9,11 +9,8 @@
 
 namespace BulletEngine {
 namespace reflect {
-namespace {
 
 constexpr std::string_view COMPONENT_SUFFIX = "Component";
-
-} // namespace
 
 std::string toLabel(std::string_view name)
 {

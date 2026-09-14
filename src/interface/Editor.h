@@ -16,6 +16,7 @@
 
 #include <glm/glm.hpp>
 
+#include <cstdint>
 #include <string>
 #include <typeindex>
 #include <unordered_map>
@@ -33,6 +34,7 @@ namespace interface {
 constexpr const char* HIERARCHY_PANEL = "Hierarchy";
 constexpr const char* INSPECTOR_PANEL = "Inspector";
 constexpr const char* SCENE_PANEL = "Scene";
+constexpr const char* CONSOLE_PANEL = "Console";
 
 // what a new entity comes with
 enum class Preset {
@@ -100,6 +102,7 @@ private:
     void drawEntityNode(ecs::Entity entity, bool last, int depth);
     void drawInspector();
     void drawAddMenu();
+    void drawConsole();
     bool drawFields(const reflect::Type& type, void* instance);
     bool drawValue(const reflect::Field& field, void* instance);
     bool drawObjectType(const reflect::Field& field, void* instance, const reflect::Type& current);
@@ -147,6 +150,13 @@ private:
     bool m_showScene = true;
     bool m_showHierarchy = true;
     bool m_showInspector = true;
+    bool m_showConsole = true;
+
+    // the journal as the field sees it, copied when it changes
+    std::string m_consoleText;
+    float m_consoleLines = 1.0f;
+    uint32_t m_consoleRevision = 0;
+    bool m_consoleTail = true;      // scrolls down once after new lines arrive
 
     const char* m_focusPanel = nullptr;
     const reflect::Type* m_focusComponent = nullptr;

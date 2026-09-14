@@ -9,15 +9,11 @@
 namespace BulletEngine {
 namespace ecs {
 
-namespace {
-
-auto findComponent(const std::vector<std::unique_ptr<Component>>& components, std::type_index type)
+static auto findComponent(const std::vector<std::unique_ptr<Component>>& components, std::type_index type)
 {
     return std::find_if(components.begin(), components.end(),
         [type](const std::unique_ptr<Component>& component) { return std::type_index(typeid(*component)) == type; });
 }
-
-} // namespace
 
 Entity World::create()
 {

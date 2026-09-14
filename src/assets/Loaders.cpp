@@ -16,13 +16,12 @@
 
 namespace BulletEngine {
 namespace assets {
-namespace {
 
 // primitives are spelled out in the key itself, "box:1,1,1"
 constexpr const char* BOX_PREFIX = "box:";
 constexpr const char* SPHERE_PREFIX = "sphere:";
 
-std::vector<float> parseNumbers(std::string_view text)
+static std::vector<float> parseNumbers(std::string_view text)
 {
     std::vector<float> numbers;
 
@@ -44,12 +43,12 @@ std::vector<float> parseNumbers(std::string_view text)
     return numbers;
 }
 
-bool startsWith(const std::string& key, const char* prefix)
+static bool startsWith(const std::string& key, const char* prefix)
 {
     return key.rfind(prefix, 0) == 0;
 }
 
-std::shared_ptr<BulletRender::scene::Model> loadModel(const std::string& key)
+static std::shared_ptr<BulletRender::scene::Model> loadModel(const std::string& key)
 {
     if (startsWith(key, BOX_PREFIX))
     {
@@ -71,8 +70,6 @@ std::shared_ptr<BulletRender::scene::Model> loadModel(const std::string& key)
 
     return BulletRender::scene::ModelLoader::instance().load(key);
 }
-
-} // namespace
 
 std::string toLabel(const std::string& key)
 {

@@ -11,24 +11,23 @@
 
 namespace BulletEngine {
 namespace scene {
-namespace {
 
 constexpr const char* INDENT = "  ";
 
-std::string_view trimRight(std::string_view text)
+static std::string_view trimRight(std::string_view text)
 {
     const size_t end = text.find_last_not_of(" \t\r");
     return end == std::string_view::npos ? std::string_view{} : text.substr(0, end + 1);
 }
 
-size_t countIndent(std::string_view line)
+static size_t countIndent(std::string_view line)
 {
     const size_t first = line.find_first_not_of(' ');
     return first == std::string_view::npos ? 0 : first / 2;
 }
 
 // splits "1, 2, 3" into its numbers
-std::vector<float> parseNumbers(const std::string& text, size_t expected)
+static std::vector<float> parseNumbers(const std::string& text, size_t expected)
 {
     std::vector<float> numbers;
     std::stringstream stream(text);
@@ -42,7 +41,7 @@ std::vector<float> parseNumbers(const std::string& text, size_t expected)
     return numbers.size() == expected ? numbers : std::vector<float>{};
 }
 
-std::string joinNumbers(const float* values, size_t count)
+static std::string joinNumbers(const float* values, size_t count)
 {
     std::ostringstream stream;
 
@@ -54,7 +53,7 @@ std::string joinNumbers(const float* values, size_t count)
     return stream.str();
 }
 
-void writeNode(std::ostringstream& stream, const Node& node, int depth)
+static void writeNode(std::ostringstream& stream, const Node& node, int depth)
 {
     for (int i = 0; i < depth; i++)
     {
@@ -75,8 +74,6 @@ void writeNode(std::ostringstream& stream, const Node& node, int depth)
         writeNode(stream, child, depth + 1);
     }
 }
-
-} // namespace
 
 Node& Node::add(std::string name)
 {

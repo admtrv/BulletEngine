@@ -15,12 +15,8 @@ using namespace BulletEngine::ecs;
 using namespace BulletPhysics::collision;
 using namespace BulletPhysics::collision::collider;
 
-namespace {
-
 constexpr const char* ALBEDO_UNIFORM = "uAlbedo";   // only slot the standard shader samples
 constexpr unsigned ALBEDO_UNIT = 0;
-
-} // namespace
 
 // assets
 

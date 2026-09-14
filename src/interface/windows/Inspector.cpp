@@ -16,13 +16,10 @@
 
 namespace BulletEngine {
 namespace interface {
-namespace {
 
 constexpr float DRAG_SPEED_DEFAULT = 0.05f;
 constexpr float DRAG_SPEED_ROTATION = 0.5f;
 constexpr float DRAG_LIMIT = 10000.0f;
-
-} // namespace
 
 void Editor::drawInspector()
 {

@@ -13,12 +13,10 @@
 
 namespace BulletEngine {
 namespace interface {
-namespace {
 
 constexpr const char* DOCK_ID = "EngineDockSpace";
 constexpr float SIDE_PANEL_FRACTION = 0.20f;
-
-} // namespace
+constexpr float CONSOLE_PANEL_FRACTION = 0.25f;
 
 Editor::Editor(ecs::World& world, ecs::systems::PhysicsSystem& physics) : m_world(world), m_physics(physics) {}
 
@@ -40,6 +38,7 @@ void Editor::draw()
     drawScene();
     drawHierarchy();
     drawInspector();
+    drawConsole();
 
     if (m_focusPanel)
     {
@@ -99,9 +98,11 @@ void Editor::buildLayout(unsigned dockId)
     ImGuiID center = dockId;
     const ImGuiID left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, SIDE_PANEL_FRACTION, nullptr, &center);
     const ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, SIDE_PANEL_FRACTION / (1.0f - SIDE_PANEL_FRACTION), nullptr, &center);
+    const ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, CONSOLE_PANEL_FRACTION, nullptr, &center);
 
     ImGui::DockBuilderDockWindow(HIERARCHY_PANEL, left);
     ImGui::DockBuilderDockWindow(INSPECTOR_PANEL, right);
+    ImGui::DockBuilderDockWindow(CONSOLE_PANEL, bottom);
     ImGui::DockBuilderDockWindow(SCENE_PANEL, center);
 
     ImGui::DockBuilderFinish(dockId);
@@ -158,6 +159,11 @@ void Editor::drawMenuBar()
                 openPanel(m_showInspector, INSPECTOR_PANEL);
             }
 
+            if (ImGui::MenuItem(CONSOLE_PANEL))
+            {
+                openPanel(m_showConsole, CONSOLE_PANEL);
+            }
+
             ImGui::Separator();
 
             if (ImGui::MenuItem("Reset"))
@@ -165,6 +171,7 @@ void Editor::drawMenuBar()
                 m_showScene = true;
                 m_showHierarchy = true;
                 m_showInspector = true;
+                m_showConsole = true;
                 m_layoutBuilt = false;
             }
 
