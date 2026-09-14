@@ -5,19 +5,24 @@
 #pragma once
 
 #include <cstdint>
-#include <vector>
+#include <functional>
 #include <memory>
+#include <typeindex>
 #include <unordered_map>
+#include <vector>
 
 namespace BulletEngine {
 namespace ecs {
 
 using Entity = uint32_t;
+inline constexpr Entity INVALID_ENTITY = 0;
 
 class Component {
 public:
     virtual ~Component() = default;
 };
+
+using Listener = std::function<void(Entity)>;
 
 class World {
 public:
@@ -29,6 +34,9 @@ public:
     // marked now and dropped by flush
     void destroy(Entity entity);
     void flush();
+
+    // called with each entity right before its components go
+    void addListener(Listener listener) { m_listeners.push_back(std::move(listener)); }
 
     bool isAlive(Entity entity) const;
 
@@ -63,12 +71,16 @@ public:
     const std::vector<std::unique_ptr<Component>>& getComponents(Entity entity) const;
 
     Component& attach(Entity entity, std::unique_ptr<Component> component);
+    void detach(Entity entity, std::type_index type);
+
+    bool has(Entity entity, std::type_index type) const;
 
 private:
     Entity m_nextId = 1;
     std::vector<Entity> m_entities;
     std::vector<Entity> m_destroyed;
     std::unordered_map<Entity, std::vector<std::unique_ptr<Component>>> m_components;
+    std::vector<Listener> m_listeners;
 };
 
 } // namespace ecs

@@ -19,8 +19,13 @@ class PhysicsSystem {
 public:
     PhysicsSystem() = default;
 
+    // simulation
     void update(World& world, float dt);    // own clock, runs as many steps as frame owes
     void step(World& world, float dt);      // one step, paced from outside
+
+    // contents
+    void watch(World& world);                   // drops bodies as their entities die
+    void detach(World& world, Entity entity);   // takes a body out, sync puts it back next step
 
     // contacts
     void setContactListener(BulletPhysics::dynamics::IContactListener* listener) { m_physicsWorld.setContactListener(listener); }   // not owned

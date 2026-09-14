@@ -21,7 +21,7 @@ Type& Registry::add(std::type_index index, std::string name)
         return *it->second;
     }
 
-    auto type = std::make_unique<Type>(std::move(name));
+    auto type = std::make_unique<Type>(index, std::move(name));
     Type* raw = type.get();
 
     m_byName.emplace(raw->getName(), std::move(type));
@@ -29,6 +29,21 @@ Type& Registry::add(std::type_index index, std::string name)
     m_order.push_back(raw);
 
     return *raw;
+}
+
+std::vector<const Type*> Registry::getDerived(const Type& base) const
+{
+    std::vector<const Type*> derived;
+
+    for (const Type* type : m_order)
+    {
+        if (type->derivesFrom(base) && type->isCreatable())
+        {
+            derived.push_back(type);
+        }
+    }
+
+    return derived;
 }
 
 const Type* Registry::find(std::string_view name) const

@@ -5,9 +5,41 @@
 #include "Type.h"
 
 #include <algorithm>
+#include <cctype>
 
 namespace BulletEngine {
 namespace reflect {
+namespace {
+
+constexpr std::string_view COMPONENT_SUFFIX = "Component";
+
+} // namespace
+
+std::string toLabel(std::string_view name)
+{
+    if (name.size() > COMPONENT_SUFFIX.size() && name.ends_with(COMPONENT_SUFFIX))
+    {
+        name.remove_suffix(COMPONENT_SUFFIX.size());
+    }
+
+    std::string label;
+    label.reserve(name.size() + 4);
+
+    for (size_t i = 0; i < name.size(); i++)
+    {
+        const char c = name[i];
+
+        // a capital starts a new word, unless it continues an acronym
+        if (i > 0 && std::isupper(static_cast<unsigned char>(c)) && !std::isupper(static_cast<unsigned char>(name[i - 1])))
+        {
+            label += ' ';
+        }
+
+        label += i == 0 ? static_cast<char>(std::toupper(static_cast<unsigned char>(c))) : c;
+    }
+
+    return label;
+}
 
 std::vector<const Field*> Type::getAllFields() const
 {

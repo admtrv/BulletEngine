@@ -18,4 +18,8 @@
   
 </p>
 
-Minimal C/C++ 3D game engine. It consists of a graphics engine module and a physics engine module, serving as the connecting layer between them.
+Minimal C/C++ 3D game engine. It brings a graphics engine module and a physics engine module together under a common entity model, editor and scene format.
+
+<p align="center">
+    <img src="assets/images/Demo.png" alt="Demo Editor" width="500">
+</p>

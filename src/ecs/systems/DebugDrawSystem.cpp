@@ -15,9 +15,7 @@ namespace systems {
 
 namespace bpc = BulletPhysics::collision::collider;
 
-static constexpr float VELOCITY_SCALE = 0.2f;
-static constexpr float CONTACT_LENGTH = 0.5f;
-static constexpr float SLOWEST_SHOWN = 0.1f;
+static constexpr float GROUND_RADIUS = 1.5f;    // the plane is endless, only a patch of it is hinted
 
 static glm::vec3 toGlm(const BulletPhysics::math::Vec3& v)
 {
@@ -31,27 +29,15 @@ static glm::quat toGlmQuat(const BulletPhysics::math::Quat& q)
 
 DebugDrawSystem::DebugDrawSystem(std::shared_ptr<BulletRender::render::Lines> lines) : m_debugDraw(std::move(lines)) {}
 
-void DebugDrawSystem::draw(World& world, const std::vector<BulletPhysics::collision::Manifold>& contacts)
+void DebugDrawSystem::draw(World& world, Entity selected)
 {
     if (!m_enabled)
     {
         return;
     }
 
-    if (m_showColliders)
-    {
-        drawColliders(world);
-    }
-
-    if (m_showVelocities)
-    {
-        drawVelocities(world);
-    }
-
-    if (m_showContacts)
-    {
-        drawContacts(contacts);
-    }
+    drawColliders(world);
+    drawAxes(world, selected);
 }
 
 void DebugDrawSystem::drawColliders(World& world)
@@ -97,42 +83,23 @@ void DebugDrawSystem::drawColliders(World& world)
 
             m_debugDraw.drawBox(corners, BulletRender::colors::White);
         }
+        else if (collider->getShape() == bpc::CollisionShape::Ground)
+        {
+            m_debugDraw.drawPlane(toGlm(collider->getPosition()), {0.0f, 1.0f, 0.0f}, GROUND_RADIUS, BulletRender::colors::White);
+        }
     }
 }
 
-void DebugDrawSystem::drawVelocities(World& world)
+void DebugDrawSystem::drawAxes(World& world, Entity selected)
 {
-    for (auto entity : world.getEntities())
+    if (selected == INVALID_ENTITY || !world.isAlive(selected))
     {
-        auto* rigidBodyComponent = world.get<RigidBodyComponent>(entity);
-        if (!rigidBodyComponent)
-        {
-            continue;
-        }
-
-        const auto& body = rigidBodyComponent->body;
-        if (body.getVelocity().length() < SLOWEST_SHOWN)
-        {
-            continue;
-        }
-
-        const glm::vec3 from = toGlm(body.getPosition());
-        const glm::vec3 to = from + toGlm(body.getVelocity()) * VELOCITY_SCALE;
-
-        m_debugDraw.drawArrow(from, to, BulletRender::colors::Green);
+        return;
     }
-}
 
-void DebugDrawSystem::drawContacts(const std::vector<BulletPhysics::collision::Manifold>& contacts)
-{
-    for (const auto& manifold : contacts)
+    if (const auto* transform = world.get<TransformComponent>(selected))
     {
-        for (int i = 0; i < manifold.info.pointCount; i++)
-        {
-            const glm::vec3 point = toGlm(manifold.info.points[i].position);
-
-            m_debugDraw.drawArrow(point, point + toGlm(manifold.info.normal) * CONTACT_LENGTH, BulletRender::colors::Red);
-        }
+        m_debugDraw.drawTransform(transform->transform);
     }
 }
 

@@ -10,6 +10,19 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
+void PhysicsSystem::watch(World& world)
+{
+    world.addListener([this, &world](Entity entity) { detach(world, entity); });
+}
+
+void PhysicsSystem::detach(World& world, Entity entity)
+{
+    if (auto* component = world.get<RigidBodyComponent>(entity))
+    {
+        m_physicsWorld.removeBody(&component->body);
+    }
+}
+
 void PhysicsSystem::update(World& world, float dt)
 {
     syncBodies(world);

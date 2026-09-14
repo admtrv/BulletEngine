@@ -25,6 +25,7 @@ struct Tag;
 
 template<> struct Tag<bool>       { static constexpr ValueType TYPE = ValueType::Bool;   using Stored = bool; };
 template<> struct Tag<int>        { static constexpr ValueType TYPE = ValueType::Int;    using Stored = int; };
+template<> struct Tag<unsigned>   { static constexpr ValueType TYPE = ValueType::Int;    using Stored = int; };
 template<> struct Tag<float>      { static constexpr ValueType TYPE = ValueType::Float;  using Stored = float; };
 template<> struct Tag<double>     { static constexpr ValueType TYPE = ValueType::Float;  using Stored = float; };
 template<> struct Tag<std::string>{ static constexpr ValueType TYPE = ValueType::String; using Stored = std::string; };
@@ -108,7 +109,7 @@ Field makeField(std::string name, Getter getter)
 template<class C, class P>
 Field makeObjectField(std::string name, P C::* member)
 {
-    return Field(
+    Field field(
         std::move(name),
         [member](const void* instance, const Type** outType) -> void* {
             const auto& pointer = static_cast<const C*>(instance)->*member;
@@ -131,6 +132,9 @@ Field makeObjectField(std::string name, P C::* member)
             return made;
         }
     );
+
+    field.setBaseType(Registry::instance().find(std::type_index(typeid(typename P::element_type))));
+    return field;
 }
 
 // factory, skipped for abstract types
@@ -234,6 +238,31 @@ Field makeMemberField(std::string name, M C::* member)
                     if (outType) *outType = Registry::instance().find(std::type_index(typeid(N))); \
                     return &nested;                                                     \
                 }));
+
+// type hints
+
+#define LABEL(TEXT)                                                                     \
+            type.setLabel(TEXT);
+
+#define HIDE_TYPE()                                                                     \
+            type.setHidden(true);
+
+// field hints, each applies to the field just added
+
+#define HIDE_FIELD()                                                                    \
+            type.getLastField().setHidden(true);
+
+#define COLOR()                                                                         \
+            type.getLastField().setColor(true);
+
+#define ASSET()                                                                         \
+            type.getLastField().setAsset(true);
+
+#define OPTIONS(...)                                                                    \
+            type.getLastField().setOptions({__VA_ARGS__});
+
+#define SPEED(VALUE)                                                                    \
+            type.getLastField().setSpeed(VALUE);
 
 #define BASE(TYPE)                                                                      \
             type.setBase(Registry::instance().find(std::type_index(typeid(TYPE))));

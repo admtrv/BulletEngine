@@ -45,6 +45,10 @@ public:
 
 private:
     Registry() = default;
+    ~Registry() = default;
+
+    Registry(const Registry&) = delete;
+    Registry& operator=(const Registry&) = delete;
 
     std::shared_ptr<void> build(std::type_index type, const std::string& key) const;
 

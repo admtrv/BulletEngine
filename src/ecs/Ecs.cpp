@@ -9,6 +9,16 @@
 namespace BulletEngine {
 namespace ecs {
 
+namespace {
+
+auto findComponent(const std::vector<std::unique_ptr<Component>>& components, std::type_index type)
+{
+    return std::find_if(components.begin(), components.end(),
+        [type](const std::unique_ptr<Component>& component) { return std::type_index(typeid(*component)) == type; });
+}
+
+} // namespace
+
 Entity World::create()
 {
     Entity entity = m_nextId++;
@@ -25,8 +35,7 @@ void World::destroy(Entity entity)
         return;
     }
 
-    *it = m_entities.back();
-    m_entities.pop_back();
+    m_entities.erase(it);
 
     // out of the world at once, its components live until the frame ends
     m_destroyed.push_back(entity);
@@ -36,6 +45,11 @@ void World::flush()
 {
     for (Entity entity : m_destroyed)
     {
+        for (const Listener& listener : m_listeners)
+        {
+            listener(entity);
+        }
+
         m_components.erase(entity);
     }
 
@@ -55,6 +69,36 @@ Component& World::attach(Entity entity, std::unique_ptr<Component> component)
     auto& vec = m_components[entity];
     vec.push_back(std::move(component));
     return *vec.back();
+}
+
+void World::detach(Entity entity, std::type_index type)
+{
+    const auto it = m_components.find(entity);
+
+    if (it == m_components.end())
+    {
+        return;
+    }
+
+    auto& components = it->second;
+    const auto found = findComponent(components, type);
+
+    if (found != components.end())
+    {
+        components.erase(found);
+    }
+}
+
+bool World::has(Entity entity, std::type_index type) const
+{
+    const auto it = m_components.find(entity);
+
+    if (it == m_components.end())
+    {
+        return false;
+    }
+
+    return findComponent(it->second, type) != it->second.end();
 }
 
 bool World::isAlive(Entity entity) const

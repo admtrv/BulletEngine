@@ -32,8 +32,15 @@ public:
 
     const std::vector<Type*>& getTypes() const { return m_order; }
 
+    // types that derive from the given one and can be built
+    std::vector<const Type*> getDerived(const Type& base) const;
+
 private:
     Registry() = default;
+    ~Registry() = default;
+
+    Registry(const Registry&) = delete;
+    Registry& operator=(const Registry&) = delete;
 
     std::unordered_map<std::string, std::unique_ptr<Type>> m_byName;
     std::unordered_map<std::type_index, Type*> m_byIndex;

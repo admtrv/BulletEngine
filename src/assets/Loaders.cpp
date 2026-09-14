@@ -10,12 +10,13 @@
 #include "scene/models/Model.h"
 #include "scene/models/ModelLoader.h"
 
-#include <charconv>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
 namespace BulletEngine {
 namespace assets {
+namespace {
 
 // primitives are spelled out in the key itself, "box:1,1,1"
 constexpr const char* BOX_PREFIX = "box:";
@@ -69,6 +70,29 @@ std::shared_ptr<BulletRender::scene::Model> loadModel(const std::string& key)
     }
 
     return BulletRender::scene::ModelLoader::instance().load(key);
+}
+
+} // namespace
+
+std::string toLabel(const std::string& key)
+{
+    if (key.empty())
+    {
+        return "None";
+    }
+
+    if (startsWith(key, BOX_PREFIX))
+    {
+        return "Box";
+    }
+
+    if (startsWith(key, SPHERE_PREFIX))
+    {
+        return "Sphere";
+    }
+
+    const size_t slash = key.find_last_of("/\\");
+    return slash == std::string::npos ? key : key.substr(slash + 1);
 }
 
 void registerLoaders()
