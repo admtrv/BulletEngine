@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 
@@ -270,6 +271,10 @@ bool fromString(Node& root, const std::string& text)
 
 bool write(const Node& root, const std::string& path)
 {
+    // path may name folders that are not there yet
+    std::error_code error;
+    std::filesystem::create_directories(std::filesystem::path(path).parent_path(), error);
+
     std::ofstream file(path);
 
     if (!file)

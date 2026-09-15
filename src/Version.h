@@ -6,6 +6,6 @@
 
 namespace BulletEngine {
 
-inline constexpr const char* VERSION = "0.6.0";
+inline constexpr const char* VERSION = "0.7.0";
 
 } // namespace BulletEngine

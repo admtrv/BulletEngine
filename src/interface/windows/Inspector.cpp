@@ -286,7 +286,7 @@ bool Editor::drawValue(const reflect::Field& field, void* instance)
                 // the field types a path, it never mirrors the key a preset carries
                 AssetPath& typed = m_assetPaths[field.getName()];
 
-                if (BulletRender::interface::loadFromFileField(field.getName().c_str(), typed.text, sizeof(typed.text), "path/to/asset"))
+                if (BulletRender::interface::loadFromFileField(field.getName().c_str(), typed.text, sizeof(typed.text), "path/to/asset", ASSET_DRAG_TYPE))
                 {
                     field.set(instance, std::string(typed.text));
 

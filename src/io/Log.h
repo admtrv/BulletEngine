@@ -28,7 +28,7 @@ public:
 
     std::string getText() const;
 
-    // grows with every change, a reader knows its copy went stale
+    // grows on every change, reader knows its copy went stale
     uint32_t getRevision() const;
 
 private:

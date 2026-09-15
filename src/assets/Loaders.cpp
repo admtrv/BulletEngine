@@ -5,6 +5,7 @@
 #include "Loaders.h"
 
 #include "assets/Registry.h"
+#include "project/Project.h"
 
 #include "render/textures/TextureLoader.h"
 #include "scene/models/Model.h"
@@ -16,10 +17,6 @@
 
 namespace BulletEngine {
 namespace assets {
-
-// primitives are spelled out in the key itself, "box:1,1,1"
-constexpr const char* BOX_PREFIX = "box:";
-constexpr const char* SPHERE_PREFIX = "sphere:";
 
 static std::vector<float> parseNumbers(std::string_view text)
 {
@@ -68,7 +65,7 @@ static std::shared_ptr<BulletRender::scene::Model> loadModel(const std::string& 
             : std::make_shared<BulletRender::scene::Sphere>();
     }
 
-    return BulletRender::scene::ModelLoader::instance().load(key);
+    return BulletRender::scene::ModelLoader::instance().load(project::Project::instance().getPath(key));
 }
 
 std::string toLabel(const std::string& key)
@@ -99,7 +96,7 @@ void registerLoaders()
     registry.setLoader<BulletRender::scene::Model>(loadModel);
 
     registry.setLoader<BulletRender::render::Texture2D>([](const std::string& key) {
-        return BulletRender::render::TextureLoader::instance().load(key);
+        return BulletRender::render::TextureLoader::instance().load(project::Project::instance().getPath(key));
     });
 }
 

@@ -6,10 +6,16 @@
 
 #include "interface/elements/Fonts.h"
 #include "interface/elements/Theme.h"
+#include "project/Project.h"
 #include "scene/Serializer.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
+
+#include <cstdio>
+#include <iostream>
+#include <string_view>
+#include <vector>
 
 namespace BulletEngine {
 namespace interface {
@@ -17,8 +23,10 @@ namespace interface {
 constexpr const char* DOCK_ID = "EngineDockSpace";
 constexpr float SIDE_PANEL_FRACTION = 0.20f;
 constexpr float CONSOLE_PANEL_FRACTION = 0.25f;
+constexpr float NAME_FIELD_CHARS = 12.0f;       // save as field width, in font sizes
 
-Editor::Editor(ecs::World& world, ecs::systems::PhysicsSystem& physics) : m_world(world), m_physics(physics) {}
+Editor::Editor(ecs::World& world, ecs::systems::PhysicsSystem& physics, ecs::systems::DebugDrawSystem& debugDraw)
+    : m_world(world), m_physics(physics), m_debugDraw(debugDraw) {}
 
 void Editor::beforeFrame()
 {
@@ -39,6 +47,7 @@ void Editor::draw()
     drawHierarchy();
     drawInspector();
     drawConsole();
+    drawExplorer();
 
     if (m_focusPanel)
     {
@@ -103,6 +112,7 @@ void Editor::buildLayout(unsigned dockId)
     ImGui::DockBuilderDockWindow(HIERARCHY_PANEL, left);
     ImGui::DockBuilderDockWindow(INSPECTOR_PANEL, right);
     ImGui::DockBuilderDockWindow(CONSOLE_PANEL, bottom);
+    ImGui::DockBuilderDockWindow(EXPLORER_PANEL, bottom);
     ImGui::DockBuilderDockWindow(SCENE_PANEL, center);
 
     ImGui::DockBuilderFinish(dockId);
@@ -116,29 +126,113 @@ void Editor::openPanel(bool& shown, const char* name)
     m_focusPanel = name;
 }
 
+// key without extension, path is user's to choose
+std::string Editor::sceneName() const
+{
+    if (m_sceneKey.empty())
+    {
+        return SCENE_DEFAULT_NAME;
+    }
+
+    return m_sceneKey.substr(0, m_sceneKey.size() - std::string_view(SCENE_EXTENSION).size());
+}
+
+void Editor::saveScene(const std::string& key)
+{
+    if (!scene::save(m_world, project::Project::instance().getPath(key)))
+    {
+        std::cerr << "scene save failed: " << key << '\n';
+        return;
+    }
+
+    m_sceneKey = key;
+    project::Project::instance().rescan();
+}
+
+void Editor::drawSceneMenu()
+{
+    if (ImGui::MenuItem("New"))
+    {
+        m_pendingClear = true;
+    }
+
+    if (ImGui::BeginMenu("Open"))
+    {
+        const std::vector<std::string> scenes = project::Project::instance().getKeys(SCENE_EXTENSION);
+
+        if (scenes.empty())
+        {
+            ImGui::TextDisabled("No scenes");
+        }
+
+        for (const std::string& key : scenes)
+        {
+            if (ImGui::MenuItem(key.c_str(), nullptr, key == m_sceneKey))
+            {
+                m_pendingOpen = key;
+            }
+        }
+
+        ImGui::EndMenu();
+    }
+
+    ImGui::Separator();
+
+    // never saved scene has no key to save into
+    if (ImGui::MenuItem("Save", nullptr, false, !m_sceneKey.empty()))
+    {
+        saveScene(m_sceneKey);
+    }
+
+    if (ImGui::BeginMenu("Save As"))
+    {
+        // field opens on current name, ready to edit or keep
+        if (ImGui::IsWindowAppearing())
+        {
+            std::snprintf(m_sceneName, sizeof(m_sceneName), "%s", sceneName().c_str());
+        }
+
+        ImGui::SetNextItemWidth(ImGui::GetFontSize() * NAME_FIELD_CHARS);
+
+        const bool entered = ImGui::InputText("##name", m_sceneName, sizeof(m_sceneName),
+                                              ImGuiInputTextFlags_EnterReturnsTrue);
+
+        ImGui::SameLine();
+
+        if ((ImGui::Button("Save") || entered) && m_sceneName[0])
+        {
+            saveScene(m_sceneName + std::string(SCENE_EXTENSION));
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndMenu();
+    }
+}
+
+void Editor::drawDebugMenu()
+{
+    bool colliders = m_debugDraw.isShowColliders();
+
+    if (ImGui::MenuItem("Visible Colliders", nullptr, &colliders))
+    {
+        m_debugDraw.setShowColliders(colliders);
+    }
+
+    bool physics = m_debugDraw.isShowPhysics();
+
+    if (ImGui::MenuItem("Visible Physics", nullptr, &physics))
+    {
+        m_debugDraw.setShowPhysics(physics);
+    }
+}
+
 void Editor::drawMenuBar()
 {
     if (ImGui::BeginMenuBar())
     {
-        if (ImGui::BeginMenu("File"))
+        if (ImGui::BeginMenu("Scene"))
         {
-            if (ImGui::MenuItem("Save"))
-            {
-                scene::save(m_world, m_scenePath);
-            }
-
-            if (ImGui::MenuItem("Load"))
-            {
-                m_pendingLoad = true;
-            }
-
-            ImGui::Separator();
-
-            if (ImGui::MenuItem("Clear"))
-            {
-                m_pendingClear = true;
-            }
-
+            drawSceneMenu();
             ImGui::EndMenu();
         }
 
@@ -164,6 +258,11 @@ void Editor::drawMenuBar()
                 openPanel(m_showConsole, CONSOLE_PANEL);
             }
 
+            if (ImGui::MenuItem(EXPLORER_PANEL))
+            {
+                openPanel(m_showExplorer, EXPLORER_PANEL);
+            }
+
             ImGui::Separator();
 
             if (ImGui::MenuItem("Reset"))
@@ -172,7 +271,19 @@ void Editor::drawMenuBar()
                 m_showHierarchy = true;
                 m_showInspector = true;
                 m_showConsole = true;
+                m_showExplorer = true;
                 m_layoutBuilt = false;
+            }
+
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Settings"))
+        {
+            if (ImGui::BeginMenu("Debug"))
+            {
+                drawDebugMenu();
+                ImGui::EndMenu();
             }
 
             ImGui::EndMenu();

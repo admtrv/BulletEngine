@@ -19,7 +19,7 @@ if(SANITIZE)
 endif()
 
 # connect BulletRender as library
-set(BULLET_RENDER_BUILD_APP OFF CACHE BOOL "" FORCE)    # disable demo compilation within BulletRender
+set(BULLET_RENDER_BUILD_APP OFF CACHE BOOL "" FORCE)    # disable building BulletRender as standalone app
 add_subdirectory(BulletRender)
 
 # connect BulletPhysics library
@@ -31,19 +31,12 @@ add_executable(BulletEngine ${CMAKE_SOURCE_DIR}/main.cpp ${BULLET_ENGINE_SOURCES
 target_include_directories(BulletEngine PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(BulletEngine PRIVATE BulletRenderLib BulletPhysicsLib)
 
-# copy resources
-add_custom_command(TARGET BulletEngine POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_CURRENT_SOURCE_DIR}/BulletRender/assets
-            $<TARGET_FILE_DIR:BulletEngine>/assets
-    COMMENT "Copying BulletRender assets..."
-)
-
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+# editor resources
+foreach(RESOURCE shaders fonts)
     add_custom_command(TARGET BulletEngine POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-                ${CMAKE_CURRENT_SOURCE_DIR}/assets
-                $<TARGET_FILE_DIR:BulletEngine>/assets
-        COMMENT "Copying BulletEngine assets..."
+                ${CMAKE_CURRENT_SOURCE_DIR}/BulletRender/assets/${RESOURCE}
+                $<TARGET_FILE_DIR:BulletEngine>/assets/${RESOURCE}
+        COMMENT "Copying ${RESOURCE}..."
     )
-endif()
+endforeach()

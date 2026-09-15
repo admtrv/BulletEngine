@@ -5,6 +5,7 @@
 #pragma once
 
 #include "ecs/Ecs.h"
+#include "ecs/systems/DebugDrawSystem.h"
 #include "ecs/systems/PhysicsSystem.h"
 
 #include "interface/elements/TreeView.h"
@@ -20,6 +21,7 @@
 #include <string>
 #include <typeindex>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -27,6 +29,7 @@ namespace BulletEngine {
 
 // fwd
 namespace reflect { class Type; class Field; }
+namespace project { struct Entry; }
 
 namespace interface {
 
@@ -35,6 +38,14 @@ constexpr const char* HIERARCHY_PANEL = "Hierarchy";
 constexpr const char* INSPECTOR_PANEL = "Inspector";
 constexpr const char* SCENE_PANEL = "Scene";
 constexpr const char* CONSOLE_PANEL = "Console";
+constexpr const char* EXPLORER_PANEL = "Explorer";
+
+// keys leaving the explorer, file to asset field or either kind to folder
+constexpr const char* ASSET_DRAG_TYPE = "BE_ASSET";
+constexpr const char* FOLDER_DRAG_TYPE = "BE_FOLDER";
+
+constexpr const char* SCENE_EXTENSION = ".scene";
+constexpr const char* SCENE_DEFAULT_NAME = "NewScene";
 
 // what a new entity comes with
 enum class Preset {
@@ -43,6 +54,7 @@ enum class Preset {
     Sphere
 };
 
+// menu label, also name of spawned entity
 inline std::string toString(Preset preset)
 {
     switch (preset)
@@ -53,7 +65,7 @@ inline std::string toString(Preset preset)
     }
 }
 
-// what an asset field types into, with the last failure to report
+// what an asset field types into, with last failure to report
 struct AssetPath {
     char text[256] = "";
     std::string error;
@@ -62,7 +74,7 @@ struct AssetPath {
 // docked panels driving the world
 class Editor {
 public:
-    Editor(ecs::World& world, ecs::systems::PhysicsSystem& physics);
+    Editor(ecs::World& world, ecs::systems::PhysicsSystem& physics, ecs::systems::DebugDrawSystem& debugDraw);
 
     void draw();
 
@@ -72,7 +84,8 @@ public:
     // size the scene is rendered at, known one frame ahead
     void applySceneSize();
 
-    void setScenePath(std::string path) { m_scenePath = std::move(path); }
+    // scene project opens with, first one it holds or a new one
+    void openFirstScene();
 
     bool isSceneFocused() const { return m_sceneFocused; }
 
@@ -86,9 +99,6 @@ public:
 
     const glm::vec2& getSceneSize() const { return m_sceneSize; }
 
-    // what a spawned entity is drawn with
-    void setDefaultShader(std::shared_ptr<BulletRender::render::GraphicsShader> shader) { m_shader = std::move(shader); }
-
 private:
     // layout
     void drawDockSpace();
@@ -96,6 +106,10 @@ private:
 
     // panels
     void openPanel(bool& shown, const char* name);
+    std::string sceneName() const;
+    void saveScene(const std::string& key);
+    void drawSceneMenu();
+    void drawDebugMenu();
     void drawMenuBar();
     void drawScene();
     void drawHierarchy();
@@ -103,6 +117,10 @@ private:
     void drawInspector();
     void drawAddMenu();
     void drawConsole();
+    void drawExplorer();
+    void applyEntryCommands();
+    void acceptEntryDrop(const std::string& folder);
+    void drawEntry(const project::Entry& entry, bool last);
     bool drawFields(const reflect::Type& type, void* instance);
     bool drawValue(const reflect::Field& field, void* instance);
     bool drawObjectType(const reflect::Field& field, void* instance, const reflect::Type& current);
@@ -115,6 +133,7 @@ private:
     std::vector<ecs::Entity> getChildren(ecs::Entity entity) const;
     ecs::Entity spawnEntity(Preset preset);
     void createEntity(Preset preset);
+    void fillNewScene();
     void destroyEntity(ecs::Entity entity);
     void collectSubtree(ecs::Entity entity, std::vector<ecs::Entity>& out) const;
     void destroySubtree(ecs::Entity entity);
@@ -126,12 +145,15 @@ private:
 
     ecs::World& m_world;
     ecs::systems::PhysicsSystem& m_physics;
+    ecs::systems::DebugDrawSystem& m_debugDraw;
     ecs::Entity m_selection = ecs::INVALID_ENTITY;
 
     BulletRender::interface::TreeView m_tree;
+    BulletRender::interface::TreeView m_explorerTree;
 
-    std::string m_scenePath = "scene.txt";
-    std::shared_ptr<BulletRender::render::GraphicsShader> m_shader;
+    // scene being edited, empty until saved somewhere
+    std::string m_sceneKey;
+    char m_sceneName[128] = "";
 
     // what is typed into an asset field before Load is pressed
     std::unordered_map<std::string, AssetPath> m_assetPaths;
@@ -143,7 +165,7 @@ private:
     std::vector<std::pair<ecs::Entity, const reflect::Type*>> m_pendingAdd;
     std::vector<std::pair<ecs::Entity, std::type_index>> m_pendingRemove;
 
-    bool m_pendingLoad = false;
+    std::string m_pendingOpen;
     bool m_pendingClear = false;
 
     // panel visibility, driven by the windows menu
@@ -151,6 +173,15 @@ private:
     bool m_showHierarchy = true;
     bool m_showInspector = true;
     bool m_showConsole = true;
+    bool m_showExplorer = true;
+
+    // folders user closed, everything else is open
+    std::unordered_set<std::string> m_folded;
+    std::string m_explorerSelection;
+
+    // queued while tree is walked
+    std::pair<std::string, std::string> m_pendingMove;
+    std::string m_pendingDelete;
 
     // the journal as the field sees it, copied when it changes
     std::string m_consoleText;

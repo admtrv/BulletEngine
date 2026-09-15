@@ -4,18 +4,20 @@
 
 #include "interface/Editor.h"
 
+#include "assets/Loaders.h"
+#include "assets/Registry.h"
 #include "ecs/Components.h"
 #include "ecs/systems/HierarchySystem.h"
-#include "interface/elements/Widgets.h"
+#include "project/Project.h"
 #include "reflect/Type.h"
+#include "scene/Serializer.h"
 
-#include "assets/Registry.h"
+#include "interface/elements/Widgets.h"
 #include "scene/models/Model.h"
 
 #include "collision/collider/BoxCollider.h"
-#include "collision/collider/SphereCollider.h"
+#include "collision/collider/GroundCollider.h"
 #include "dynamics/body/Inertia.h"
-#include "scene/Serializer.h"
 
 #include "imgui.h"
 
@@ -26,7 +28,6 @@ namespace interface {
 
 constexpr const char* ENTITY_DRAG_TYPE = "BE_ENTITY";
 constexpr int MAX_TREE_DEPTH = 64;
-constexpr double SPHERE_RADIUS = 0.5;
 
 void Editor::drawHierarchy()
 {
@@ -44,21 +45,18 @@ void Editor::drawHierarchy()
 
     if (ImGui::BeginPopup("entities"))
     {
-        if (ImGui::MenuItem("Box"))
+        // shapes first, bare entity closes the list
+        for (const Preset preset : {Preset::Box, Preset::Sphere, Preset::Empty})
         {
-            createEntity(Preset::Box);
-        }
+            if (preset == Preset::Empty)
+            {
+                ImGui::Separator();
+            }
 
-        if (ImGui::MenuItem("Sphere"))
-        {
-            createEntity(Preset::Sphere);
-        }
-
-        ImGui::Separator();
-
-        if (ImGui::MenuItem("Empty"))
-        {
-            createEntity(Preset::Empty);
+            if (ImGui::MenuItem(toString(preset).c_str()))
+            {
+                createEntity(preset);
+            }
         }
 
         ImGui::EndPopup();
@@ -187,7 +185,7 @@ void Editor::createEntity(Preset preset)
     m_pendingCreate.push_back(preset);
 }
 
-// builds the entity a preset describes, shape and physics included
+// builds what a preset describes, physics is left to inspector
 ecs::Entity Editor::spawnEntity(Preset preset)
 {
     const ecs::Entity entity = m_world.create();
@@ -200,31 +198,61 @@ ecs::Entity Editor::spawnEntity(Preset preset)
         return entity;
     }
 
-    const bool box = preset == Preset::Box;
-
     auto& renderable = m_world.add<ecs::RenderableComponent>(entity);
-    renderable.model = assets::Registry::instance().load<BulletRender::scene::Model>(box ? "box:1,1,1" : "sphere:0.5,32,16");
-    renderable.material.setShader(m_shader);
-
-    auto& rigidBody = m_world.add<ecs::RigidBodyComponent>(entity);
-    rigidBody.body.setMass(1.0);
-
-    auto& collider = m_world.add<ecs::ColliderComponent>(entity);
-
-    if (box)
-    {
-        const BulletPhysics::math::Vec3 size{1.0, 1.0, 1.0};
-
-        rigidBody.body.setInverseInertiaLocal(BulletPhysics::dynamics::inertia::box(1.0, size));
-        collider.collider = std::make_unique<BulletPhysics::collision::collider::BoxCollider>(size);
-    }
-    else
-    {
-        rigidBody.body.setInverseInertiaLocal(BulletPhysics::dynamics::inertia::sphere(1.0, SPHERE_RADIUS));
-        collider.collider = std::make_unique<BulletPhysics::collision::collider::SphereCollider>(SPHERE_RADIUS);
-    }
+    renderable.model = assets::Registry::instance().load<BulletRender::scene::Model>(
+        preset == Preset::Box ? assets::BOX_KEY : assets::SPHERE_KEY);
 
     return entity;
+}
+
+// what empty project starts from, floor and something on it
+void Editor::fillNewScene()
+{
+    {
+        const ecs::Entity entity = m_world.create();
+
+        m_world.add<ecs::NameComponent>(entity).name = "Ground";
+        m_world.add<ecs::TransformComponent>(entity);
+
+        m_world.add<ecs::RigidBodyComponent>(entity).body.setMotionType(BulletPhysics::dynamics::MotionType::Static);
+        m_world.add<ecs::ColliderComponent>(entity).collider =
+            std::make_unique<BulletPhysics::collision::collider::GroundCollider>(0.0);
+    }
+
+    {
+        const BulletPhysics::math::Vec3 size{1.0, 1.0, 1.0};
+        const BulletPhysics::math::Vec3 position{0.0, 0.5, 0.0};
+
+        const ecs::Entity entity = m_world.create();
+
+        m_world.add<ecs::NameComponent>(entity).name = "Cube";
+        m_world.add<ecs::TransformComponent>(entity).transform.setPosition({0.0f, 0.5f, 0.0f});
+
+        m_world.add<ecs::RenderableComponent>(entity).model =
+            assets::Registry::instance().load<BulletRender::scene::Model>(assets::BOX_KEY);
+
+        auto& rigidBody = m_world.add<ecs::RigidBodyComponent>(entity);
+        rigidBody.body.setMass(1.0);
+        rigidBody.body.setPosition(position);
+        rigidBody.body.setInverseInertiaLocal(BulletPhysics::dynamics::inertia::box(1.0, size));
+
+        m_world.add<ecs::ColliderComponent>(entity).collider =
+            std::make_unique<BulletPhysics::collision::collider::BoxCollider>(size);
+    }
+}
+
+void Editor::openFirstScene()
+{
+    const std::vector<std::string> scenes = project::Project::instance().getKeys(SCENE_EXTENSION);
+
+    if (scenes.empty())
+    {
+        fillNewScene();
+        return;
+    }
+
+    m_sceneKey = scenes.front();
+    scene::load(m_world, project::Project::instance().getPath(m_sceneKey));
 }
 
 void Editor::destroyEntity(ecs::Entity entity)
@@ -267,8 +295,8 @@ void Editor::destroySubtree(ecs::Entity entity)
 
 void Editor::applyCommands()
 {
-    // loading replaces the world, so it clears first
-    if (m_pendingClear || m_pendingLoad)
+    // opening replaces world, so it clears first
+    if (m_pendingClear || !m_pendingOpen.empty())
     {
         m_selection = ecs::INVALID_ENTITY;
 
@@ -280,13 +308,19 @@ void Editor::applyCommands()
         m_world.flush();
     }
 
-    if (m_pendingLoad)
+    if (!m_pendingOpen.empty())
     {
-        scene::load(m_world, m_scenePath);
+        m_sceneKey = std::move(m_pendingOpen);
+        scene::load(m_world, project::Project::instance().getPath(m_sceneKey));
+    }
+    else if (m_pendingClear)
+    {
+        m_sceneKey.clear();
+        fillNewScene();
     }
 
+    m_pendingOpen.clear();
     m_pendingClear = false;
-    m_pendingLoad = false;
 
     for (Preset preset : m_pendingCreate)
     {

@@ -16,6 +16,9 @@ namespace systems {
 namespace bpc = BulletPhysics::collision::collider;
 
 static constexpr float GROUND_RADIUS = 1.5f;    // the plane is endless, only a patch of it is hinted
+static constexpr float VELOCITY_SCALE = 0.2f;   // metres per second to arrow length
+static constexpr float CONTACT_LENGTH = 0.5f;
+static constexpr float SLOWEST_SHOWN = 0.1f;    // slower ones clutter the view
 
 static glm::vec3 toGlm(const BulletPhysics::math::Vec3& v)
 {
@@ -29,14 +32,18 @@ static glm::quat toGlmQuat(const BulletPhysics::math::Quat& q)
 
 DebugDrawSystem::DebugDrawSystem(std::shared_ptr<BulletRender::render::Lines> lines) : m_debugDraw(std::move(lines)) {}
 
-void DebugDrawSystem::draw(World& world, Entity selected)
+void DebugDrawSystem::draw(World& world, Entity selected, const std::vector<BulletPhysics::collision::Manifold>& contacts)
 {
-    if (!m_enabled)
+    if (m_showColliders)
     {
-        return;
+        drawColliders(world);
     }
 
-    drawColliders(world);
+    if (m_showPhysics)
+    {
+        drawPhysics(world, contacts);
+    }
+
     drawAxes(world, selected);
 }
 
@@ -86,6 +93,35 @@ void DebugDrawSystem::drawColliders(World& world)
         else if (collider->getShape() == bpc::CollisionShape::Ground)
         {
             m_debugDraw.drawPlane(toGlm(collider->getPosition()), {0.0f, 1.0f, 0.0f}, GROUND_RADIUS, BulletRender::colors::White);
+        }
+    }
+}
+
+// where bodies head and where they touch
+void DebugDrawSystem::drawPhysics(World& world, const std::vector<BulletPhysics::collision::Manifold>& contacts)
+{
+    for (Entity entity : world.getEntities())
+    {
+        const auto* component = world.get<RigidBodyComponent>(entity);
+
+        if (!component || component->body.getVelocity().length() < SLOWEST_SHOWN)
+        {
+            continue;
+        }
+
+        const glm::vec3 from = toGlm(component->body.getPosition());
+        const glm::vec3 to = from + toGlm(component->body.getVelocity()) * VELOCITY_SCALE;
+
+        m_debugDraw.drawArrow(from, to, BulletRender::colors::Green);
+    }
+
+    for (const auto& manifold : contacts)
+    {
+        for (int i = 0; i < manifold.info.pointCount; i++)
+        {
+            const glm::vec3 point = toGlm(manifold.info.points[i].position);
+
+            m_debugDraw.drawArrow(point, point + toGlm(manifold.info.normal) * CONTACT_LENGTH, BulletRender::colors::Red);
         }
     }
 }

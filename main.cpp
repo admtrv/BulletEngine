@@ -13,47 +13,42 @@
 #include "render/Shader.h"
 #include "scene/Camera.h"
 #include "scene/Light.h"
-#include "scene/models/Model.h"
 #include "scene/Scene.h"
-
-// BulletPhysics
-#include "collision/collider/BoxCollider.h"
-#include "collision/collider/GroundCollider.h"
-#include "dynamics/body/Inertia.h"
 
 // BulletEngine
 #include "app/Application.h"
 #include "assets/Loaders.h"
-#include "assets/Registry.h"
-#include "ecs/Components.h"
 #include "ecs/Ecs.h"
 #include "ecs/systems/DebugDrawSystem.h"
 #include "ecs/systems/HierarchySystem.h"
 #include "ecs/systems/InputSystem.h"
 #include "ecs/systems/PhysicsSystem.h"
 #include "ecs/systems/PickSystem.h"
+#include "ecs/systems/ReloadSystem.h"
 #include "ecs/systems/RenderSystem.h"
 #include "interface/Editor.h"
 #include "io/Log.h"
+#include "project/Project.h"
 
 #include <memory>
 
 using namespace BulletEngine;
 
 namespace br = BulletRender;
-namespace bp = BulletPhysics;
-namespace bpc = BulletPhysics::collision;
-namespace bpd = BulletPhysics::dynamics;
 
 static const std::string VERTEX_SHADER_PATH = "assets/shaders/normal.vert.glsl";
 static const std::string FRAGMENT_SHADER_PATH = "assets/shaders/normal.frag.glsl";
 
-static const std::string SCENE_PATH = "scene.txt";
-
-int main()
+int main(int argc, char** argv)
 {
-    // the streams reach the editor from here on, the terminal still gets them
+    // streams reach editor from here on, terminal still gets them
     io::Log::instance().capture();
+
+    // folder editor opens, working one when none is named
+    if (!project::Project::instance().open(argc > 1 ? argv[1] : "."))
+    {
+        return -1;
+    }
 
     // window
     br::app::Loop::setDocking(true);
@@ -89,50 +84,13 @@ int main()
         scene.createLight<br::scene::AmbientLight>()->setIntensity(0.3f);
         scene.createLight<br::scene::DirectionalLight>();
 
-        auto shader = std::make_shared<br::render::GraphicsShader>(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH);
+        br::render::Renderer::setDefaultShader(
+            std::make_shared<br::render::GraphicsShader>(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH));
 
         // world
         assets::registerLoaders();
 
         ecs::World world;
-
-        // ground
-        {
-            auto entity = world.create();
-
-            world.add<ecs::NameComponent>(entity).name = "Ground";
-            world.add<ecs::TransformComponent>(entity);
-
-            world.add<ecs::RigidBodyComponent>(entity).body.setMotionType(bpd::MotionType::Static);
-            world.add<ecs::ColliderComponent>(entity).collider = std::make_unique<bpc::collider::GroundCollider>(0.0);
-        }
-
-        // cube
-        {
-            const bp::math::Vec3 size{1.0, 1.0, 1.0};
-            const bp::math::Vec3 position{0.0, 0.5, 0.0};
-
-            auto entity = world.create();
-
-            world.add<ecs::NameComponent>(entity).name = "Cube";
-
-            auto& transform = world.add<ecs::TransformComponent>(entity);
-            transform.transform.setPosition({
-                static_cast<float>(position.x), static_cast<float>(position.y), static_cast<float>(position.z)
-            });
-
-            auto& renderable = world.add<ecs::RenderableComponent>(entity);
-            renderable.model = assets::Registry::instance().load<br::scene::Model>("box:1,1,1");
-            renderable.material.setShader(shader);
-            renderable.material.setColor({0.8f, 0.8f, 0.8f});
-
-            auto& rigidBody = world.add<ecs::RigidBodyComponent>(entity);
-            rigidBody.body.setMass(1.0);
-            rigidBody.body.setPosition(position);
-            rigidBody.body.setInverseInertiaLocal(bpd::inertia::box(1.0, size));
-
-            world.add<ecs::ColliderComponent>(entity).collider = std::make_unique<bpc::collider::BoxCollider>(size);
-        }
 
         // systems
         ecs::systems::PhysicsSystem physicsSystem;
@@ -142,11 +100,11 @@ int main()
         ecs::systems::RenderSystem renderSystem(scene);
         ecs::systems::DebugDrawSystem debugDrawSystem(lines);
         ecs::systems::PickSystem pickSystem(camera, physicsSystem);
+        ecs::systems::ReloadSystem reloadSystem;
 
         // editor
-        interface::Editor editor(world, physicsSystem);
-        editor.setScenePath(SCENE_PATH);
-        editor.setDefaultShader(shader);
+        interface::Editor editor(world, physicsSystem, debugDrawSystem);
+        editor.openFirstScene();
 
         // phases
         app::Application app;
@@ -162,6 +120,10 @@ int main()
 
             br::utils::Input::instance().update();
         }, 0, "input");
+
+        scheduler.add(app::Phase::PreUpdate, [&reloadSystem](const app::FrameContext& frame) {
+            reloadSystem.update(*frame.world, frame.deltaTime);
+        }, 10, "reload");
 
         scheduler.add(app::Phase::FixedUpdate, [&physicsSystem](const app::FrameContext& frame) {
             physicsSystem.step(*frame.world, frame.fixedDeltaTime);
@@ -185,8 +147,8 @@ int main()
             renderSystem.render(*frame.world);
         }, 0, "scene");
 
-        scheduler.add(app::Phase::Render, [&debugDrawSystem, &editor](const app::FrameContext& frame) {
-            debugDrawSystem.draw(*frame.world, editor.getSelection());
+        scheduler.add(app::Phase::Render, [&debugDrawSystem, &editor, &physicsSystem](const app::FrameContext& frame) {
+            debugDrawSystem.draw(*frame.world, editor.getSelection(), physicsSystem.getContacts());
         }, 10, "debug draw");
 
         // input
@@ -194,10 +156,6 @@ int main()
 
         inputSystem.bind(br::utils::InputKey::ESCAPE, []() {
             br::app::Window::setShouldClose(true);
-        });
-
-        inputSystem.bind(br::utils::InputKey::F2, [&debugDrawSystem]() {
-            debugDrawSystem.setEnabled(!debugDrawSystem.isEnabled());
         });
 
         // loop
