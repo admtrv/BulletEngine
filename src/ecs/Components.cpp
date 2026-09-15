@@ -15,6 +15,7 @@ using namespace BulletEngine::ecs;
 using namespace BulletPhysics::collision;
 using namespace BulletPhysics::collision::collider;
 using namespace BulletRender::render;
+using namespace BulletRender::scene;
 
 // assets
 
@@ -80,6 +81,37 @@ REFLECT(GroundCollider)
     PROPERTY("level", getGroundY, setGroundY)
 END_REFLECT()
 
+// lights, pose comes from the entity transform
+
+REFLECT(Light)
+    PROPERTY("color", getColor, setColor)
+    COLOR()
+    PROPERTY("intensity", getIntensity, setIntensity)
+    PROPERTY("shadow", getCastsShadow, setCastsShadow)
+END_REFLECT()
+
+REFLECT(AmbientLight)
+    LABEL("Ambient")
+    BASE(Light)
+END_REFLECT()
+
+REFLECT(DirectionalLight)
+    LABEL("Directional")
+    BASE(Light)
+END_REFLECT()
+
+REFLECT(PointLight)
+    LABEL("Point")
+    BASE(Light)
+    PROPERTY("range", getRange, setRange)
+END_REFLECT()
+
+REFLECT(SpotLight)
+    LABEL("Spot")
+    BASE(Light)
+    PROPERTY("range", getRange, setRange)
+END_REFLECT()
+
 // components
 
 REFLECT(Component)
@@ -110,6 +142,19 @@ REFLECT(RenderableComponent)
     ASSET()
     PROPERTY("texture", getTextureKey, setTextureKey)
     ASSET()
+END_REFLECT()
+
+REFLECT(CameraComponent)
+    BASE(Component)
+    FIELD("fov", fov)
+    FIELD("near", nearPlane)
+    FIELD("far", farPlane)
+    FIELD("main", main)
+END_REFLECT()
+
+REFLECT(LightComponent)
+    BASE(Component)
+    OBJECT("light", light)
 END_REFLECT()
 
 REFLECT(RigidBodyComponent)

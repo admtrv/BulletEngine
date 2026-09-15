@@ -112,7 +112,7 @@ void loadObject(const Node& node, const reflect::Type& type, void* instance)
     }
 }
 
-bool save(const ecs::World& world, const std::string& path)
+Node toNode(const ecs::World& world)
 {
     Node root;
     root.add(VERSION_NODE).setValue(VERSION);
@@ -135,18 +135,11 @@ bool save(const ecs::World& world, const std::string& path)
         }
     }
 
-    return write(root, path);
+    return root;
 }
 
-bool load(ecs::World& world, const std::string& path)
+void fromNode(ecs::World& world, const Node& root)
 {
-    Node root;
-
-    if (!read(root, path))
-    {
-        return false;
-    }
-
     for (const Node& entityNode : root.getChildren())
     {
         if (entityNode.getName() != ENTITY_NODE)
@@ -176,7 +169,23 @@ bool load(ecs::World& world, const std::string& path)
             world.attach(entity, std::unique_ptr<ecs::Component>(component));
         }
     }
+}
 
+bool save(const ecs::World& world, const std::string& path)
+{
+    return write(toNode(world), path);
+}
+
+bool load(ecs::World& world, const std::string& path)
+{
+    Node root;
+
+    if (!read(root, path))
+    {
+        return false;
+    }
+
+    fromNode(world, root);
     return true;
 }
 

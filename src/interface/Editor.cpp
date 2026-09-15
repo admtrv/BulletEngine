@@ -23,10 +23,17 @@ namespace interface {
 constexpr const char* DOCK_ID = "EngineDockSpace";
 constexpr float SIDE_PANEL_FRACTION = 0.20f;
 constexpr float CONSOLE_PANEL_FRACTION = 0.25f;
+constexpr float VIEW_SPLIT_FRACTION = 0.5f;     // scene and game share the middle
 constexpr float NAME_FIELD_CHARS = 12.0f;       // save as field width, in font sizes
 
+// where scene panel starts looking from
+constexpr glm::vec3 EDITOR_CAMERA_POSITION{0.0f, 5.0f, 6.0f};
+constexpr float EDITOR_CAMERA_YAW = -90.0f;
+constexpr float EDITOR_CAMERA_PITCH = -35.0f;
+
 Editor::Editor(ecs::World& world, ecs::systems::PhysicsSystem& physics, ecs::systems::DebugDrawSystem& debugDraw)
-    : m_world(world), m_physics(physics), m_debugDraw(debugDraw) {}
+    : m_world(world), m_physics(physics), m_debugDraw(debugDraw),
+      m_camera(std::make_unique<BulletRender::scene::FlyCamera>(EDITOR_CAMERA_POSITION, EDITOR_CAMERA_YAW, EDITOR_CAMERA_PITCH)) {}
 
 void Editor::beforeFrame()
 {
@@ -44,6 +51,7 @@ void Editor::draw()
     drawDockSpace();
 
     drawScene();
+    drawGame();
     drawHierarchy();
     drawInspector();
     drawConsole();
@@ -113,7 +121,11 @@ void Editor::buildLayout(unsigned dockId)
     ImGui::DockBuilderDockWindow(INSPECTOR_PANEL, right);
     ImGui::DockBuilderDockWindow(CONSOLE_PANEL, bottom);
     ImGui::DockBuilderDockWindow(EXPLORER_PANEL, bottom);
+    // two views split what is left, scene left and game right
+    const ImGuiID game = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, VIEW_SPLIT_FRACTION, nullptr, &center);
+
     ImGui::DockBuilderDockWindow(SCENE_PANEL, center);
+    ImGui::DockBuilderDockWindow(GAME_PANEL, game);
 
     ImGui::DockBuilderFinish(dockId);
 }
@@ -167,7 +179,7 @@ void Editor::drawSceneMenu()
 
         for (const std::string& key : scenes)
         {
-            if (ImGui::MenuItem(key.c_str(), nullptr, key == m_sceneKey))
+            if (ImGui::MenuItem(key.c_str()) && key != m_sceneKey)
             {
                 m_pendingOpen = key;
             }
@@ -224,6 +236,60 @@ void Editor::drawDebugMenu()
     {
         m_debugDraw.setShowPhysics(physics);
     }
+
+    bool lights = m_debugDraw.isShowLights();
+
+    if (ImGui::MenuItem("Visible Lights", nullptr, &lights))
+    {
+        m_debugDraw.setShowLights(lights);
+    }
+
+    bool cameras = m_debugDraw.isShowCameras();
+
+    if (ImGui::MenuItem("Visible Cameras", nullptr, &cameras))
+    {
+        m_debugDraw.setShowCameras(cameras);
+    }
+}
+
+// play takes a snapshot, stop puts the world back
+void Editor::setMode(Mode mode)
+{
+    if (mode == m_mode)
+    {
+        return;
+    }
+
+    if (mode == Mode::Play)
+    {
+        m_snapshot = scene::toNode(m_world);
+    }
+    else
+    {
+        m_selection = ecs::INVALID_ENTITY;
+
+        m_world.clear();
+        m_world.flush();
+        scene::fromNode(m_world, m_snapshot);
+    }
+
+    m_mode = mode;
+}
+
+void Editor::drawPlayBar()
+{
+    const char* label = isPlaying() ? "Stop" : "Play";
+    const float cursor = ImGui::GetCursorPosX();
+
+    // button sits mid bar, menus after it carry on from where they were
+    ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(label).x) * 0.5f);
+
+    if (ImGui::MenuItem(label))
+    {
+        setMode(isPlaying() ? Mode::Edit : Mode::Play);
+    }
+
+    ImGui::SetCursorPosX(cursor);
 }
 
 void Editor::drawMenuBar()
@@ -241,6 +307,11 @@ void Editor::drawMenuBar()
             if (ImGui::MenuItem(SCENE_PANEL))
             {
                 openPanel(m_showScene, SCENE_PANEL);
+            }
+
+            if (ImGui::MenuItem(GAME_PANEL))
+            {
+                openPanel(m_showGame, GAME_PANEL);
             }
 
             if (ImGui::MenuItem(HIERARCHY_PANEL))
@@ -268,6 +339,7 @@ void Editor::drawMenuBar()
             if (ImGui::MenuItem("Reset"))
             {
                 m_showScene = true;
+                m_showGame = true;
                 m_showHierarchy = true;
                 m_showInspector = true;
                 m_showConsole = true;
@@ -277,6 +349,8 @@ void Editor::drawMenuBar()
 
             ImGui::EndMenu();
         }
+
+        drawPlayBar();
 
         if (ImGui::BeginMenu("Settings"))
         {

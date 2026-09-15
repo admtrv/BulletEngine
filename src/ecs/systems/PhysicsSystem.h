@@ -22,6 +22,7 @@ public:
     // simulation
     void update(World& world, float dt);    // own clock, runs as many steps as frame owes
     void step(World& world, float dt);      // one step, paced from outside
+    void sync(World& world, bool adoptPoses = true);    // colliders reach physics world, poses follow unless running
 
     // contents
     void watch(World& world);                   // drops bodies as their entities die
@@ -35,7 +36,6 @@ public:
     bool raycast(const BulletPhysics::collision::Ray& ray, BulletPhysics::collision::RayHit& outHit) const { return m_physicsWorld.raycast(ray, outHit); }
 
 private:
-    void syncBodies(World& world);
     void publishTransforms(World& world);
 
     BulletPhysics::dynamics::PhysicsWorld m_physicsWorld;

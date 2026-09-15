@@ -33,6 +33,7 @@ public:
 
     // marked now and dropped by flush
     void destroy(Entity entity);
+    void clear();               // all at once, walking getEntities while destroying would skip half
     void flush();
 
     // called with each entity right before its components go

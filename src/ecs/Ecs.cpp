@@ -37,6 +37,12 @@ void World::destroy(Entity entity)
     m_destroyed.push_back(entity);
 }
 
+void World::clear()
+{
+    m_destroyed.insert(m_destroyed.end(), m_entities.begin(), m_entities.end());
+    m_entities.clear();
+}
+
 void World::flush()
 {
     for (Entity entity : m_destroyed)

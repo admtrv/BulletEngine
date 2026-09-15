@@ -13,21 +13,33 @@ RenderSystem::RenderSystem(BulletRender::scene::Scene& scene) : m_scene(scene) {
 void RenderSystem::render(World& world)
 {
     m_scene.clearObjects();
+    m_scene.clearLights();
 
-    for (auto entity : world.getEntities())
+    for (Entity entity : world.getEntities())
     {
         auto* transformComponent = world.get<TransformComponent>(entity);
-        auto* renderableComponent = world.get<RenderableComponent>(entity);
 
-        if (!transformComponent || !renderableComponent || !renderableComponent->model)
+        if (!transformComponent)
         {
             continue;
         }
 
-        auto* object = m_scene.addObject(renderableComponent->model.getShared());
+        const glm::mat4& matrix = transformComponent->transform.getMatrix();
 
-        object->getMaterial() = renderableComponent->material;
-        object->getTransform().setMatrix(transformComponent->transform.getMatrix());
+        if (auto* renderable = world.get<RenderableComponent>(entity); renderable && renderable->model)
+        {
+            auto* object = m_scene.addObject(renderable->model.getShared());
+
+            object->getMaterial() = renderable->material;
+            object->getTransform().setMatrix(matrix);
+        }
+
+        // scene shares the light component holds, entity pose places it
+        if (auto* lightComponent = world.get<LightComponent>(entity); lightComponent && lightComponent->light)
+        {
+            lightComponent->light->getTransform().setMatrix(matrix);
+            m_scene.addLight(lightComponent->light);
+        }
     }
 }
 

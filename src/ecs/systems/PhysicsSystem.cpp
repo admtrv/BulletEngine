@@ -25,7 +25,7 @@ void PhysicsSystem::detach(World& world, Entity entity)
 
 void PhysicsSystem::update(World& world, float dt)
 {
-    syncBodies(world);
+    sync(world, false);
 
     // physics keeps its own clock, frame time only says how much of it passed
     m_physicsWorld.update(dt);
@@ -35,14 +35,14 @@ void PhysicsSystem::update(World& world, float dt)
 
 void PhysicsSystem::step(World& world, float dt)
 {
-    syncBodies(world);
+    sync(world, false);
 
     m_physicsWorld.step(dt);
 
     publishTransforms(world);
 }
 
-void PhysicsSystem::syncBodies(World& world)
+void PhysicsSystem::sync(World& world, bool adoptPoses)
 {
     std::unordered_set<const BulletPhysics::dynamics::RigidBody*> alive;
 
@@ -55,6 +55,16 @@ void PhysicsSystem::syncBodies(World& world)
         }
 
         alive.insert(&rigidBodyComponent->body);
+
+        // transform owns the pose, simulation takes over once it runs
+        if (const auto* transformComponent = world.get<TransformComponent>(entity); transformComponent && adoptPoses)
+        {
+            const glm::vec3 position = transformComponent->transform.getPosition();
+            const glm::quat rotation = transformComponent->transform.getRotation();
+
+            rigidBodyComponent->body.setPosition({position.x, position.y, position.z});
+            rigidBodyComponent->body.setOrientation({rotation.w, rotation.x, rotation.y, rotation.z});
+        }
 
         auto* colliderComponent = world.get<ColliderComponent>(entity);
         auto* collider = colliderComponent ? colliderComponent->collider.get() : nullptr;

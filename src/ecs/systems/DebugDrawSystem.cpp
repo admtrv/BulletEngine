@@ -5,9 +5,12 @@
 #include "DebugDrawSystem.h"
 
 #include "Colors.h"
+#include "render/Renderer.h"
 
 #include "collision/collider/BoxCollider.h"
 #include "collision/collider/SphereCollider.h"
+
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace BulletEngine {
 namespace ecs {
@@ -19,6 +22,8 @@ static constexpr float GROUND_RADIUS = 1.5f;    // the plane is endless, only a 
 static constexpr float VELOCITY_SCALE = 0.2f;   // metres per second to arrow length
 static constexpr float CONTACT_LENGTH = 0.5f;
 static constexpr float SLOWEST_SHOWN = 0.1f;    // slower ones clutter the view
+
+static const glm::vec3 UP{0.0f, 1.0f, 0.0f};
 
 static glm::vec3 toGlm(const BulletPhysics::math::Vec3& v)
 {
@@ -42,6 +47,16 @@ void DebugDrawSystem::draw(World& world, Entity selected, const std::vector<Bull
     if (m_showPhysics)
     {
         drawPhysics(world, contacts);
+    }
+
+    if (m_showLights)
+    {
+        drawLights(world);
+    }
+
+    if (m_showCameras)
+    {
+        drawCameras(world);
     }
 
     drawAxes(world, selected);
@@ -92,7 +107,7 @@ void DebugDrawSystem::drawColliders(World& world)
         }
         else if (collider->getShape() == bpc::CollisionShape::Ground)
         {
-            m_debugDraw.drawPlane(toGlm(collider->getPosition()), {0.0f, 1.0f, 0.0f}, GROUND_RADIUS, BulletRender::colors::White);
+            m_debugDraw.drawPlane(toGlm(collider->getPosition()), UP, GROUND_RADIUS, BulletRender::colors::White);
         }
     }
 }
@@ -123,6 +138,39 @@ void DebugDrawSystem::drawPhysics(World& world, const std::vector<BulletPhysics:
 
             m_debugDraw.drawArrow(point, point + toGlm(manifold.info.normal) * CONTACT_LENGTH, BulletRender::colors::Red);
         }
+    }
+}
+
+void DebugDrawSystem::drawLights(World& world)
+{
+    for (Entity entity : world.getEntities())
+    {
+        const auto* component = world.get<LightComponent>(entity);
+
+        if (component && component->light)
+        {
+            m_debugDraw.drawLight(*component->light);
+        }
+    }
+}
+
+void DebugDrawSystem::drawCameras(World& world)
+{
+    for (Entity entity : world.getEntities())
+    {
+        const auto* camera = world.get<CameraComponent>(entity);
+        const auto* transform = world.get<TransformComponent>(entity);
+
+        if (!camera || !transform)
+        {
+            continue;
+        }
+
+        // view is built from pose alone, scale would bend the frustum
+        const glm::vec3 position = transform->transform.getPosition();
+
+        m_debugDraw.drawFrustum(glm::lookAt(position, position + transform->transform.getForward(), UP),
+                                BulletRender::render::Renderer::getAspect());
     }
 }
 

@@ -12,7 +12,6 @@
 #include "render/Renderer.h"
 #include "render/Shader.h"
 #include "scene/Camera.h"
-#include "scene/Light.h"
 #include "scene/Scene.h"
 
 // BulletEngine
@@ -52,7 +51,7 @@ int main(int argc, char** argv)
 
     // window
     br::app::Loop::setDocking(true);
-    br::render::Renderer::setOffscreen(true);
+    br::app::Loop::setDrawScene(false);      // editor draws the scene into its panels
 
     br::app::WindowConfig windowCfg{1600, 900, "BulletEngine", true, true};
     if (!br::app::Window::init(windowCfg))
@@ -69,20 +68,16 @@ int main(int argc, char** argv)
         auto lines = std::make_shared<br::render::Lines>(1.5f);
         lines->setDepthTest(false);     // gizmos stay visible through geometry
 
-        br::render::Renderer::registerPrePass(std::make_shared<br::render::Grid>());
-        br::render::Renderer::registerPrePass(std::make_shared<br::render::WorldAxis>());
+        auto grid = std::make_shared<br::render::Grid>();
+        auto worldAxis = std::make_shared<br::render::WorldAxis>();
+
+        br::render::Renderer::registerPrePass(grid);
+        br::render::Renderer::registerPrePass(worldAxis);
         br::render::Renderer::registerOverlayPass(lines);
         br::render::Renderer::registerPostPass(std::make_shared<br::render::Fog>(true, 20.0f, 70.0f));
 
         // scene
         br::scene::Scene scene;
-
-        br::scene::FlyCamera& camera = *scene.createCamera<br::scene::FlyCamera>(
-            glm::vec3{0.0f, 5.0f, 6.0f}, -90.0f, -35.0f
-        );
-
-        scene.createLight<br::scene::AmbientLight>()->setIntensity(0.3f);
-        scene.createLight<br::scene::DirectionalLight>();
 
         br::render::Renderer::setDefaultShader(
             std::make_shared<br::render::GraphicsShader>(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH));
@@ -99,12 +94,20 @@ int main(int argc, char** argv)
         ecs::systems::HierarchySystem hierarchySystem;
         ecs::systems::RenderSystem renderSystem(scene);
         ecs::systems::DebugDrawSystem debugDrawSystem(lines);
-        ecs::systems::PickSystem pickSystem(camera, physicsSystem);
         ecs::systems::ReloadSystem reloadSystem;
 
         // editor
         interface::Editor editor(world, physicsSystem, debugDrawSystem);
+
+        // its own tools, the game view goes without them
+        editor.addEditorPass(grid);
+        editor.addEditorPass(worldAxis);
+        editor.addEditorPass(lines);
+
         editor.openFirstScene();
+
+        // picking looks through the camera editor owns
+        ecs::systems::PickSystem pickSystem(editor.getCamera(), physicsSystem);
 
         // phases
         app::Application app;
@@ -112,10 +115,10 @@ int main(int argc, char** argv)
 
         app::Scheduler& scheduler = app.getScheduler();
 
-        scheduler.add(app::Phase::PreUpdate, [&camera, &editor](const app::FrameContext& frame) {
+        scheduler.add(app::Phase::PreUpdate, [&editor](const app::FrameContext& frame) {
             if (editor.isSceneFocused())
             {
-                camera.update(frame.deltaTime);
+                editor.getCamera().update(frame.deltaTime);
             }
 
             br::utils::Input::instance().update();
@@ -125,8 +128,16 @@ int main(int argc, char** argv)
             reloadSystem.update(*frame.world, frame.deltaTime);
         }, 10, "reload");
 
-        scheduler.add(app::Phase::FixedUpdate, [&physicsSystem](const app::FrameContext& frame) {
-            physicsSystem.step(*frame.world, frame.fixedDeltaTime);
+        scheduler.add(app::Phase::FixedUpdate, [&physicsSystem, &editor](const app::FrameContext& frame) {
+            // idle world still keeps physics in step, picking casts rays into it
+            if (editor.isPlaying())
+            {
+                physicsSystem.step(*frame.world, frame.fixedDeltaTime);
+            }
+            else
+            {
+                physicsSystem.sync(*frame.world);
+            }
         }, 0, "physics");
 
         scheduler.add(app::Phase::PostUpdate, [&pickSystem, &editor](const app::FrameContext& frame) {
@@ -163,9 +174,8 @@ int main(int argc, char** argv)
         loop.setBeforeFrame([&editor]() { editor.beforeFrame(); });
 
         loop.run([&](float dt) {
-            editor.applySceneSize();
-
             app.tick(dt);
+            editor.renderViews(scene);
             editor.draw();
 
             world.flush();

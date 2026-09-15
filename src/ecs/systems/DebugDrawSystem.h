@@ -17,7 +17,7 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-// draws what physics sees
+// gizmos over the scene, each layer on its own
 class DebugDrawSystem {
 public:
     explicit DebugDrawSystem(std::shared_ptr<BulletRender::render::Lines> lines);
@@ -31,15 +31,25 @@ public:
     bool isShowPhysics() const { return m_showPhysics; }
     void setShowPhysics(bool show) { m_showPhysics = show; }
 
+    bool isShowLights() const { return m_showLights; }
+    void setShowLights(bool show) { m_showLights = show; }
+
+    bool isShowCameras() const { return m_showCameras; }
+    void setShowCameras(bool show) { m_showCameras = show; }
+
 private:
     void drawColliders(World& world);
     void drawPhysics(World& world, const std::vector<BulletPhysics::collision::Manifold>& contacts);
+    void drawLights(World& world);
+    void drawCameras(World& world);
     void drawAxes(World& world, Entity selected);
 
     BulletRender::render::DebugDraw m_debugDraw;
 
     bool m_showColliders = false;
     bool m_showPhysics = false;
+    bool m_showLights = true;
+    bool m_showCameras = true;
 };
 
 } // namespace systems

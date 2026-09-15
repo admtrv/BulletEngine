@@ -11,7 +11,12 @@
 #include "interface/elements/TreeView.h"
 #include "interface/elements/Widgets.h"
 #include "reflect/Value.h"
+#include "scene/Archive.h"
+#include "render/buffers/FrameBuffer.h"
+#include "render/passes/RenderPass.h"
 #include "render/Shader.h"
+#include "scene/Camera.h"
+#include "scene/Scene.h"
 
 #include "imgui.h"
 
@@ -37,6 +42,7 @@ namespace interface {
 constexpr const char* HIERARCHY_PANEL = "Hierarchy";
 constexpr const char* INSPECTOR_PANEL = "Inspector";
 constexpr const char* SCENE_PANEL = "Scene";
+constexpr const char* GAME_PANEL = "Game";
 constexpr const char* CONSOLE_PANEL = "Console";
 constexpr const char* EXPLORER_PANEL = "Explorer";
 
@@ -46,6 +52,12 @@ constexpr const char* FOLDER_DRAG_TYPE = "BE_FOLDER";
 
 constexpr const char* SCENE_EXTENSION = ".scene";
 constexpr const char* SCENE_DEFAULT_NAME = "NewScene";
+
+// what editor is doing with the world
+enum class Mode {
+    Edit,       // scene stands still, ready to arrange
+    Play        // physics and scripts run, changes dropped on stop
+};
 
 // what a new entity comes with
 enum class Preset {
@@ -81,11 +93,20 @@ public:
     // runs between frames, once imgui context exists
     void beforeFrame();
 
-    // size the scene is rendered at, known one frame ahead
-    void applySceneSize();
+    // draws open panels, each into its own texture
+    void renderViews(BulletRender::scene::Scene& scene);
+
+    // what only scene panel shows, grid, axis and gizmos
+    void addEditorPass(std::shared_ptr<BulletRender::render::IRenderPass> pass) { m_editorPasses.push_back(std::move(pass)); }
 
     // scene project opens with, first one it holds or a new one
     void openFirstScene();
+
+    // world only advances while playing
+    bool isPlaying() const { return m_mode == Mode::Play; }
+
+    // what scene panel looks through, editor owns it so scenes never carry it
+    BulletRender::scene::FlyCamera& getCamera() { return *m_camera; }
 
     bool isSceneFocused() const { return m_sceneFocused; }
 
@@ -110,8 +131,11 @@ private:
     void saveScene(const std::string& key);
     void drawSceneMenu();
     void drawDebugMenu();
+    void setMode(Mode mode);
+    void drawPlayBar();
     void drawMenuBar();
     void drawScene();
+    void drawGame();
     void drawHierarchy();
     void drawEntityNode(ecs::Entity entity, bool last, int depth);
     void drawInspector();
@@ -151,6 +175,11 @@ private:
     BulletRender::interface::TreeView m_tree;
     BulletRender::interface::TreeView m_explorerTree;
 
+    Mode m_mode = Mode::Edit;
+
+    // world before play began, what stop restores
+    scene::Node m_snapshot;
+
     // scene being edited, empty until saved somewhere
     std::string m_sceneKey;
     char m_sceneName[128] = "";
@@ -170,6 +199,7 @@ private:
 
     // panel visibility, driven by the windows menu
     bool m_showScene = true;
+    bool m_showGame = true;
     bool m_showHierarchy = true;
     bool m_showInspector = true;
     bool m_showConsole = true;
@@ -195,9 +225,24 @@ private:
     bool m_themeApplied = false;
     bool m_layoutBuilt = false;
 
+    // passes the game view does without
+    std::vector<std::shared_ptr<BulletRender::render::IRenderPass>> m_editorPasses;
+
+    // what each panel draws into, sized to fill it
+    std::unique_ptr<BulletRender::render::FrameBuffer> m_sceneView;
+    std::unique_ptr<BulletRender::render::FrameBuffer> m_gameView;
+
     glm::vec2 m_sceneSize{0.0f, 0.0f};
+    glm::vec2 m_gameSize{0.0f, 0.0f};
+
     bool m_sceneFocused = false;
     glm::vec2 m_scenePick{-1.0f, -1.0f};
+
+    // what scene panel looks through, editor owns it so scenes never carry it
+    std::unique_ptr<BulletRender::scene::FlyCamera> m_camera;
+
+    // what game panel looks through, driven by camera entity
+    std::shared_ptr<BulletRender::scene::StaticCamera> m_gameCamera;
 };
 
 } // namespace interface

@@ -17,6 +17,10 @@ namespace reflect { class Type; }
 
 namespace scene {
 
+// world as a tree, what a file is written from and read into
+Node toNode(const ecs::World& world);
+void fromNode(ecs::World& world, const Node& root);
+
 bool save(const ecs::World& world, const std::string& path);
 bool load(ecs::World& world, const std::string& path);
 

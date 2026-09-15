@@ -7,6 +7,7 @@
 #include "assets/Handle.h"
 #include "ecs/Ecs.h"
 
+#include "scene/Light.h"
 #include "scene/Transform.h"
 #include "scene/models/Model.h"
 #include "render/Material.h"
@@ -45,6 +46,22 @@ public:
 
     const std::string& getTextureKey() const { return texture.getKey(); }
     void setTextureKey(const std::string& key);
+};
+
+// what the game looks through, entity transform places it
+class CameraComponent : public Component {
+public:
+    float fov = 60.0f;
+    float nearPlane = 0.1f;
+    float farPlane = 500.0f;
+
+    // one camera renders, first found when none is marked
+    bool main = false;
+};
+
+class LightComponent : public Component {
+public:
+    std::shared_ptr<BulletRender::scene::Light> light;
 };
 
 class RigidBodyComponent : public Component {

@@ -13,6 +13,7 @@
 #include "scene/Serializer.h"
 
 #include "interface/elements/Widgets.h"
+#include "scene/Light.h"
 #include "scene/models/Model.h"
 
 #include "collision/collider/BoxCollider.h"
@@ -28,6 +29,8 @@ namespace interface {
 
 constexpr const char* ENTITY_DRAG_TYPE = "BE_ENTITY";
 constexpr int MAX_TREE_DEPTH = 64;
+constexpr float AMBIENT_INTENSITY = 0.3f;   // fill light, directional one does the shaping
+constexpr float LIGHT_HEIGHT = 5.0f;        // sun stands off the scene, gizmo has to clear it
 
 void Editor::drawHierarchy()
 {
@@ -205,9 +208,36 @@ ecs::Entity Editor::spawnEntity(Preset preset)
     return entity;
 }
 
-// what empty project starts from, floor and something on it
+// what empty project starts from, floor, something on it and light
 void Editor::fillNewScene()
 {
+    {
+        const ecs::Entity entity = m_world.create();
+
+        m_world.add<ecs::NameComponent>(entity).name = "Ambient Light";
+        m_world.add<ecs::TransformComponent>(entity);
+
+        auto light = std::make_shared<BulletRender::scene::AmbientLight>();
+        light->setIntensity(AMBIENT_INTENSITY);
+
+        m_world.add<ecs::LightComponent>(entity).light = std::move(light);
+    }
+
+    {
+        const ecs::Entity entity = m_world.create();
+
+        m_world.add<ecs::NameComponent>(entity).name = "Directional Light";
+
+        // light points the way entity faces, default direction sets that pose
+        auto& transform = m_world.add<ecs::TransformComponent>(entity);
+
+        auto light = std::make_shared<BulletRender::scene::DirectionalLight>();
+        transform.transform.setRotation(light->getTransform().getRotation());
+        transform.transform.setPosition(LIGHT_HEIGHT * light->getDirection());
+
+        m_world.add<ecs::LightComponent>(entity).light = std::move(light);
+    }
+
     {
         const ecs::Entity entity = m_world.create();
 
@@ -300,11 +330,7 @@ void Editor::applyCommands()
     {
         m_selection = ecs::INVALID_ENTITY;
 
-        for (ecs::Entity entity : m_world.getEntities())
-        {
-            m_world.destroy(entity);
-        }
-
+        m_world.clear();
         m_world.flush();
     }
 
