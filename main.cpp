@@ -97,6 +97,7 @@ int main(int argc, char** argv)
         ecs::systems::DebugDrawSystem debugDrawSystem(lines);
         ecs::systems::ReloadSystem reloadSystem;
         ecs::systems::ScriptSystem scriptSystem;
+        scriptSystem.observe(world);
 
         // editor
         interface::Editor editor(world, physicsSystem, debugDrawSystem);
@@ -144,6 +145,15 @@ int main(int argc, char** argv)
         scheduler.add(app::Phase::Update, [&scriptSystem](const app::FrameContext& frame) {
             scriptSystem.update(*frame.world, frame.deltaTime);
         }, 0, "scripts");
+
+        // forces land before the step that reads them
+        scheduler.add(app::Phase::FixedUpdate, [&scriptSystem](const app::FrameContext& frame) {
+            scriptSystem.fixedUpdate(*frame.world, frame.fixedDeltaTime);
+        }, -10, "scripts fixed");
+
+        scheduler.add(app::Phase::PostUpdate, [&scriptSystem](const app::FrameContext& frame) {
+            scriptSystem.lateUpdate(*frame.world, frame.deltaTime);
+        }, 0, "scripts late");
 
         scheduler.add(app::Phase::FixedUpdate, [&physicsSystem, &editor](const app::FrameContext& frame) {
             // idle world still keeps physics in step, picking casts rays into it

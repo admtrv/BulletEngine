@@ -14,6 +14,11 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
+// what script may define, order matches Callback
+constexpr const char* CALLBACK_NAMES[] = {"onStart", "onUpdate", "onFixedUpdate", "onLateUpdate", "onDestroy"};
+
+// machine
+
 ScriptSystem::ScriptSystem()
 {
     m_lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
@@ -84,13 +89,36 @@ void ScriptSystem::attach(World& world, Entity entity)
     environment["entity"] = entity;
     bindComponents(environment, world, entity);
 
-    if (sol::protected_function start = environment["start"]; start.valid())
+    Instance instance{environment, {}};
+
+    for (size_t i = 0; i < static_cast<size_t>(Callback::Count); i++)
     {
-        start();
+        instance.callbacks[i] = environment[CALLBACK_NAMES[i]];
     }
 
-    m_instances.emplace(entity, Instance{environment, environment["update"]});
+    call(instance, Callback::Start);
+    m_instances.emplace(entity, std::move(instance));
 }
+
+// world
+
+void ScriptSystem::observe(World& world)
+{
+    world.addListener([this](Entity entity) {
+        const auto it = m_instances.find(entity);
+
+        if (it == m_instances.end())
+        {
+            return;
+        }
+
+        // components are still there, script may read them one last time
+        call(it->second, Callback::Destroy);
+        m_instances.erase(it);
+    });
+}
+
+// play
 
 void ScriptSystem::start(World& world)
 {
@@ -109,49 +137,81 @@ void ScriptSystem::start(World& world)
 
 void ScriptSystem::stop()
 {
+    // whatever the world listener did not take, ends here
+    for (auto& [entity, instance] : m_instances)
+    {
+        call(instance, Callback::Destroy);
+    }
+
     m_running = false;
     m_instances.clear();
 }
 
+// frame
+
 void ScriptSystem::update(World& world, float dt)
+{
+    // entities spawned since last frame get script here, dispatch checks the rest
+    if (m_running)
+    {
+        for (Entity entity : world.getEntities())
+        {
+            attach(world, entity);
+        }
+    }
+
+    dispatch(world, Callback::Update, dt);
+}
+
+void ScriptSystem::fixedUpdate(World& world, float dt)
+{
+    dispatch(world, Callback::FixedUpdate, dt);
+}
+
+void ScriptSystem::lateUpdate(World& world, float dt)
+{
+    dispatch(world, Callback::LateUpdate, dt);
+}
+
+// calls
+
+void ScriptSystem::dispatch(World& world, Callback callback, float dt)
 {
     if (!m_running)
     {
         return;
     }
 
-    // entities spawned since last frame get script here
-    for (Entity entity : world.getEntities())
+    for (auto& [entity, instance] : m_instances)
     {
-        attach(world, entity);
+        // script may destroy entity mid frame, instance waits for flush
+        if (world.isAlive(entity))
+        {
+            call(instance, callback, dt);
+        }
+    }
+}
+
+void ScriptSystem::call(Instance& instance, Callback callback, float dt)
+{
+    sol::protected_function& function = instance.callbacks[static_cast<size_t>(callback)];
+
+    if (!function.valid())
+    {
+        return;
     }
 
-    for (auto it = m_instances.begin(); it != m_instances.end(); )
+    // per frame callbacks take time, start and destroy take nothing
+    const bool timed = callback != Callback::Start && callback != Callback::Destroy;
+    const sol::protected_function_result result = timed ? function(dt) : function();
+
+    if (!result.valid())
     {
-        // destroyed entity takes instance, id may come back on new one
-        if (!world.isAlive(it->first))
-        {
-            it = m_instances.erase(it);
-            continue;
-        }
+        std::cerr << "script error in " << CALLBACK_NAMES[static_cast<size_t>(callback)]
+                  << ": " << result.get<sol::error>().what() << '\n';
 
-        Instance& instance = it->second;
-        ++it;
-
-        if (!instance.update.valid())
-        {
-            continue;
-        }
-
-        const sol::protected_function_result result = instance.update(dt);
-
-        if (!result.valid())
-        {
-            std::cerr << "script error: " << result.get<sol::error>().what() << '\n';
-
-            // broken update would repeat every frame, runs once and stops
-            instance.update = sol::protected_function();
-        }
+        // throwing callback would repeat every frame, runs once and stops
+        function = sol::protected_function();
     }
 }
 

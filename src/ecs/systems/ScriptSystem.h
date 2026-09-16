@@ -19,26 +19,45 @@ class ScriptSystem {
 public:
     ScriptSystem();
 
-    // play began, compiles what world holds
-    void start(World& world);
+    // world
+    void observe(World& world);             // onDestroy needs components still standing
 
-    // play ended, instances go
-    void stop();
+    // play
+    void start(World& world);               // compiles what world holds
+    void stop();                            // instances go
 
-    // compiles entities spawned since last frame, then updates all
-    void update(World& world, float dt);
+    // frame, one per phase
+    void update(World& world, float dt);        // compiles entities spawned since last frame, then onUpdate
+    void fixedUpdate(World& world, float dt);   // in step with physics, where forces belong
+    void lateUpdate(World& world, float dt);    // after everything moved, where followers belong
 
 private:
+    // types
+
+    // what script may define, names live in CALLBACK_NAMES
+    enum class Callback : uint8_t {
+        Start,
+        Update,
+        FixedUpdate,
+        LateUpdate,
+        Destroy,
+
+        Count
+    };
+
     // one entity, own copy of script globals
     struct Instance {
         sol::environment environment;
-        sol::protected_function update;
+        sol::protected_function callbacks[static_cast<size_t>(Callback::Count)];
     };
 
-    void bind();
+    // machine
+    void bind();                                        // what every script sees
+    void attach(World& world, Entity entity);           // compiles one, skips one already compiled
 
-    // compiles script of one entity, skips one already compiled
-    void attach(World& world, Entity entity);
+    // calls
+    void dispatch(World& world, Callback callback, float dt);       // one callback on every live instance
+    void call(Instance& instance, Callback callback, float dt = 0.0f);
 
     sol::state m_lua;
     std::unordered_map<Entity, Instance> m_instances;
