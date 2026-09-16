@@ -43,6 +43,7 @@ public:
     // identity
     const std::string& getName() const { return m_name; }
     const std::string& getLabel() const { return m_label; }
+    void setLabel(std::string label) { m_label = std::move(label); }
     FieldKind getKind() const { return m_kind; }
     ValueType getType() const { return m_type; }
 
@@ -62,6 +63,9 @@ public:
 
     bool isBits() const { return m_bits; }          // bit mask, drawn with a grid of checkboxes
     void setBits(bool bits) { m_bits = bits; }
+
+    bool isAxes() const { return m_axes; }          // first of three, drawn as one row of x y z
+    void setAxes(bool axes) { m_axes = axes; }
 
     float getSpeed() const { return m_speed; }      // how fast a drag walks the value, zero leaves it to the editor
     void setSpeed(float speed) { m_speed = speed; }
@@ -90,6 +94,7 @@ private:
     bool m_color = false;
     bool m_asset = false;
     bool m_bits = false;
+    bool m_axes = false;
     float m_speed = 0.0f;
 
     Getter m_getter;

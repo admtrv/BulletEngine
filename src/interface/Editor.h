@@ -153,6 +153,12 @@ private:
     void acceptEntryDrop(const std::string& folder);
     void drawEntry(const project::Entry& entry, bool last);
     bool drawField(const reflect::Field& field, void* instance);
+    bool drawAxes(const reflect::Field* const axes[3], void* instance);
+
+    // walks fields given as values or as pointers, defined where it is used
+    template<class F>
+    bool drawRange(F fields, size_t count, void* instance);
+
     bool drawFields(const reflect::Type& type, void* instance, bool splitOwn = false);
     bool drawValue(const reflect::Field& field, void* instance);
     bool drawObjectType(const reflect::Field& field, void* instance, const reflect::Type& current);

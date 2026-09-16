@@ -187,6 +187,29 @@ Field makeNestedField(std::string name, N C::* member, Getter getter, Setter set
     );
 }
 
+// single bit of nested mask, reads and writes as bool
+template<class C, class N, class Getter, class Setter, class Bits>
+Field makeFlagField(std::string name, N C::* member, Getter getter, Setter setter, Bits bits)
+{
+    using Raw = Bare<std::invoke_result_t<Getter, const N&>>;
+
+    return Field(
+        std::move(name),
+        ValueType::Bool,
+        [member, getter, bits](const void* instance) -> Value {
+            const N& nested = static_cast<const C*>(instance)->*member;
+            return Value(((nested.*getter)() & bits) != 0);
+        },
+        [member, getter, setter, bits](void* instance, const Value& value) {
+            N& nested = static_cast<C*>(instance)->*member;
+            const Raw current = (nested.*getter)();
+
+            (nested.*setter)(value.get<bool>() ? static_cast<Raw>(current | bits)
+                                              : static_cast<Raw>(current & ~bits));
+        }
+    );
+}
+
 // field from public data member
 template<class C, class M>
 Field makeMemberField(std::string name, M C::* member)
@@ -260,6 +283,18 @@ Field makeMemberField(std::string name, M C::* member)
 
 #define BITS()                                                                          \
             type.getLastField().setBits(true);
+
+// marks first of three bool fields, editor draws them as one x y z row under TEXT
+#define AXES(TEXT)                                                                      \
+            do {                                                                        \
+                type.getLastField().setAxes(true);                                      \
+                type.getLastField().setLabel(TEXT);                                     \
+            } while (false);
+
+#define FLAG(NAME, MEMBER, GETTER, SETTER, BITS)                                        \
+            type.addField(makeFlagField<Self>(NAME, &Self::MEMBER,                      \
+                &std::decay_t<decltype(std::declval<Self>().MEMBER)>::GETTER,           \
+                &std::decay_t<decltype(std::declval<Self>().MEMBER)>::SETTER, BITS));
 
 #define OPTIONS(...)                                                                    \
             type.getLastField().setOptions({__VA_ARGS__});

@@ -21,6 +21,7 @@ constexpr float DRAG_SPEED_DEFAULT = 0.05f;
 constexpr float DRAG_SPEED_ROTATION = 0.5f;
 constexpr float DRAG_LIMIT = 10000.0f;
 constexpr int MASK_BITS = 32;                   // layers physics carries, one per bit
+constexpr size_t AXIS_COUNT = 3;                // fields an axes row claims
 
 void Editor::drawInspector()
 {
@@ -528,28 +529,76 @@ bool Editor::drawField(const reflect::Field& field, void* instance)
     return drawValue(field, instance);
 }
 
-bool Editor::drawFields(const reflect::Type& type, void* instance, bool splitOwn)
+// fields arrive either as values or as pointers, one walk serves both
+static const reflect::Field* at(const reflect::Field* fields, size_t index) { return fields + index; }
+static const reflect::Field* at(const reflect::Field* const* fields, size_t index) { return fields[index]; }
+
+// three bool fields the first one claims, drawn as one x y z row
+bool Editor::drawAxes(const reflect::Field* const axes[AXIS_COUNT], void* instance)
+{
+    bool axis[AXIS_COUNT] = {};
+
+    for (size_t i = 0; i < AXIS_COUNT; i++)
+    {
+        axis[i] = axes[i]->get(instance).get<bool>();
+    }
+
+    if (!BulletRender::interface::checkboxAxes(axes[0]->getLabel().c_str(), axis[0], axis[1], axis[2]))
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < AXIS_COUNT; i++)
+    {
+        axes[i]->set(instance, reflect::Value(axis[i]));
+    }
+
+    return true;
+}
+
+template<class F>
+bool Editor::drawRange(F fields, size_t count, void* instance)
 {
     bool changed = false;
 
-    if (!splitOwn)
+    for (size_t i = 0; i < count; i++)
     {
-        for (const reflect::Field* field : type.getAllFields())
+        const reflect::Field* field = at(fields, i);
+
+        // a claimed triple leaves only its own row behind, a broken one falls back to plain fields
+        if (field->isAxes() && i + AXIS_COUNT <= count)
         {
-            changed |= drawField(*field, instance);
+            const reflect::Field* axes[AXIS_COUNT];
+
+            for (size_t axis = 0; axis < AXIS_COUNT; axis++)
+            {
+                axes[axis] = at(fields, i + axis);
+            }
+
+            changed |= drawAxes(axes, instance);
+            i += AXIS_COUNT - 1;
+            continue;
         }
 
-        return changed;
+        changed |= drawField(*field, instance);
+    }
+
+    return changed;
+}
+
+bool Editor::drawFields(const reflect::Type& type, void* instance, bool splitOwn)
+{
+    if (!splitOwn)
+    {
+        const std::vector<const reflect::Field*> fields = type.getAllFields();
+        return drawRange(fields.data(), fields.size(), instance);
     }
 
     // what only this type has belongs to the row above, indented under it
+    const std::vector<reflect::Field>& own = type.getFields();
+
     ImGui::Indent();
-
-    for (const reflect::Field& field : type.getFields())
-    {
-        changed |= drawField(field, instance);
-    }
-
+    bool changed = drawRange(own.data(), own.size(), instance);
     ImGui::Unindent();
 
     // what the base declares describes the component itself, back on its level
