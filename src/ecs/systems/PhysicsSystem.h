@@ -9,6 +9,7 @@
 
 #include "dynamics/PhysicsWorld.h"
 
+#include <unordered_set>
 #include <vector>
 
 namespace BulletEngine {
@@ -39,6 +40,9 @@ private:
     void publishTransforms(World& world);
 
     BulletPhysics::dynamics::PhysicsWorld m_physicsWorld;
+
+    // entities the simulation already owns, a new one still takes its pose from the transform
+    std::unordered_set<Entity> m_simulated;
 };
 
 } // namespace systems

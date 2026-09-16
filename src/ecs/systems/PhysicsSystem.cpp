@@ -56,8 +56,11 @@ void PhysicsSystem::sync(World& world, bool adoptPoses)
 
         alive.insert(&rigidBodyComponent->body);
 
+        // a body born mid play has never been stepped, it still owes its pose to the transform
+        const bool isNew = m_simulated.insert(entity).second;
+
         // transform owns the pose, simulation takes over once it runs
-        if (const auto* transformComponent = world.get<TransformComponent>(entity); transformComponent && adoptPoses)
+        if (const auto* transformComponent = world.get<TransformComponent>(entity); transformComponent && (adoptPoses || isNew))
         {
             const glm::vec3 position = transformComponent->transform.getPosition();
             const glm::quat rotation = transformComponent->transform.getRotation();
@@ -69,9 +72,19 @@ void PhysicsSystem::sync(World& world, bool adoptPoses)
         auto* colliderComponent = world.get<ColliderComponent>(entity);
         auto* collider = colliderComponent ? colliderComponent->collider.get() : nullptr;
 
+        // shape and mass decide how the body spins, both may change between steps
+        if (collider)
+        {
+            rigidBodyComponent->body.setInverseInertiaLocal(
+                collider->inverseInertia(rigidBodyComponent->body.getMass()));
+        }
+
         // the world takes each body once, a second call would list it twice
         m_physicsWorld.addBody(&rigidBodyComponent->body, collider);
     }
+
+    // an entity that dropped its body starts over if it gets another
+    std::erase_if(m_simulated, [&world](Entity entity) { return !world.has<RigidBodyComponent>(entity); });
 
     // a body whose entity is gone has nothing left to follow
     const auto& bodies = m_physicsWorld.getBodies();

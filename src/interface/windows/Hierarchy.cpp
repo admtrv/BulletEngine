@@ -18,7 +18,6 @@
 
 #include "collision/collider/BoxCollider.h"
 #include "collision/collider/GroundCollider.h"
-#include "dynamics/body/Inertia.h"
 
 #include "imgui.h"
 
@@ -264,7 +263,6 @@ void Editor::fillNewScene()
         auto& rigidBody = m_world.add<ecs::RigidBodyComponent>(entity);
         rigidBody.body.setMass(1.0);
         rigidBody.body.setPosition(position);
-        rigidBody.body.setInverseInertiaLocal(BulletPhysics::dynamics::inertia::box(1.0, size));
 
         m_world.add<ecs::ColliderComponent>(entity).collider =
             std::make_unique<BulletPhysics::collision::collider::BoxCollider>(size);

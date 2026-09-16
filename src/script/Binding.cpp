@@ -4,6 +4,8 @@
 
 #include "Binding.h"
 
+#include "reflect/Registry.h"
+
 #include <glm/gtc/quaternion.hpp>
 
 #include <iostream>
@@ -84,6 +86,22 @@ void Handle::set(const std::string& name, const sol::object& value)
     if (!field || !instance)
     {
         std::cerr << "script wrote to unknown field: " << name << '\n';
+        return;
+    }
+
+    // object field holds a type, not a value, script names the one it wants
+    if (field->getKind() == reflect::FieldKind::Object)
+    {
+        const std::string wanted = value.as<std::string>();
+        const reflect::Type* built = reflect::Registry::instance().find(wanted);
+
+        if (!built || !field->isBuildable())
+        {
+            std::cerr << "script cannot build " << wanted << " for field: " << name << '\n';
+            return;
+        }
+
+        field->build(instance, *built);
         return;
     }
 

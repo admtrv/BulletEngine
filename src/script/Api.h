@@ -16,6 +16,7 @@ namespace script {
 void installComponents(sol::environment& environment, ecs::World& world, ecs::Entity entity);
 void installInput(sol::environment& environment);
 void installPhysics(sol::environment& environment, ecs::World& world, ecs::Entity entity);
+void installWorld(sol::environment& environment, ecs::World& world);
 
 } // namespace script
 } // namespace BulletEngine

@@ -78,6 +78,7 @@ void ScriptSystem::attach(World& world, Entity entity)
     script::installComponents(environment, world, entity);
     script::installInput(environment);
     script::installPhysics(environment, world, entity);
+    script::installWorld(environment, world);
 
     Instance instance{environment, {}};
 
@@ -119,7 +120,10 @@ void ScriptSystem::start(World& world)
 
     m_running = true;
 
-    for (Entity entity : world.getEntities())
+    // onStart may spawn, which would grow the list being walked
+    const std::vector<Entity> entities = world.getEntities();
+
+    for (Entity entity : entities)
     {
         attach(world, entity);
     }
@@ -145,7 +149,10 @@ void ScriptSystem::update(World& world, float dt)
     // entities spawned since last frame get script here, dispatch checks the rest
     if (m_running)
     {
-        for (Entity entity : world.getEntities())
+        // a script may spawn while this walks, so the list is taken by value
+        const std::vector<Entity> entities = world.getEntities();
+
+        for (Entity entity : entities)
         {
             attach(world, entity);
         }
