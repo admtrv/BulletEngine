@@ -25,6 +25,7 @@
 #include "ecs/systems/PickSystem.h"
 #include "ecs/systems/ReloadSystem.h"
 #include "ecs/systems/RenderSystem.h"
+#include "ecs/systems/ScriptSystem.h"
 #include "interface/Editor.h"
 #include "io/Log.h"
 #include "project/Project.h"
@@ -95,6 +96,7 @@ int main(int argc, char** argv)
         ecs::systems::RenderSystem renderSystem(scene);
         ecs::systems::DebugDrawSystem debugDrawSystem(lines);
         ecs::systems::ReloadSystem reloadSystem;
+        ecs::systems::ScriptSystem scriptSystem;
 
         // editor
         interface::Editor editor(world, physicsSystem, debugDrawSystem);
@@ -127,6 +129,21 @@ int main(int argc, char** argv)
         scheduler.add(app::Phase::PreUpdate, [&reloadSystem](const app::FrameContext& frame) {
             reloadSystem.update(*frame.world, frame.deltaTime);
         }, 10, "reload");
+
+        editor.addModeListener([&scriptSystem, &world](interface::Mode mode) {
+            if (mode == interface::Mode::Play)
+            {
+                scriptSystem.start(world);
+            }
+            else
+            {
+                scriptSystem.stop();
+            }
+        });
+
+        scheduler.add(app::Phase::Update, [&scriptSystem](const app::FrameContext& frame) {
+            scriptSystem.update(*frame.world, frame.deltaTime);
+        }, 0, "scripts");
 
         scheduler.add(app::Phase::FixedUpdate, [&physicsSystem, &editor](const app::FrameContext& frame) {
             // idle world still keeps physics in step, picking casts rays into it

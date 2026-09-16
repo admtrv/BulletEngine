@@ -51,6 +51,21 @@ void RenderableComponent::setTextureKey(const std::string& key)
     }
 }
 
+void ScriptComponent::setScriptKey(const std::string& key)
+{
+    if (key.empty())
+    {
+        script.reset();
+        return;
+    }
+
+    // a key that loads nothing leaves what is already there
+    if (auto loaded = BulletEngine::assets::Registry::instance().load<BulletEngine::script::Script>(key))
+    {
+        script = std::move(loaded);
+    }
+}
+
 // shapes
 
 REFLECT(PhysicsMaterial)
@@ -155,6 +170,12 @@ END_REFLECT()
 REFLECT(LightComponent)
     BASE(Component)
     OBJECT("light", light)
+END_REFLECT()
+
+REFLECT(ScriptComponent)
+    BASE(Component)
+    PROPERTY("script", getScriptKey, setScriptKey)
+    ASSET()
 END_REFLECT()
 
 REFLECT(RigidBodyComponent)

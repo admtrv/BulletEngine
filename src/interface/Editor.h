@@ -23,6 +23,7 @@
 #include <glm/glm.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <typeindex>
 #include <unordered_map>
@@ -58,6 +59,9 @@ enum class Mode {
     Edit,       // scene stands still, ready to arrange
     Play        // physics and scripts run, changes dropped on stop
 };
+
+// told after mode changed, world already restored on stop
+using ModeListener = std::function<void(Mode)>;
 
 // what a new entity comes with
 enum class Preset {
@@ -104,6 +108,9 @@ public:
 
     // world only advances while playing
     bool isPlaying() const { return m_mode == Mode::Play; }
+
+    // called on every play and stop, systems hook own state to it
+    void addModeListener(ModeListener listener) { m_modeListeners.push_back(std::move(listener)); }
 
     // what scene panel looks through, editor owns it so scenes never carry it
     BulletRender::scene::FlyCamera& getCamera() { return *m_camera; }
@@ -176,6 +183,7 @@ private:
     BulletRender::interface::TreeView m_explorerTree;
 
     Mode m_mode = Mode::Edit;
+    std::vector<ModeListener> m_modeListeners;
 
     // world before play began, what stop restores
     scene::Node m_snapshot;

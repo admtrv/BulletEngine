@@ -25,11 +25,21 @@ add_subdirectory(BulletRender)
 # connect BulletPhysics library
 add_subdirectory(BulletPhysics)
 
+# lua library
+file(GLOB LUA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/external/lua/*.c)
+list(REMOVE_ITEM LUA_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/lua/lua.c          # standalone interpreter
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/lua/onelua.c)      # every source in one file
+
+add_library(lua STATIC ${LUA_SOURCES})
+target_include_directories(lua PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/lua)
+target_compile_definitions(lua PUBLIC LUA_USE_LINUX)
+
 # BulletEngine application
 file(GLOB_RECURSE BULLET_ENGINE_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.cpp")
 add_executable(BulletEngine ${CMAKE_SOURCE_DIR}/main.cpp ${BULLET_ENGINE_SOURCES})
-target_include_directories(BulletEngine PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(BulletEngine PRIVATE BulletRenderLib BulletPhysicsLib)
+target_include_directories(BulletEngine PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/external/sol2/include)
+target_link_libraries(BulletEngine PRIVATE BulletRenderLib BulletPhysicsLib lua)
 
 # editor resources
 foreach(RESOURCE shaders fonts)

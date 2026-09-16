@@ -6,6 +6,7 @@
 
 #include "assets/Handle.h"
 #include "ecs/Ecs.h"
+#include "script/Script.h"
 
 #include "scene/Light.h"
 #include "scene/Transform.h"
@@ -62,6 +63,15 @@ public:
 class LightComponent : public Component {
 public:
     std::shared_ptr<BulletRender::scene::Light> light;
+};
+
+// behaviour of entity, one lua file
+class ScriptComponent : public Component {
+public:
+    assets::Handle<script::Script> script;
+
+    const std::string& getScriptKey() const { return script.getKey(); }
+    void setScriptKey(const std::string& key);
 };
 
 class RigidBodyComponent : public Component {

@@ -274,6 +274,12 @@ void Editor::setMode(Mode mode)
     }
 
     m_mode = mode;
+
+    // after world settled, systems see final state
+    for (const ModeListener& listener : m_modeListeners)
+    {
+        listener(m_mode);
+    }
 }
 
 void Editor::drawPlayBar()

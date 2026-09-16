@@ -4,3 +4,9 @@
 [submodule "BulletRender"]
 	path = BulletRender
 	url = https://github.com/admtrv/BulletRender.git
+[submodule "external/lua"]
+	path = external/lua
+	url = https://github.com/lua/lua
+[submodule "external/sol2"]
+	path = external/sol2
+	url = https://github.com/ThePhD/sol2

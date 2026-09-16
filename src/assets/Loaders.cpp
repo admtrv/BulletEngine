@@ -6,12 +6,16 @@
 
 #include "assets/Registry.h"
 #include "project/Project.h"
+#include "script/Script.h"
 
 #include "render/textures/TextureLoader.h"
 #include "scene/models/Model.h"
 #include "scene/models/ModelLoader.h"
 
 #include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -68,6 +72,22 @@ static std::shared_ptr<BulletRender::scene::Model> loadModel(const std::string& 
     return BulletRender::scene::ModelLoader::instance().load(project::Project::instance().getPath(key));
 }
 
+static std::shared_ptr<script::Script> loadScript(const std::string& key)
+{
+    std::ifstream file(project::Project::instance().getPath(key));
+
+    if (!file)
+    {
+        std::cerr << "script load failed: " << key << '\n';
+        return nullptr;
+    }
+
+    std::ostringstream buffer;
+    buffer << file.rdbuf();
+
+    return std::make_shared<script::Script>(script::Script{std::move(buffer).str()});
+}
+
 std::string toLabel(const std::string& key)
 {
     if (key.empty())
@@ -98,6 +118,8 @@ void registerLoaders()
     registry.setLoader<BulletRender::render::Texture2D>([](const std::string& key) {
         return BulletRender::render::TextureLoader::instance().load(project::Project::instance().getPath(key));
     });
+
+    registry.setLoader<script::Script>(loadScript);
 }
 
 } // namespace assets
