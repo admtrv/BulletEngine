@@ -8,7 +8,6 @@
 #include "ecs/Components.h"
 #include "reflect/Registry.h"
 
-#include <iostream>
 #include <string>
 
 namespace BulletEngine {
@@ -17,11 +16,10 @@ namespace script {
 // component of registered type, attached to entity, handle empty when it cannot be built
 static Handle addComponent(ecs::World& world, ecs::Entity entity, const std::string& name)
 {
-    const reflect::Type* type = reflect::Registry::instance().find(name);
+    const reflect::Type* type = findType(name);
 
     if (!type)
     {
-        std::cerr << "script asked for unknown component: " << name << '\n';
         return {};
     }
 
@@ -51,7 +49,7 @@ void installWorld(sol::environment& environment, ecs::World& world)
     table["spawn"] = [&world](sol::optional<std::string> name) {
         const ecs::Entity entity = world.create();
 
-        auto& component = world.add<ecs::NameComponent>(entity);
+        auto& component = world.add<ecs::IdentityComponent>(entity);
         component.name = name.value_or("Entity");
 
         world.add<ecs::TransformComponent>(entity);
@@ -70,6 +68,70 @@ void installWorld(sol::environment& environment, ecs::World& world)
     // component by reflected name, handle lets the script fill it in
     table["add"] = [&world](ecs::Entity entity, const std::string& name) {
         return addComponent(world, entity, name);
+    };
+
+    // same reach as get, for entity script found rather than owns
+    table["get"] = [&world](ecs::Entity entity, const std::string& name) -> Handle {
+        const reflect::Type* type = findType(name);
+        return type ? Handle{&world, entity, type} : Handle{};
+    };
+
+    // first entity carrying that name, nothing when none does
+    table["find"] = [&world](const std::string& name) -> sol::optional<ecs::Entity> {
+        for (ecs::Entity entity : world.getEntities())
+        {
+            const auto* identity = world.get<ecs::IdentityComponent>(entity);
+
+            if (identity && identity->name == name)
+            {
+                return entity;
+            }
+        }
+
+        return sol::nullopt;
+    };
+
+    // every entity sharing a tag, nothing matches the empty one
+    table["findByTag"] = [&world](const std::string& tag, sol::this_state state) {
+        sol::table found = sol::state_view(state).create_table();
+
+        if (tag.empty())
+        {
+            return found;
+        }
+
+        for (ecs::Entity entity : world.getEntities())
+        {
+            const auto* identity = world.get<ecs::IdentityComponent>(entity);
+
+            if (identity && identity->tag == tag)
+            {
+                found.add(entity);
+            }
+        }
+
+        return found;
+    };
+
+    // every entity carrying a component, by its reflected name
+    table["findWith"] = [&world](const std::string& name, sol::this_state state) {
+        sol::table found = sol::state_view(state).create_table();
+        const reflect::Type* type = findType(name);
+
+        if (!type)
+        {
+            return found;
+        }
+
+        for (ecs::Entity entity : world.getEntities())
+        {
+            if (world.has(entity, type->getIndex()))
+            {
+                found.add(entity);
+            }
+        }
+
+        return found;
     };
 }
 

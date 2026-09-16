@@ -23,9 +23,11 @@
 namespace BulletEngine {
 namespace ecs {
 
-class NameComponent : public Component {
+// what an entity is called and what group it belongs to
+class IdentityComponent : public Component {
 public:
     std::string name = "Entity";
+    std::string tag;                // empty for an entity nothing looks for
 };
 
 class TransformComponent : public Component {

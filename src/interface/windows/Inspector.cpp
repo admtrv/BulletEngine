@@ -40,9 +40,10 @@ void Editor::drawInspector()
 
     drawAddMenu();
 
-    if (auto* named = m_world.get<ecs::NameComponent>(m_selection))
+    if (auto* identity = m_world.get<ecs::IdentityComponent>(m_selection))
     {
-        BulletRender::interface::textField("Name", named->name);
+        BulletRender::interface::textField("Name", identity->name);
+        BulletRender::interface::textField("Tag", identity->tag);
     }
 
     ImGui::Separator();

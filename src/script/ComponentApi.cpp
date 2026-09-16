@@ -5,9 +5,7 @@
 #include "Api.h"
 #include "Binding.h"
 
-#include "reflect/Registry.h"
-
-#include <iostream>
+#include <string>
 
 namespace BulletEngine {
 namespace script {
@@ -16,15 +14,8 @@ void installComponents(sol::environment& environment, ecs::World& world, ecs::En
 {
     // components of entity, by name reflection registered
     environment["get"] = [&world, entity](const std::string& name) -> Handle {
-        const reflect::Type* type = reflect::Registry::instance().find(name);
-
-        if (!type)
-        {
-            std::cerr << "script asked for unknown component: " << name << '\n';
-            return {};
-        }
-
-        return {&world, entity, type};
+        const reflect::Type* type = findType(name);
+        return type ? Handle{&world, entity, type} : Handle{};
     };
 }
 

@@ -8,10 +8,19 @@
 
 #include <sol/sol.hpp>
 
+#include <string>
+
 namespace BulletEngine {
+
+// fwd
+namespace reflect { class Type; }
+
 namespace script {
 
-// what a script reaches beyond its own components, one file per subject
+// registered type by name, complains once per name so script cannot flood console
+const reflect::Type* findType(const std::string& name);
+
+// what script reaches beyond its own components, one file per subject
 
 void installComponents(sol::environment& environment, ecs::World& world, ecs::Entity entity);
 void installInput(sol::environment& environment);

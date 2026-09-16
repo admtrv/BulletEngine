@@ -109,8 +109,8 @@ void Editor::drawEntityNode(ecs::Entity entity, bool last, int depth)
 
     const std::vector<ecs::Entity> children = getChildren(entity);
 
-    const auto* named = m_world.get<ecs::NameComponent>(entity);
-    const char* label = named ? named->name.c_str() : "Entity";
+    const auto* identity = m_world.get<ecs::IdentityComponent>(entity);
+    const char* label = identity ? identity->name.c_str() : "Entity";
 
     const void* id = reinterpret_cast<const void*>(static_cast<uintptr_t>(entity));
 
@@ -192,7 +192,7 @@ ecs::Entity Editor::spawnEntity(Preset preset)
 {
     const ecs::Entity entity = m_world.create();
 
-    m_world.add<ecs::NameComponent>(entity).name = toString(preset) + std::string(" ") + std::to_string(entity);
+    m_world.add<ecs::IdentityComponent>(entity).name = toString(preset) + std::string(" ") + std::to_string(entity);
     m_world.add<ecs::TransformComponent>(entity);
 
     if (preset == Preset::Empty)
@@ -213,7 +213,7 @@ void Editor::fillNewScene()
     {
         const ecs::Entity entity = m_world.create();
 
-        m_world.add<ecs::NameComponent>(entity).name = "Ambient Light";
+        m_world.add<ecs::IdentityComponent>(entity).name = "Ambient Light";
         m_world.add<ecs::TransformComponent>(entity);
 
         auto light = std::make_shared<BulletRender::scene::AmbientLight>();
@@ -225,7 +225,7 @@ void Editor::fillNewScene()
     {
         const ecs::Entity entity = m_world.create();
 
-        m_world.add<ecs::NameComponent>(entity).name = "Directional Light";
+        m_world.add<ecs::IdentityComponent>(entity).name = "Directional Light";
 
         // light points the way entity faces, default direction sets that pose
         auto& transform = m_world.add<ecs::TransformComponent>(entity);
@@ -240,7 +240,7 @@ void Editor::fillNewScene()
     {
         const ecs::Entity entity = m_world.create();
 
-        m_world.add<ecs::NameComponent>(entity).name = "Ground";
+        m_world.add<ecs::IdentityComponent>(entity).name = "Ground";
         m_world.add<ecs::TransformComponent>(entity);
 
         m_world.add<ecs::RigidBodyComponent>(entity).body.setMotionType(BulletPhysics::dynamics::MotionType::Static);
@@ -254,7 +254,7 @@ void Editor::fillNewScene()
 
         const ecs::Entity entity = m_world.create();
 
-        m_world.add<ecs::NameComponent>(entity).name = "Cube";
+        m_world.add<ecs::IdentityComponent>(entity).name = "Cube";
         m_world.add<ecs::TransformComponent>(entity).transform.setPosition({0.0f, 0.5f, 0.0f});
 
         m_world.add<ecs::RenderableComponent>(entity).model =

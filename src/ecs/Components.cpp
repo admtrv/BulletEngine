@@ -138,10 +138,11 @@ REFLECT(Component)
     HIDE_TYPE()
 END_REFLECT()
 
-REFLECT(NameComponent)
+REFLECT(IdentityComponent)
     BASE(Component)
     HIDE_TYPE()
     FIELD("name", name)
+    FIELD("tag", tag)
 END_REFLECT()
 
 REFLECT(TransformComponent)

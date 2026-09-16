@@ -17,7 +17,7 @@ void installInput(sol::environment& environment)
 {
     sol::table input = environment.create_named("input");
 
-    // key by name, as the enum spells it
+    // key by name, as enum spells it
     input["isKeyDown"] = [](const std::string& name) {
         const std::optional<BulletRender::utils::InputKey> key = BulletRender::utils::toKey(name);
 
