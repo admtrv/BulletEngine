@@ -20,6 +20,7 @@ namespace interface {
 constexpr float DRAG_SPEED_DEFAULT = 0.05f;
 constexpr float DRAG_SPEED_ROTATION = 0.5f;
 constexpr float DRAG_LIMIT = 10000.0f;
+constexpr int MASK_BITS = 32;                   // layers physics carries, one per bit
 
 void Editor::drawInspector()
 {
@@ -266,6 +267,19 @@ bool Editor::drawValue(const reflect::Field& field, void* instance)
                 break;
             }
 
+            if (field.isBits())
+            {
+                unsigned bits = static_cast<unsigned>(v);
+
+                if (BulletRender::interface::bitsField(name, bits, MASK_BITS))
+                {
+                    field.set(instance, static_cast<int>(bits));
+                    changed = true;
+                }
+
+                break;
+            }
+
             if (BulletRender::interface::dragScalarField(name, v, 0, 0, "%d")) { field.set(instance, v); changed = true; }
             break;
         }
@@ -459,69 +473,89 @@ bool Editor::drawObjectType(const reflect::Field& field, void* instance, const r
     return true;
 }
 
-bool Editor::drawFields(const reflect::Type& type, void* instance)
+bool Editor::drawField(const reflect::Field& field, void* instance)
 {
-    bool changed = false;
-
-    // fields the type declares itself gather under its own heading
-    const size_t inherited = type.getAllFields().size() - type.getFields().size();
-    const bool heading = inherited > 0 && !type.getFields().empty();
-    size_t index = 0;
-
-    for (const reflect::Field* field : type.getAllFields())
+    if (field.isHidden())
     {
-        if (index++ == inherited && heading)
+        return false;
+    }
+
+    const char* name = field.getLabel().c_str();
+
+    if (field.getKind() == reflect::FieldKind::Object)
+    {
+        const reflect::Type* nested = nullptr;
+        void* object = field.resolve(instance, &nested);
+
+        if (!nested || !object)
         {
-            ImGui::TextUnformatted(type.getLabel().c_str());
-            ImGui::Indent();
+            BulletRender::interface::statRow(name, "None");
+            return false;
         }
 
-        if (field->isHidden())
+        bool changed = false;
+
+        if (drawObjectType(field, instance, *nested))
         {
-            continue;
+            changed = true;
+            object = field.resolve(instance, &nested);
         }
 
-        const char* name = field->getLabel().c_str();
-
-        if (field->getKind() == reflect::FieldKind::Object)
+        if (nested && object)
         {
-            const reflect::Type* nested = nullptr;
-            void* object = field->resolve(instance, &nested);
-
-            if (!nested || !object)
+            // buildable object splits itself, plain one sits under its label
+            if (field.isBuildable())
             {
-                BulletRender::interface::statRow(name, "None");
-                continue;
+                changed |= drawFields(*nested, object, true);
             }
-
-            if (drawObjectType(*field, instance, *nested))
-            {
-                changed = true;
-                object = field->resolve(instance, &nested);
-            }
-
-            if (nested && object)
+            else
             {
                 ImGui::Indent();
                 changed |= drawFields(*nested, object);
                 ImGui::Unindent();
             }
-
-            continue;
         }
 
-        if (field->isReadOnly())
-        {
-            BulletRender::interface::statRow(name, "read only");
-            continue;
-        }
-
-        changed |= drawValue(*field, instance);
+        return changed;
     }
 
-    if (heading)
+    if (field.isReadOnly())
     {
-        ImGui::Unindent();
+        BulletRender::interface::statRow(name, "read only");
+        return false;
+    }
+
+    return drawValue(field, instance);
+}
+
+bool Editor::drawFields(const reflect::Type& type, void* instance, bool splitOwn)
+{
+    bool changed = false;
+
+    if (!splitOwn)
+    {
+        for (const reflect::Field* field : type.getAllFields())
+        {
+            changed |= drawField(*field, instance);
+        }
+
+        return changed;
+    }
+
+    // what only this type has belongs to the row above, indented under it
+    ImGui::Indent();
+
+    for (const reflect::Field& field : type.getFields())
+    {
+        changed |= drawField(field, instance);
+    }
+
+    ImGui::Unindent();
+
+    // what the base declares describes the component itself, back on its level
+    if (const reflect::Type* base = type.getBase())
+    {
+        changed |= drawFields(*base, instance);
     }
 
     return changed;

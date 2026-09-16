@@ -75,6 +75,11 @@ END_REFLECT()
 
 REFLECT(Collider)
     PROPERTY("trigger", isTrigger, setTrigger)
+    // bits, what collider is and what it meets
+    PROPERTY("layer", getLayer, setLayer)
+    BITS()
+    PROPERTY("mask", getMask, setMask)
+    BITS()
     OBJECT_REF("material", getMaterial)
 END_REFLECT()
 
@@ -191,5 +196,5 @@ END_REFLECT()
 
 REFLECT(ColliderComponent)
     BASE(Component)
-    OBJECT("collider", collider)
+    OBJECT("shape", collider)
 END_REFLECT()

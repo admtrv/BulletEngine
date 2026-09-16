@@ -258,6 +258,9 @@ Field makeMemberField(std::string name, M C::* member)
 #define ASSET()                                                                         \
             type.getLastField().setAsset(true);
 
+#define BITS()                                                                          \
+            type.getLastField().setBits(true);
+
 #define OPTIONS(...)                                                                    \
             type.getLastField().setOptions({__VA_ARGS__});
 

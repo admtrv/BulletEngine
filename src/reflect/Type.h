@@ -60,6 +60,9 @@ public:
     bool isAsset() const { return m_asset; }        // an asset key, drawn with a load button
     void setAsset(bool asset) { m_asset = asset; }
 
+    bool isBits() const { return m_bits; }          // bit mask, drawn with a grid of checkboxes
+    void setBits(bool bits) { m_bits = bits; }
+
     float getSpeed() const { return m_speed; }      // how fast a drag walks the value, zero leaves it to the editor
     void setSpeed(float speed) { m_speed = speed; }
 
@@ -86,6 +89,7 @@ private:
     bool m_hidden = false;
     bool m_color = false;
     bool m_asset = false;
+    bool m_bits = false;
     float m_speed = 0.0f;
 
     Getter m_getter;
@@ -112,7 +116,7 @@ public:
     void addField(Field field) { m_fields.push_back(std::move(field)); }
     const std::vector<Field>& getFields() const { return m_fields; }
     Field& getLastField() { return m_fields.back(); }
-    std::vector<const Field*> getAllFields() const;     // inherited first, then own
+    std::vector<const Field*> getAllFields() const;     // own first, then inherited
     const Field* findField(std::string_view name) const;
 
     // construction

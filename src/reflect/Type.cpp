@@ -38,18 +38,20 @@ std::string toLabel(std::string_view name)
     return label;
 }
 
+// own fields first, what the type is reads before how it behaves
 std::vector<const Field*> Type::getAllFields() const
 {
     std::vector<const Field*> fields;
 
-    if (m_base)
-    {
-        fields = m_base->getAllFields();
-    }
-
     for (const Field& field : m_fields)
     {
         fields.push_back(&field);
+    }
+
+    if (m_base)
+    {
+        const std::vector<const Field*> inherited = m_base->getAllFields();
+        fields.insert(fields.end(), inherited.begin(), inherited.end());
     }
 
     return fields;

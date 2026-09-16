@@ -152,7 +152,8 @@ private:
     void applyEntryCommands();
     void acceptEntryDrop(const std::string& folder);
     void drawEntry(const project::Entry& entry, bool last);
-    bool drawFields(const reflect::Type& type, void* instance);
+    bool drawField(const reflect::Field& field, void* instance);
+    bool drawFields(const reflect::Type& type, void* instance, bool splitOwn = false);
     bool drawValue(const reflect::Field& field, void* instance);
     bool drawObjectType(const reflect::Field& field, void* instance, const reflect::Type& current);
 
