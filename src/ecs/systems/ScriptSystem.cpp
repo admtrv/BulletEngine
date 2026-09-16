@@ -5,7 +5,7 @@
 #include "ScriptSystem.h"
 
 #include "ecs/Components.h"
-#include "reflect/Registry.h"
+#include "script/Api.h"
 #include "script/Binding.h"
 
 #include <iostream>
@@ -23,22 +23,6 @@ ScriptSystem::ScriptSystem()
 {
     m_lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
     bind();
-}
-
-// components of entity, by name reflection registered
-static void bindComponents(sol::environment& environment, World& world, Entity entity)
-{
-    environment["get"] = [&world, entity](const std::string& name) -> script::Handle {
-        const reflect::Type* type = reflect::Registry::instance().find(name);
-
-        if (!type)
-        {
-            std::cerr << "script asked for unknown component: " << name << '\n';
-            return {};
-        }
-
-        return {&world, entity, type};
-    };
 }
 
 void ScriptSystem::bind()
@@ -61,7 +45,7 @@ void ScriptSystem::bind()
 
 void ScriptSystem::attach(World& world, Entity entity)
 {
-    if (m_instances.count(entity))
+    if (m_instances.count(entity) || m_broken.count(entity))
     {
         return;
     }
@@ -83,11 +67,17 @@ void ScriptSystem::attach(World& world, Entity entity)
     {
         std::cerr << "script failed: " << component->getScriptKey()
                   << " (" << result.get<sol::error>().what() << ")\n";
+
+        // compiling it again every frame would flood the console
+        m_broken.insert(entity);
         return;
     }
 
     environment["entity"] = entity;
-    bindComponents(environment, world, entity);
+
+    script::installComponents(environment, world, entity);
+    script::installInput(environment);
+    script::installPhysics(environment, world, entity);
 
     Instance instance{environment, {}};
 
@@ -145,6 +135,7 @@ void ScriptSystem::stop()
 
     m_running = false;
     m_instances.clear();
+    m_broken.clear();
 }
 
 // frame

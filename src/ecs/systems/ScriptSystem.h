@@ -9,6 +9,7 @@
 #include <sol/sol.hpp>
 
 #include <unordered_map>
+#include <unordered_set>
 
 namespace BulletEngine {
 namespace ecs {
@@ -61,6 +62,7 @@ private:
 
     sol::state m_lua;
     std::unordered_map<Entity, Instance> m_instances;
+    std::unordered_set<Entity> m_broken;    // did not compile, left alone until play restarts
     bool m_running = false;
 };
 
