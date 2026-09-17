@@ -13,6 +13,9 @@
 namespace BulletEngine {
 namespace script {
 
+// name script reads to learn whether component is there at all
+constexpr const char* VALID_FIELD = "valid";
+
 static sol::object toLua(const reflect::Value& value, sol::state_view lua)
 {
     switch (value.getType())
@@ -67,8 +70,15 @@ void* Handle::resolve() const
 
 sol::object Handle::get(const std::string& name, sol::this_state state) const
 {
-    const reflect::Field* field = type ? type->findField(name) : nullptr;
     void* instance = resolve();
+
+    // asked before touching fields, missing component answers nothing else
+    if (name == VALID_FIELD)
+    {
+        return sol::make_object(state, instance != nullptr);
+    }
+
+    const reflect::Field* field = type ? type->findField(name) : nullptr;
 
     if (!field || !instance)
     {
@@ -80,12 +90,19 @@ sol::object Handle::get(const std::string& name, sol::this_state state) const
 
 void Handle::set(const std::string& name, const sol::object& value)
 {
-    const reflect::Field* field = type ? type->findField(name) : nullptr;
     void* instance = resolve();
 
-    if (!field || !instance)
+    // entity may simply not carry this component, which is no mistake
+    if (!instance)
     {
-        std::cerr << "script wrote to unknown field: " << name << '\n';
+        return;
+    }
+
+    const reflect::Field* field = type ? type->findField(name) : nullptr;
+
+    if (!field)
+    {
+        std::cerr << "script wrote to unknown field: " << type->getName() << '.' << name << '\n';
         return;
     }
 

@@ -15,7 +15,17 @@ namespace ecs {
 namespace systems {
 
 // what script may define, order matches Callback
-constexpr const char* CALLBACK_NAMES[] = {"onStart", "onUpdate", "onFixedUpdate", "onLateUpdate", "onDestroy"};
+constexpr const char* CALLBACK_NAMES[] = {
+    "onStart",
+    "onUpdate",
+    "onFixedUpdate",
+    "onLateUpdate",
+    "onDestroy",
+    "onCollisionEnter",
+    "onCollisionExit",
+    "onTriggerEnter",
+    "onTriggerExit"
+};
 
 // machine
 
@@ -171,6 +181,33 @@ void ScriptSystem::lateUpdate(World& world, float dt)
     dispatch(world, Callback::LateUpdate, dt);
 }
 
+void ScriptSystem::deliver(World& world, const std::vector<ContactEvent>& events)
+{
+    if (!m_running)
+    {
+        return;
+    }
+
+    for (const ContactEvent& event : events)
+    {
+        const auto it = m_instances.find(event.self);
+
+        // most contacts happen between entities that carry no script
+        if (it == m_instances.end() || !world.isAlive(event.self))
+        {
+            continue;
+        }
+
+        const bool entering = event.phase == ContactPhase::Begin;
+
+        const Callback callback = event.trigger
+            ? (entering ? Callback::TriggerEnter : Callback::TriggerExit)
+            : (entering ? Callback::CollisionEnter : Callback::CollisionExit);
+
+        callContact(it->second, callback, event);
+    }
+}
+
 // calls
 
 void ScriptSystem::dispatch(World& world, Callback callback, float dt)
@@ -190,6 +227,32 @@ void ScriptSystem::dispatch(World& world, Callback callback, float dt)
     }
 }
 
+// callback that throws is dropped, otherwise it fails again every frame
+void ScriptSystem::report(Instance& instance, Callback callback, const sol::protected_function_result& result)
+{
+    if (result.valid())
+    {
+        return;
+    }
+
+    std::cerr << "script error in " << CALLBACK_NAMES[static_cast<size_t>(callback)]
+              << ": " << result.get<sol::error>().what() << '\n';
+
+    instance.callbacks[static_cast<size_t>(callback)] = sol::protected_function();
+}
+
+void ScriptSystem::callContact(Instance& instance, Callback callback, const ContactEvent& event)
+{
+    sol::protected_function& function = instance.callbacks[static_cast<size_t>(callback)];
+
+    if (!function.valid())
+    {
+        return;
+    }
+
+    report(instance, callback, function(event.other, event.point, event.normal, event.depth));
+}
+
 void ScriptSystem::call(Instance& instance, Callback callback, float dt)
 {
     sol::protected_function& function = instance.callbacks[static_cast<size_t>(callback)];
@@ -201,16 +264,8 @@ void ScriptSystem::call(Instance& instance, Callback callback, float dt)
 
     // per frame callbacks take time, start and destroy take nothing
     const bool timed = callback != Callback::Start && callback != Callback::Destroy;
-    const sol::protected_function_result result = timed ? function(dt) : function();
 
-    if (!result.valid())
-    {
-        std::cerr << "script error in " << CALLBACK_NAMES[static_cast<size_t>(callback)]
-                  << ": " << result.get<sol::error>().what() << '\n';
-
-        // throwing callback would repeat every frame, runs once and stops
-        function = sol::protected_function();
-    }
+    report(instance, callback, timed ? function(dt) : function());
 }
 
 } // namespace systems

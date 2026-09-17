@@ -5,10 +5,12 @@
 #pragma once
 
 #include "ecs/Ecs.h"
+#include "ecs/systems/PhysicsEvents.h"
 
 #include <sol/sol.hpp>
 
 #include <unordered_map>
+#include <vector>
 #include <unordered_set>
 
 namespace BulletEngine {
@@ -32,6 +34,9 @@ public:
     void fixedUpdate(World& world, float dt);   // in step with physics, where forces belong
     void lateUpdate(World& world, float dt);    // after everything moved, where followers belong
 
+    // what simulation ran into, told to entities involved
+    void deliver(World& world, const std::vector<ContactEvent>& events);
+
 private:
     // types
 
@@ -42,6 +47,10 @@ private:
         FixedUpdate,
         LateUpdate,
         Destroy,
+        CollisionEnter,
+        CollisionExit,
+        TriggerEnter,
+        TriggerExit,
 
         Count
     };
@@ -59,6 +68,11 @@ private:
     // calls
     void dispatch(World& world, Callback callback, float dt);       // one callback on every live instance
     void call(Instance& instance, Callback callback, float dt = 0.0f);
+
+    // contact callbacks take what was hit, not how long frame was
+    void callContact(Instance& instance, Callback callback, const ContactEvent& event);
+
+    void report(Instance& instance, Callback callback, const sol::protected_function_result& result);
 
     sol::state m_lua;
     std::unordered_map<Entity, Instance> m_instances;

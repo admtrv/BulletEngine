@@ -10,6 +10,65 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
+PhysicsSystem::PhysicsSystem()
+{
+    m_physicsWorld.setContactListener(this);
+}
+
+Entity PhysicsSystem::entityOf(const BulletPhysics::collision::collider::Collider* collider) const
+{
+    const auto it = m_owners.find(collider);
+    return it != m_owners.end() ? it->second : INVALID_ENTITY;
+}
+
+void PhysicsSystem::report(ContactPhase phase, BulletPhysics::collision::collider::Collider* a,
+                           BulletPhysics::collision::collider::Collider* b,
+                           const glm::vec3& point, const glm::vec3& normal, float depth)
+{
+    const Entity first = entityOf(a);
+    const Entity second = entityOf(b);
+
+    // collider world no longer knows has no entity to tell
+    if (first == INVALID_ENTITY || second == INVALID_ENTITY)
+    {
+        return;
+    }
+
+    const bool trigger = (a && a->isTrigger()) || (b && b->isTrigger());
+
+    // normal runs from a to b, so it points away from whoever is told
+    m_events.push_back({phase, first, second, point, normal, depth, trigger});
+    m_events.push_back({phase, second, first, point, -normal, depth, trigger});
+}
+
+void PhysicsSystem::onContactBegin(const BulletPhysics::collision::Manifold& manifold)
+{
+    const auto& info = manifold.info;
+
+    const glm::vec3 normal{
+        static_cast<float>(info.normal.x),
+        static_cast<float>(info.normal.y),
+        static_cast<float>(info.normal.z)
+    };
+
+    glm::vec3 point{};
+
+    if (info.pointCount > 0)
+    {
+        const auto& position = info.points[0].position;
+        point = {static_cast<float>(position.x), static_cast<float>(position.y), static_cast<float>(position.z)};
+    }
+
+    report(ContactPhase::Begin, manifold.colliderA, manifold.colliderB,
+           point, normal, static_cast<float>(info.penetration));
+}
+
+void PhysicsSystem::onContactEnd(BulletPhysics::collision::collider::Collider* a,
+                                 BulletPhysics::collision::collider::Collider* b)
+{
+    report(ContactPhase::End, a, b, {}, {}, 0.0f);
+}
+
 void PhysicsSystem::watch(World& world)
 {
     world.addListener([this, &world](Entity entity) { detach(world, entity); });
@@ -45,6 +104,7 @@ void PhysicsSystem::step(World& world, float dt)
 void PhysicsSystem::sync(World& world, bool adoptPoses)
 {
     std::unordered_set<const BulletPhysics::dynamics::RigidBody*> alive;
+    m_owners.clear();
 
     for (auto entity : world.getEntities())
     {
@@ -72,11 +132,13 @@ void PhysicsSystem::sync(World& world, bool adoptPoses)
         auto* colliderComponent = world.get<ColliderComponent>(entity);
         auto* collider = colliderComponent ? colliderComponent->collider.get() : nullptr;
 
-        // shape and mass decide how the body spins, both may change between steps
         if (collider)
         {
+            // shape and mass decide how the body spins, both may change between steps
             rigidBodyComponent->body.setInverseInertiaLocal(
                 collider->inverseInertia(rigidBodyComponent->body.getMass()));
+
+            m_owners.emplace(collider, entity);
         }
 
         // the world takes each body once, a second call would list it twice

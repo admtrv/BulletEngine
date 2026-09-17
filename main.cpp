@@ -167,6 +167,12 @@ int main(int argc, char** argv)
             }
         }, 0, "physics");
 
+        // contacts reach scripts once the step is over, so they may spawn and destroy freely
+        scheduler.add(app::Phase::FixedUpdate, [&scriptSystem, &physicsSystem](const app::FrameContext& frame) {
+            scriptSystem.deliver(*frame.world, physicsSystem.getEvents());
+            physicsSystem.clearEvents();
+        }, 10, "contacts");
+
         scheduler.add(app::Phase::PostUpdate, [&pickSystem, &editor](const app::FrameContext& frame) {
             if (!editor.hasScenePick())
             {
