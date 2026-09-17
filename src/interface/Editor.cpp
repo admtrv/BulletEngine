@@ -6,6 +6,7 @@
 
 #include "interface/elements/Fonts.h"
 #include "interface/elements/Theme.h"
+#include "ecs/Components.h"
 #include "project/Project.h"
 #include "scene/Serializer.h"
 
@@ -158,6 +159,20 @@ void Editor::saveScene(const std::string& key)
     }
 
     m_sceneKey = key;
+    project::Project::instance().rescan();
+}
+
+void Editor::savePrefab(ecs::Entity entity)
+{
+    const auto* identity = m_world.get<ecs::IdentityComponent>(entity);
+    const std::string key = (identity ? identity->name : std::string("Entity")) + PREFAB_EXTENSION;
+
+    if (!scene::savePrefab(m_world, entity, project::Project::instance().getPath(key)))
+    {
+        std::cerr << "prefab save failed: " << key << '\n';
+        return;
+    }
+
     project::Project::instance().rescan();
 }
 

@@ -22,6 +22,7 @@
 #include "imgui.h"
 
 #include <algorithm>
+#include <iostream>
 
 namespace BulletEngine {
 namespace interface {
@@ -39,6 +40,19 @@ void Editor::drawHierarchy()
     }
 
     ImGui::Begin(HIERARCHY_PANEL, &m_showHierarchy);
+
+    // dropping on panel detaches back to root, prefab lands there too
+    if (ImGui::BeginDragDropTarget())
+    {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ENTITY_DRAG_TYPE))
+        {
+            ecs::systems::HierarchySystem::attach(m_world, *static_cast<const ecs::Entity*>(payload->Data), ecs::INVALID_ENTITY);
+        }
+
+        acceptPrefabDrop(ecs::INVALID_ENTITY);
+
+        ImGui::EndDragDropTarget();
+    }
 
     if (ImGui::Button("Add Entity", {ImGui::GetContentRegionAvail().x, 0.0f}))
     {
@@ -67,17 +81,6 @@ void Editor::drawHierarchy()
     // own tree, guides start fresh
     m_tree.reset();
     m_tree.setRootless(true);
-
-    // dropping on the panel detaches back to the root
-    if (ImGui::BeginDragDropTarget())
-    {
-        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ENTITY_DRAG_TYPE))
-        {
-            ecs::systems::HierarchySystem::attach(m_world, *static_cast<const ecs::Entity*>(payload->Data), ecs::INVALID_ENTITY);
-        }
-
-        ImGui::EndDragDropTarget();
-    }
 
     std::vector<ecs::Entity> roots;
 
@@ -123,6 +126,11 @@ void Editor::drawEntityNode(ecs::Entity entity, bool last, int depth)
     ImGui::PushID(id);
 
     BulletRender::interface::contextMenu("entity", [&]() {
+        if (ImGui::MenuItem("Save As Prefab"))
+        {
+            m_pendingPrefab = entity;
+        }
+
         if (ImGui::MenuItem("Delete"))
         {
             destroyEntity(entity);
@@ -145,6 +153,9 @@ void Editor::drawEntityNode(ecs::Entity entity, bool last, int depth)
             ecs::systems::HierarchySystem::attach(m_world, *static_cast<const ecs::Entity*>(payload->Data), entity);
         }
 
+        // prefab dropped on a row becomes its child
+        acceptPrefabDrop(entity);
+
         ImGui::EndDragDropTarget();
     }
 
@@ -163,6 +174,27 @@ void Editor::drawEntityNode(ecs::Entity entity, bool last, int depth)
     }
 
     m_tree.pop();
+}
+
+// prefab dragged out of explorer joins scene, invalid parent leaves it at root
+void Editor::acceptPrefabDrop(ecs::Entity parent)
+{
+    const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ASSET_DRAG_TYPE);
+
+    if (!payload)
+    {
+        return;
+    }
+
+    std::string key(static_cast<const char*>(payload->Data));
+
+    // explorer drags every file, only prefabs mean anything here
+    if (!key.ends_with(PREFAB_EXTENSION))
+    {
+        return;
+    }
+
+    m_pendingInstance.emplace_back(std::move(key), parent);
 }
 
 std::vector<ecs::Entity> Editor::getChildren(ecs::Entity entity) const
@@ -203,6 +235,25 @@ ecs::Entity Editor::spawnEntity(Preset preset)
     auto& renderable = m_world.add<ecs::RenderableComponent>(entity);
     renderable.model = assets::Registry::instance().load<BulletRender::scene::Model>(
         preset == Preset::Box ? assets::BOX_KEY : assets::SPHERE_KEY);
+
+    return entity;
+}
+
+// prefab file read into the world, attached where it was dropped
+ecs::Entity Editor::spawnPrefab(const std::string& key, ecs::Entity parent)
+{
+    const ecs::Entity entity = scene::loadPrefab(m_world, project::Project::instance().getPath(key));
+
+    if (entity == ecs::INVALID_ENTITY)
+    {
+        std::cerr << "prefab load failed: " << key << '\n';
+        return ecs::INVALID_ENTITY;
+    }
+
+    if (parent != ecs::INVALID_ENTITY)
+    {
+        ecs::systems::HierarchySystem::attach(m_world, entity, parent);
+    }
 
     return entity;
 }
@@ -346,9 +397,23 @@ void Editor::applyCommands()
     m_pendingOpen.clear();
     m_pendingClear = false;
 
+    if (m_pendingPrefab != ecs::INVALID_ENTITY)
+    {
+        savePrefab(m_pendingPrefab);
+        m_pendingPrefab = ecs::INVALID_ENTITY;
+    }
+
     for (Preset preset : m_pendingCreate)
     {
         m_selection = spawnEntity(preset);
+    }
+
+    for (const auto& [key, parent] : m_pendingInstance)
+    {
+        if (const ecs::Entity entity = spawnPrefab(key, parent); entity != ecs::INVALID_ENTITY)
+        {
+            m_selection = entity;
+        }
     }
 
     for (ecs::Entity entity : m_pendingDestroy)
@@ -372,6 +437,7 @@ void Editor::applyCommands()
     }
 
     m_pendingCreate.clear();
+    m_pendingInstance.clear();
     m_pendingDestroy.clear();
     m_pendingAdd.clear();
     m_pendingRemove.clear();

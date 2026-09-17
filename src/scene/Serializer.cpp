@@ -15,6 +15,7 @@ namespace scene {
 
 constexpr const char* VERSION_NODE = "version";
 constexpr const char* ENTITY_NODE = "entity";
+constexpr const char* PREFAB_NODE = "prefab";
 
 static void saveValue(Node& node, const reflect::Field& field, const void* instance)
 {
@@ -112,6 +113,50 @@ void loadObject(const Node& node, const reflect::Type& type, void* instance)
     }
 }
 
+void saveEntity(Node& node, const ecs::World& world, ecs::Entity entity)
+{
+    node.setValue(std::to_string(entity));
+
+    for (const std::unique_ptr<ecs::Component>& component : world.getComponents(entity))
+    {
+        const reflect::Type* type = reflect::Registry::instance().find(std::type_index(typeid(*component)));
+
+        if (!type)
+        {
+            continue;
+        }
+
+        saveObject(node.add(type->getName()), *type, component.get());
+    }
+}
+
+ecs::Entity loadEntity(ecs::World& world, const Node& node)
+{
+    const ecs::Entity entity = world.create();
+
+    for (const Node& componentNode : node.getChildren())
+    {
+        const reflect::Type* type = reflect::Registry::instance().find(componentNode.getName());
+
+        if (!type)
+        {
+            continue;
+        }
+
+        auto* component = static_cast<ecs::Component*>(type->create());
+
+        if (!component)
+        {
+            continue;
+        }
+
+        loadObject(componentNode, *type, component);
+        world.attach(entity, std::unique_ptr<ecs::Component>(component));
+    }
+
+    return entity;
+}
+
 Node toNode(const ecs::World& world)
 {
     Node root;
@@ -119,20 +164,7 @@ Node toNode(const ecs::World& world)
 
     for (ecs::Entity entity : world.getEntities())
     {
-        Node& entityNode = root.add(ENTITY_NODE);
-        entityNode.setValue(std::to_string(entity));
-
-        for (const std::unique_ptr<ecs::Component>& component : world.getComponents(entity))
-        {
-            const reflect::Type* type = reflect::Registry::instance().find(std::type_index(typeid(*component)));
-
-            if (!type)
-            {
-                continue;
-            }
-
-            saveObject(entityNode.add(type->getName()), *type, component.get());
-        }
+        saveEntity(root.add(ENTITY_NODE), world, entity);
     }
 
     return root;
@@ -142,33 +174,49 @@ void fromNode(ecs::World& world, const Node& root)
 {
     for (const Node& entityNode : root.getChildren())
     {
-        if (entityNode.getName() != ENTITY_NODE)
+        if (entityNode.getName() == ENTITY_NODE)
         {
-            continue;
-        }
-
-        const ecs::Entity entity = world.create();
-
-        for (const Node& componentNode : entityNode.getChildren())
-        {
-            const reflect::Type* type = reflect::Registry::instance().find(componentNode.getName());
-
-            if (!type)
-            {
-                continue;
-            }
-
-            auto* component = static_cast<ecs::Component*>(type->create());
-
-            if (!component)
-            {
-                continue;
-            }
-
-            loadObject(componentNode, *type, component);
-            world.attach(entity, std::unique_ptr<ecs::Component>(component));
+            loadEntity(world, entityNode);
         }
     }
+}
+
+bool savePrefab(const ecs::World& world, ecs::Entity entity, const std::string& path)
+{
+    Node root;
+    root.add(VERSION_NODE).setValue(VERSION);
+
+    saveEntity(root.add(PREFAB_NODE), world, entity);
+    return write(root, path);
+}
+
+ecs::Entity loadPrefab(ecs::World& world, const std::string& path)
+{
+    Node root;
+
+    if (!read(root, path))
+    {
+        return ecs::INVALID_ENTITY;
+    }
+
+    for (const Node& node : root.getChildren())
+    {
+        if (node.getName() == PREFAB_NODE)
+        {
+            return loadEntity(world, node);
+        }
+    }
+
+    return ecs::INVALID_ENTITY;
+}
+
+ecs::Entity clone(ecs::World& world, ecs::Entity entity)
+{
+    // through tree, so copy goes same way file does
+    Node node;
+    saveEntity(node, world, entity);
+
+    return loadEntity(world, node);
 }
 
 bool save(const ecs::World& world, const std::string& path)

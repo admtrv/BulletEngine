@@ -52,6 +52,7 @@ constexpr const char* ASSET_DRAG_TYPE = "BE_ASSET";
 constexpr const char* FOLDER_DRAG_TYPE = "BE_FOLDER";
 
 constexpr const char* SCENE_EXTENSION = ".scene";
+constexpr const char* PREFAB_EXTENSION = ".prefab";
 constexpr const char* SCENE_DEFAULT_NAME = "NewScene";
 
 // what editor is doing with the world
@@ -106,6 +107,9 @@ public:
     // scene project opens with, first one it holds or a new one
     void openFirstScene();
 
+    // world is swapped between frames, so script may ask for it mid update
+    void requestScene(std::string key) { m_pendingOpen = std::move(key); }
+
     // world only advances while playing
     bool isPlaying() const { return m_mode == Mode::Play; }
 
@@ -136,6 +140,7 @@ private:
     void openPanel(bool& shown, const char* name);
     std::string sceneName() const;
     void saveScene(const std::string& key);
+    void savePrefab(ecs::Entity entity);        // writes it into project, named after entity
     void drawSceneMenu();
     void drawDebugMenu();
     void setMode(Mode mode);
@@ -145,6 +150,7 @@ private:
     void drawGame();
     void drawHierarchy();
     void drawEntityNode(ecs::Entity entity, bool last, int depth);
+    void acceptPrefabDrop(ecs::Entity parent);
     void drawInspector();
     void drawAddMenu();
     void drawConsole();
@@ -161,7 +167,7 @@ private:
 
     bool drawFields(const reflect::Type& type, void* instance, bool splitOwn = false);
     bool drawValue(const reflect::Field& field, void* instance);
-    bool drawObjectType(const reflect::Field& field, void* instance, const reflect::Type& current);
+    bool drawObjectType(const reflect::Field& field, void* instance, const reflect::Type* current);
 
     using ValueMap = std::unordered_map<std::string, reflect::Value>;
     void collectValues(const reflect::Type& type, const void* instance, ValueMap& out) const;
@@ -170,6 +176,7 @@ private:
     // entities
     std::vector<ecs::Entity> getChildren(ecs::Entity entity) const;
     ecs::Entity spawnEntity(Preset preset);
+    ecs::Entity spawnPrefab(const std::string& key, ecs::Entity parent);
     void createEntity(Preset preset);
     void fillNewScene();
     void destroyEntity(ecs::Entity entity);
@@ -204,7 +211,9 @@ private:
 
     // queued while the world is being walked
     std::vector<Preset> m_pendingCreate;
+    std::vector<std::pair<std::string, ecs::Entity>> m_pendingInstance;      // prefabs dropped on hierarchy, with parent to attach to
     std::vector<ecs::Entity> m_pendingDestroy;
+    ecs::Entity m_pendingPrefab = ecs::INVALID_ENTITY;      // entity menu asked to save
 
     std::vector<std::pair<ecs::Entity, const reflect::Type*>> m_pendingAdd;
     std::vector<std::pair<ecs::Entity, std::type_index>> m_pendingRemove;

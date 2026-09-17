@@ -29,8 +29,8 @@ constexpr const char* CALLBACK_NAMES[] = {
 
 // machine
 
-ScriptSystem::ScriptSystem(PhysicsSystem& physics)
-    : m_physics(physics)
+ScriptSystem::ScriptSystem(PhysicsSystem& physics, interface::Editor& editor)
+    : m_physics(physics), m_editor(editor)
 {
     m_lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
     bind();
@@ -90,6 +90,7 @@ void ScriptSystem::attach(World& world, Entity entity)
     script::installInput(environment);
     script::installPhysics(environment, world, entity, m_physics);
     script::installWorld(environment, world);
+    script::installScene(environment, m_editor);
 
     Instance instance{environment, {}};
 

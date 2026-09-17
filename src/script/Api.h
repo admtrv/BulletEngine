@@ -15,6 +15,7 @@ namespace BulletEngine {
 // fwd
 namespace reflect { class Type; }
 namespace ecs { namespace systems { class PhysicsSystem; } }
+namespace interface { class Editor; }
 
 namespace script {
 
@@ -27,6 +28,7 @@ void installComponents(sol::environment& environment, ecs::World& world, ecs::En
 void installInput(sol::environment& environment);
 void installPhysics(sol::environment& environment, ecs::World& world, ecs::Entity entity, ecs::systems::PhysicsSystem& simulation);
 void installWorld(sol::environment& environment, ecs::World& world);
+void installScene(sol::environment& environment, interface::Editor& editor);
 
 } // namespace script
 } // namespace BulletEngine

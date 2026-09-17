@@ -429,7 +429,7 @@ void Editor::applyValues(const reflect::Type& type, void* instance, const ValueM
 }
 
 // picks the concrete type a polymorphic field holds
-bool Editor::drawObjectType(const reflect::Field& field, void* instance, const reflect::Type& current)
+bool Editor::drawObjectType(const reflect::Field& field, void* instance, const reflect::Type* current)
 {
     const reflect::Type* base = field.getBaseType();
 
@@ -444,13 +444,14 @@ bool Editor::drawObjectType(const reflect::Field& field, void* instance, const r
     std::vector<const char*> names;
     names.reserve(options.size());
 
-    int selected = 0;
+    // nothing chosen yet, so row starts empty rather than on first type
+    int selected = -1;
 
     for (size_t i = 0; i < options.size(); i++)
     {
         names.push_back(options[i]->getLabel().c_str());
 
-        if (options[i] == &current)
+        if (options[i] == current)
         {
             selected = static_cast<int>(i);
         }
@@ -463,7 +464,7 @@ bool Editor::drawObjectType(const reflect::Field& field, void* instance, const r
         return false;
     }
 
-    if (selected == previous)
+    if (selected == previous || selected < 0)
     {
         return false;
     }
@@ -489,7 +490,8 @@ bool Editor::drawField(const reflect::Field& field, void* instance)
         const reflect::Type* nested = nullptr;
         void* object = field.resolve(instance, &nested);
 
-        if (!nested || !object)
+        // empty field cannot be built into, only reported
+        if (!object && !field.isBuildable())
         {
             BulletRender::interface::statRow(name, "None");
             return false;
@@ -497,7 +499,7 @@ bool Editor::drawField(const reflect::Field& field, void* instance)
 
         bool changed = false;
 
-        if (drawObjectType(field, instance, *nested))
+        if (drawObjectType(field, instance, object ? nested : nullptr))
         {
             changed = true;
             object = field.resolve(instance, &nested);

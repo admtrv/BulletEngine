@@ -97,11 +97,12 @@ int main(int argc, char** argv)
         ecs::systems::RenderSystem renderSystem(scene);
         ecs::systems::DebugDrawSystem debugDrawSystem(lines);
         ecs::systems::ReloadSystem reloadSystem;
-        ecs::systems::ScriptSystem scriptSystem(physicsSystem);
-        scriptSystem.observe(world);
 
         // editor
         interface::Editor editor(world, physicsSystem, debugDrawSystem);
+
+        ecs::systems::ScriptSystem scriptSystem(physicsSystem, editor);
+        scriptSystem.observe(world);
 
         // its own tools, the game view goes without them
         editor.addEditorPass(grid);
@@ -213,6 +214,7 @@ int main(int argc, char** argv)
             editor.draw();
 
             world.flush();
+            br::utils::Input::instance().endFrame();
         });
     }
 

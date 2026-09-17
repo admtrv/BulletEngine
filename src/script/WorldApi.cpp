@@ -6,7 +6,9 @@
 #include "Binding.h"
 
 #include "ecs/Components.h"
+#include "project/Project.h"
 #include "reflect/Registry.h"
+#include "scene/Serializer.h"
 
 #include <string>
 
@@ -54,6 +56,17 @@ void installWorld(sol::environment& environment, ecs::World& world)
 
         world.add<ecs::TransformComponent>(entity);
         return entity;
+    };
+
+    // copy of entity that already stands, cheap way to repeat something
+    table["clone"] = [&world](ecs::Entity entity) {
+        return scene::clone(world, entity);
+    };
+
+    // entity built from prefab file, nothing when key leads nowhere
+    table["instantiate"] = [&world](const std::string& key) -> sol::optional<ecs::Entity> {
+        const ecs::Entity entity = scene::loadPrefab(world, project::Project::instance().getPath(key));
+        return entity != ecs::INVALID_ENTITY ? sol::optional<ecs::Entity>(entity) : sol::nullopt;
     };
 
     // marked now, components live until the frame ends

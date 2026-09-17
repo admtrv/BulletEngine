@@ -14,6 +14,10 @@
 #include <unordered_set>
 
 namespace BulletEngine {
+
+// fwd
+namespace interface { class Editor; }
+
 namespace ecs {
 namespace systems {
 
@@ -22,7 +26,7 @@ class PhysicsSystem;
 // runs lua of scripted entities
 class ScriptSystem {
 public:
-    explicit ScriptSystem(PhysicsSystem& physics);
+    ScriptSystem(PhysicsSystem& physics, interface::Editor& editor);
 
     // world
     void observe(World& world);             // onDestroy needs components still standing
@@ -77,6 +81,7 @@ private:
     void report(Instance& instance, Callback callback, const sol::protected_function_result& result);
 
     PhysicsSystem& m_physics;
+    interface::Editor& m_editor;
     sol::state m_lua;
     std::unordered_map<Entity, Instance> m_instances;
     std::unordered_set<Entity> m_broken;    // did not compile, left alone until play restarts
