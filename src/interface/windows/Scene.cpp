@@ -112,7 +112,9 @@ void Editor::renderViews(BulletRender::scene::Scene& scene)
 
     m_gameCamera->setPosition(position);
     m_gameCamera->setTarget(position + transform.getForward());
+    m_gameCamera->setProjection(component.projection);
     m_gameCamera->setFov(component.fov);
+    m_gameCamera->setHeight(component.height);
     m_gameCamera->setClipPlanes(component.nearPlane, component.farPlane);
 
     scene.setActiveCamera(m_gameCamera.get());

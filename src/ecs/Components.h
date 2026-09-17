@@ -8,6 +8,7 @@
 #include "ecs/Ecs.h"
 #include "script/Script.h"
 
+#include "scene/Camera.h"
 #include "scene/Light.h"
 #include "scene/Transform.h"
 #include "scene/models/Model.h"
@@ -54,7 +55,11 @@ public:
 // what the game looks through, entity transform places it
 class CameraComponent : public Component {
 public:
-    float fov = 60.0f;
+    BulletRender::scene::Projection projection = BulletRender::scene::Projection::Perspective;
+
+    float fov = 60.0f;          // perspective only, vertical angle
+    float height = 10.0f;       // orthographic only, world units view spans
+
     float nearPlane = 0.1f;
     float farPlane = 500.0f;
 
