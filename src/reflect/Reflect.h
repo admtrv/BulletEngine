@@ -284,6 +284,12 @@ Field makeMemberField(std::string name, M C::* member)
 #define BITS()                                                                          \
             type.getLastField().setBits(true);
 
+// field the asset may fill instead, editor shows a toggle that clears it again
+#define OPTIONAL(MEMBER, HAS, CLEAR)                                                    \
+            type.getLastField().setOptional(                                            \
+                [](const void* instance) { return (static_cast<const Self*>(instance)->MEMBER).HAS(); },  \
+                [](void* instance) { (static_cast<Self*>(instance)->MEMBER).CLEAR(); });
+
 // marks first of three bool fields, editor draws them as one x y z row under TEXT
 #define AXES(TEXT)                                                                      \
             do {                                                                        \
@@ -301,6 +307,9 @@ Field makeMemberField(std::string name, M C::* member)
 
 #define SPEED(VALUE)                                                                    \
             type.getLastField().setSpeed(VALUE);
+
+#define RANGE(MIN, MAX)                                                                 \
+            type.getLastField().setRange(MIN, MAX);
 
 #define BASE(TYPE)                                                                      \
             type.setBase(Registry::instance().find(std::type_index(typeid(TYPE))));

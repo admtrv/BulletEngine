@@ -228,6 +228,42 @@ void Editor::syncCollider(ecs::Entity entity)
     }
 }
 
+// term the asset may fill instead, toggle clears it back to whatever came with the model
+bool Editor::drawOptional(const reflect::Field& field, void* instance)
+{
+    bool enabled = field.has(instance);
+
+    const char* label = field.getLabel().c_str();
+    const reflect::Value value = field.get(instance);
+
+    // override draws caption and toggle, so the control below carries none
+    const bool isColor = field.getType() == reflect::ValueType::Vec3;
+
+    glm::vec3 color = isColor ? value.get<glm::vec3>() : glm::vec3{};
+    float scalar = isColor ? 0.0f : value.get<float>();
+
+    const float min = field.hasRange() ? field.getMin() : -DRAG_LIMIT;
+    const float max = field.hasRange() ? field.getMax() : DRAG_LIMIT;
+
+    const bool edited = isColor
+        ? BulletRender::interface::overrideField(label, enabled, color)
+        : BulletRender::interface::overrideField(label, enabled, scalar, min, max, "%.1f");
+
+    if (!edited)
+    {
+        return false;
+    }
+
+    if (!enabled)
+    {
+        field.clear(instance);
+        return true;
+    }
+
+    field.set(instance, isColor ? reflect::Value(color) : reflect::Value(scalar));
+    return true;
+}
+
 // one value of any supported type
 bool Editor::drawValue(const reflect::Field& field, void* instance)
 {
@@ -297,24 +333,31 @@ bool Editor::drawValue(const reflect::Field& field, void* instance)
 
             if (field.isAsset())
             {
-                BulletRender::interface::statRow(name, "%s", assets::toLabel(v).c_str());
+                // state types a path, it never mirrors the key a preset carries
+                BulletRender::interface::AssetFieldState& slot = m_assetPaths[field.getName()];
 
-                // the field types a path, it never mirrors the key a preset carries
-                AssetPath& typed = m_assetPaths[field.getName()];
-
-                if (BulletRender::interface::loadFromFileField(field.getName().c_str(), typed.text, sizeof(typed.text), "path/to/asset", ASSET_DRAG_TYPE))
+                switch (BulletRender::interface::assetField(name, assets::toLabel(v).c_str(), !v.empty(), slot, ASSET_DRAG_TYPE))
                 {
-                    field.set(instance, std::string(typed.text));
+                    case BulletRender::interface::AssetAction::Clear:
+                        field.set(instance, std::string{});
+                        slot.error.clear();
+                        changed = true;
+                        break;
 
-                    // the key only sticks when the asset behind it loaded
-                    typed.error = field.get(instance).get<std::string>() == typed.text
-                        ? std::string{}
-                        : "failed to load " + std::string(typed.text);
+                    case BulletRender::interface::AssetAction::Load:
+                        field.set(instance, std::string(slot.path));
 
-                    changed = true;
+                        // the key only sticks when the asset behind it loaded
+                        slot.error = field.get(instance).get<std::string>() == slot.path
+                            ? std::string{}
+                            : "failed to load " + std::string(slot.path);
+
+                        changed = true;
+                        break;
+
+                    default:
+                        break;
                 }
-
-                BulletRender::interface::errorText(typed.error);
 
                 break;
             }
@@ -529,7 +572,7 @@ bool Editor::drawField(const reflect::Field& field, void* instance)
         return false;
     }
 
-    return drawValue(field, instance);
+    return field.isOptional() ? drawOptional(field, instance) : drawValue(field, instance);
 }
 
 // fields arrive either as values or as pointers, one walk serves both

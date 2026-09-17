@@ -32,6 +32,8 @@ public:
     using Getter = std::function<Value(const void*)>;
     using Setter = std::function<void(void*, const Value&)>;
     using Resolver = std::function<void*(const void*, const Type**)>;
+    using Query = std::function<bool(const void*)>;
+    using Clear = std::function<void(void*)>;
     using Builder = std::function<void*(void*, const Type&)>;
 
     Field(std::string name, ValueType type, Getter getter, Setter setter)
@@ -67,8 +69,20 @@ public:
     bool isAxes() const { return m_axes; }          // first of three, drawn as one row of x y z
     void setAxes(bool axes) { m_axes = axes; }
 
+    // unset until someone asks for it, so whatever the asset brought stands
+    bool isOptional() const { return m_has != nullptr; }
+    bool has(const void* instance) const { return m_has && m_has(instance); }
+    void clear(void* instance) const { if (m_clear) { m_clear(instance); } }
+    void setOptional(Query has, Clear clear) { m_has = std::move(has); m_clear = std::move(clear); }
+
     float getSpeed() const { return m_speed; }      // how fast a drag walks the value, zero leaves it to the editor
     void setSpeed(float speed) { m_speed = speed; }
+
+    // what the value may reach, equal bounds leave it to the editor
+    float getMin() const { return m_min; }
+    float getMax() const { return m_max; }
+    bool hasRange() const { return m_min < m_max; }
+    void setRange(float min, float max) { m_min = min; m_max = max; }
 
     // value
     Value get(const void* instance) const { return m_getter ? m_getter(instance) : Value{}; }
@@ -95,7 +109,12 @@ private:
     bool m_asset = false;
     bool m_bits = false;
     bool m_axes = false;
+
+    Query m_has;
+    Clear m_clear;
     float m_speed = 0.0f;
+    float m_min = 0.0f;
+    float m_max = 0.0f;
 
     Getter m_getter;
     Setter m_setter;

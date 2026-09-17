@@ -82,12 +82,6 @@ inline std::string toString(Preset preset)
     }
 }
 
-// what an asset field types into, with last failure to report
-struct AssetPath {
-    char text[256] = "";
-    std::string error;
-};
-
 // docked panels driving the world
 class Editor {
 public:
@@ -167,6 +161,7 @@ private:
 
     bool drawFields(const reflect::Type& type, void* instance, bool splitOwn = false);
     bool drawValue(const reflect::Field& field, void* instance);
+    bool drawOptional(const reflect::Field& field, void* instance);
     bool drawObjectType(const reflect::Field& field, void* instance, const reflect::Type* current);
 
     using ValueMap = std::unordered_map<std::string, reflect::Value>;
@@ -207,7 +202,7 @@ private:
     char m_sceneName[128] = "";
 
     // what is typed into an asset field before Load is pressed
-    std::unordered_map<std::string, AssetPath> m_assetPaths;
+    std::unordered_map<std::string, BulletRender::interface::AssetFieldState> m_assetPaths;
 
     // queued while the world is being walked
     std::vector<Preset> m_pendingCreate;

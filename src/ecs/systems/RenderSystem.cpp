@@ -8,6 +8,20 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
+// what the component overrides lands on the model, what it leaves alone keeps its mtl value
+static void apply(const BulletRender::render::Material& from, BulletRender::render::Material& to)
+{
+    if (from.hasColor())      { to.setColor(from.getColor()); }
+    if (from.hasSpecular())   { to.setSpecular(from.getSpecular()); }
+    if (from.hasShininess())  { to.setShininess(from.getShininess()); }
+    if (from.hasEmissive())   { to.setEmissive(from.getEmissive()); }
+
+    for (const BulletRender::render::TextureSlot& slot : from.getTextures())
+    {
+        to.setTexture(slot.uniformName, slot.texture, slot.unit);
+    }
+}
+
 RenderSystem::RenderSystem(BulletRender::scene::Scene& scene) : m_scene(scene) {}
 
 void RenderSystem::render(World& world)
@@ -30,7 +44,8 @@ void RenderSystem::render(World& world)
         {
             auto* object = m_scene.addObject(renderable->model.getShared());
 
-            object->getMaterial() = renderable->material;
+            // only terms the component set reach the object, rest stays as the model loaded it
+            apply(renderable->material, object->getMaterial());
             object->getTransform().setMatrix(matrix);
         }
 
