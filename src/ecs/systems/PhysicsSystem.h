@@ -43,16 +43,16 @@ public:
     // queries
     bool raycast(const BulletPhysics::collision::Ray& ray, BulletPhysics::collision::RayHit& outHit) const { return m_physicsWorld.raycast(ray, outHit); }
 
+    // answers with entity rather than collider, what scripts and gameplay ask for
+    RayResult raycast(const glm::vec3& origin, const glm::vec3& direction, float distance, BulletPhysics::collision::collider::LayerMask mask = BulletPhysics::collision::collider::LAYER_ALL) const;
+
 private:
     // simulation reports here, mid step, so events only pile up
     void onContactBegin(const BulletPhysics::collision::Manifold& manifold) override;
-    void onContactEnd(BulletPhysics::collision::collider::Collider* a,
-                      BulletPhysics::collision::collider::Collider* b) override;
+    void onContactEnd(BulletPhysics::collision::collider::Collider* a, BulletPhysics::collision::collider::Collider* b) override;
 
     // both sides hear about pair, each with other named
-    void report(ContactPhase phase, BulletPhysics::collision::collider::Collider* a,
-                BulletPhysics::collision::collider::Collider* b,
-                const glm::vec3& point, const glm::vec3& normal, float depth);
+    void report(ContactPhase phase, BulletPhysics::collision::collider::Collider* a, BulletPhysics::collision::collider::Collider* b, const glm::vec3& point, const glm::vec3& normal, float depth);
 
     Entity entityOf(const BulletPhysics::collision::collider::Collider* collider) const;
 

@@ -17,10 +17,12 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
+class PhysicsSystem;
+
 // runs lua of scripted entities
 class ScriptSystem {
 public:
-    ScriptSystem();
+    explicit ScriptSystem(PhysicsSystem& physics);
 
     // world
     void observe(World& world);             // onDestroy needs components still standing
@@ -74,6 +76,7 @@ private:
 
     void report(Instance& instance, Callback callback, const sol::protected_function_result& result);
 
+    PhysicsSystem& m_physics;
     sol::state m_lua;
     std::unordered_map<Entity, Instance> m_instances;
     std::unordered_set<Entity> m_broken;    // did not compile, left alone until play restarts

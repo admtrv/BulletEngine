@@ -21,9 +21,7 @@ Entity PhysicsSystem::entityOf(const BulletPhysics::collision::collider::Collide
     return it != m_owners.end() ? it->second : INVALID_ENTITY;
 }
 
-void PhysicsSystem::report(ContactPhase phase, BulletPhysics::collision::collider::Collider* a,
-                           BulletPhysics::collision::collider::Collider* b,
-                           const glm::vec3& point, const glm::vec3& normal, float depth)
+void PhysicsSystem::report(ContactPhase phase, BulletPhysics::collision::collider::Collider* a, BulletPhysics::collision::collider::Collider* b, const glm::vec3& point, const glm::vec3& normal, float depth)
 {
     const Entity first = entityOf(a);
     const Entity second = entityOf(b);
@@ -45,11 +43,7 @@ void PhysicsSystem::onContactBegin(const BulletPhysics::collision::Manifold& man
 {
     const auto& info = manifold.info;
 
-    const glm::vec3 normal{
-        static_cast<float>(info.normal.x),
-        static_cast<float>(info.normal.y),
-        static_cast<float>(info.normal.z)
-    };
+    const glm::vec3 normal{static_cast<float>(info.normal.x), static_cast<float>(info.normal.y), static_cast<float>(info.normal.z)};
 
     glm::vec3 point{};
 
@@ -59,14 +53,32 @@ void PhysicsSystem::onContactBegin(const BulletPhysics::collision::Manifold& man
         point = {static_cast<float>(position.x), static_cast<float>(position.y), static_cast<float>(position.z)};
     }
 
-    report(ContactPhase::Begin, manifold.colliderA, manifold.colliderB,
-           point, normal, static_cast<float>(info.penetration));
+    report(ContactPhase::Begin, manifold.colliderA, manifold.colliderB, point, normal, static_cast<float>(info.penetration));
 }
 
-void PhysicsSystem::onContactEnd(BulletPhysics::collision::collider::Collider* a,
-                                 BulletPhysics::collision::collider::Collider* b)
+void PhysicsSystem::onContactEnd(BulletPhysics::collision::collider::Collider* a, BulletPhysics::collision::collider::Collider* b)
 {
     report(ContactPhase::End, a, b, {}, {}, 0.0f);
+}
+
+RayResult PhysicsSystem::raycast(const glm::vec3& origin, const glm::vec3& direction, float distance, BulletPhysics::collision::collider::LayerMask mask) const
+{
+    BulletPhysics::collision::Ray ray;
+    ray.origin = {origin.x, origin.y, origin.z};
+    ray.direction = {direction.x, direction.y, direction.z};
+    ray.maxDistance = distance;
+
+    BulletPhysics::collision::RayHit hit;
+
+    if (!m_physicsWorld.raycast(ray, hit, mask))
+    {
+        return {};
+    }
+
+    const glm::vec3 point{static_cast<float>(hit.point.x), static_cast<float>(hit.point.y), static_cast<float>(hit.point.z)};
+    const glm::vec3 normal{static_cast<float>(hit.normal.x), static_cast<float>(hit.normal.y), static_cast<float>(hit.normal.z)};
+
+    return {true, entityOf(hit.collider), point, normal, static_cast<float>(hit.distance)};
 }
 
 void PhysicsSystem::watch(World& world)

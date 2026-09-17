@@ -29,6 +29,7 @@
 #include "interface/Editor.h"
 #include "io/Log.h"
 #include "project/Project.h"
+#include "script/Api.h"
 
 #include <memory>
 
@@ -96,7 +97,7 @@ int main(int argc, char** argv)
         ecs::systems::RenderSystem renderSystem(scene);
         ecs::systems::DebugDrawSystem debugDrawSystem(lines);
         ecs::systems::ReloadSystem reloadSystem;
-        ecs::systems::ScriptSystem scriptSystem;
+        ecs::systems::ScriptSystem scriptSystem(physicsSystem);
         scriptSystem.observe(world);
 
         // editor

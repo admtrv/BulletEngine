@@ -14,6 +14,7 @@ namespace BulletEngine {
 
 // fwd
 namespace reflect { class Type; }
+namespace ecs { namespace systems { class PhysicsSystem; } }
 
 namespace script {
 
@@ -24,7 +25,7 @@ const reflect::Type* findType(const std::string& name);
 
 void installComponents(sol::environment& environment, ecs::World& world, ecs::Entity entity);
 void installInput(sol::environment& environment);
-void installPhysics(sol::environment& environment, ecs::World& world, ecs::Entity entity);
+void installPhysics(sol::environment& environment, ecs::World& world, ecs::Entity entity, ecs::systems::PhysicsSystem& simulation);
 void installWorld(sol::environment& environment, ecs::World& world);
 
 } // namespace script

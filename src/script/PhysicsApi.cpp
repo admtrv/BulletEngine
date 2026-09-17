@@ -5,6 +5,7 @@
 #include "Api.h"
 
 #include "ecs/Components.h"
+#include "ecs/systems/PhysicsSystem.h"
 
 #include <glm/glm.hpp>
 
@@ -23,7 +24,7 @@ static BulletPhysics::math::Vec3 toPhysics(const glm::vec3& value)
     return {value.x, value.y, value.z};
 }
 
-void installPhysics(sol::environment& environment, ecs::World& world, ecs::Entity entity)
+void installPhysics(sol::environment& environment, ecs::World& world, ecs::Entity entity, ecs::systems::PhysicsSystem& simulation)
 {
     sol::table body = environment.create_named("body");
 
@@ -53,6 +54,27 @@ void installPhysics(sol::environment& environment, ecs::World& world, ecs::Entit
         }
 
         rigid->setVelocity(rigid->getVelocity() + toPhysics(impulse) * rigid->getInverseMass());
+    };
+
+    sol::table physics = environment.create_named("physics");
+
+    // what ray met first, or nothing, layers narrow search
+    physics["raycast"] = [&simulation](const glm::vec3& origin, const glm::vec3& direction, float distance, sol::optional<unsigned> mask, sol::this_state state) -> sol::object {
+        const ecs::systems::RayResult result = simulation.raycast(origin, glm::normalize(direction), distance, mask.value_or(~0u));
+
+        if (!result.hit)
+        {
+            return sol::lua_nil;
+        }
+
+        sol::table found = sol::state_view(state).create_table();
+
+        found["entity"] = result.entity;
+        found["point"] = result.point;
+        found["normal"] = result.normal;
+        found["distance"] = result.distance;
+
+        return found;
     };
 }
 

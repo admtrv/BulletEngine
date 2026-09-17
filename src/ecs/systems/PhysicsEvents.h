@@ -36,6 +36,17 @@ struct ContactEvent {
     bool trigger = false;
 };
 
+// what ray met, empty when it met nothing
+struct RayResult {
+    bool hit = false;
+
+    Entity entity = INVALID_ENTITY;
+
+    glm::vec3 point{};
+    glm::vec3 normal{};     // faces ray
+    float distance = 0.0f;
+};
+
 } // namespace systems
 } // namespace ecs
 } // namespace BulletEngine
