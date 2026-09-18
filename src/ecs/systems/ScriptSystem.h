@@ -8,6 +8,7 @@
 #include "ecs/systems/PhysicsEvents.h"
 
 #include "render/passes/Canvas.h"
+#include "script/Events.h"
 
 #include <sol/sol.hpp>
 
@@ -91,6 +92,7 @@ private:
     sol::state m_lua;
     std::unordered_map<Entity, Instance> m_instances;
     std::unordered_set<Entity> m_broken;    // did not compile, left alone until play restarts
+    script::EventBus m_events;              // what scripts say to each other
     bool m_running = false;
 };
 

@@ -90,6 +90,7 @@ void ScriptSystem::attach(World& world, Entity entity)
 
     script::installComponents(environment, world, entity);
     script::installInput(environment);
+    script::installEvents(environment, m_events, entity);
     script::installPhysics(environment, world, entity, m_physics);
     script::installWorld(environment, world);
     script::installScene(environment, m_editor);
@@ -119,6 +120,8 @@ void ScriptSystem::observe(World& world)
 
         // components are still there, script may read them one last time
         call(it->second, Callback::Destroy);
+
+        m_events.forget(entity);
         m_instances.erase(it);
     });
 }
@@ -155,6 +158,7 @@ void ScriptSystem::stop()
     m_instances.clear();
     m_broken.clear();
 
+    m_events.clear();
     script::releaseFonts();
 }
 
