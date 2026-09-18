@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# every commit is expected to bump the version, refuses one that forgot
+
+VERSION_FILE="src/Version.h"
+
+# already bumped, nothing to say
+git diff --cached --name-only | grep -qx "$VERSION_FILE" && exit 0
+
+current=$(grep -o '"[0-9.]*"' "$VERSION_FILE" 2>/dev/null | tr -d '"')
+
+echo "$VERSION_FILE is untouched, it still says ${current:-nothing}"
+echo "bump it, or commit with --no-verify"
+
+exit 1

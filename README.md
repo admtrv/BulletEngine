@@ -41,8 +41,8 @@ Each module grew on its own, in a vacuum, and stays usable alone. Here they meet
 
 Both modules come as submodules, everything they need applies here too:
 
-- [**BulletRender**](https://github.com/admtrv/BulletRender) for graphics
-- [**BulletPhysics**](https://github.com/admtrv/BulletPhysics) for physics
+- [BulletRender](https://github.com/admtrv/BulletRender) for graphics
+- [BulletPhysics](https://github.com/admtrv/BulletPhysics) for physics
 
 Bundled in `external/`:
 
