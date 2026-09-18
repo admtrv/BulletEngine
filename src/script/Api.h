@@ -14,6 +14,7 @@ namespace BulletEngine {
 
 // fwd
 namespace reflect { class Type; }
+namespace script { class EventBus; }
 namespace ecs { namespace systems { class PhysicsSystem; } }
 namespace interface { class Editor; }
 
@@ -32,6 +33,7 @@ void releaseFonts();
 
 void installComponents(sol::environment& environment, ecs::World& world, ecs::Entity entity);
 void installInput(sol::environment& environment);
+void installEvents(sol::environment& environment, EventBus& events, ecs::Entity entity);
 
 void installPhysics(sol::environment& environment, ecs::World& world, ecs::Entity entity, ecs::systems::PhysicsSystem& simulation);
 void installWorld(sol::environment& environment, ecs::World& world);

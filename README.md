@@ -18,12 +18,10 @@
   
 </p>
 
-Small but complete C/C++ 3D game engine with Lua scripting. It combines a graphics engine module and a physics engine module under an ECS-based architecture, with an editor and its own project and scene workflow.
-
-Each module grew on its own, in a vacuum, and stays usable alone. Here they meet, and from now on both grow driven by what the engine turns out to need.
+Small but complete C/C++ 3D game engine with Lua scripting. It combines a graphics engine module and a physics engine module under an ECS-based architecture, with an editor and its own project and scene workflow. The engine follows one core principle: provide a small, solid foundation for common needs, and leave the game-specific architecture to the programmer.
 
 <p align="center">
-    <img src="assets/images/Demo.png" alt="Demo Editor" width="500">
+    <img src="assets/images/Demo.gif" alt="Demo Editor" width="500">
 </p>
 
 ## Features
@@ -33,13 +31,15 @@ Each module grew on its own, in a vacuum, and stays usable alone. Here they meet
 - **Reflection** lets a component be described once, and editor and scene format pick it up on their own
 - **Editor** shows the whole project, world is built and played without leaving it
 - **Scripting** in Lua, small language that embeds into engine, this is where game itself is written
+- **Interface** is drawn by scripts over the game, text and images placed in pixels
+- **Events** carry what happened by name, so one script answers another without knowing it
 - **Scenes** save as readable text, so they can be read and fixed by hand as well as by editor
 - **Prefabs** keep an entity with everything below it, place it back anywhere
 - **Assets** of any kind are handled the same way, and reload on the fly when file changes
 
 ## Dependencies
 
-Both modules come as submodules, everything they need applies here too:
+Modules come as submodules, everything they need applies here too:
 
 - [BulletRender](https://github.com/admtrv/BulletRender) for graphics
 - [BulletPhysics](https://github.com/admtrv/BulletPhysics) for physics
@@ -75,8 +75,8 @@ src/
 
 What comes next:
 
-- **UI**
 - **Audio**
 - **Build**
+- **2D/3D**
 - **Animations**
 - **Particles**
