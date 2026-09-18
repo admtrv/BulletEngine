@@ -72,8 +72,19 @@ void Editor::renderViews(BulletRender::scene::Scene& scene)
 
     if (m_sceneView)
     {
+        // scene is the world being arranged, player interface has no place over it
+        for (auto& pass : m_gamePasses)
+        {
+            pass->setEnabled(false);
+        }
+
         scene.setActiveCamera(m_camera.get());
         BulletRender::render::Renderer::renderTo(scene, *m_sceneView);
+
+        for (auto& pass : m_gamePasses)
+        {
+            pass->setEnabled(true);
+        }
     }
 
     if (!m_gameView)

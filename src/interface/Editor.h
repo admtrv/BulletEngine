@@ -98,6 +98,9 @@ public:
     // what only scene panel shows, grid, axis and gizmos
     void addEditorPass(std::shared_ptr<BulletRender::render::IRenderPass> pass) { m_editorPasses.push_back(std::move(pass)); }
 
+    // what only game panel shows, interface the player is meant to see
+    void addGamePass(std::shared_ptr<BulletRender::render::IRenderPass> pass) { m_gamePasses.push_back(std::move(pass)); }
+
     // scene project opens with, first one it holds or a new one
     void openFirstScene();
 
@@ -246,6 +249,9 @@ private:
 
     // passes the game view does without
     std::vector<std::shared_ptr<BulletRender::render::IRenderPass>> m_editorPasses;
+
+    // passes the scene view does without
+    std::vector<std::shared_ptr<BulletRender::render::IRenderPass>> m_gamePasses;
 
     // what each panel draws into, sized to fill it
     std::unique_ptr<BulletRender::render::FrameBuffer> m_sceneView;

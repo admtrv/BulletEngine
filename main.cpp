@@ -5,6 +5,7 @@
 // BulletRender
 #include "app/Loop.h"
 #include "app/Window.h"
+#include "render/passes/Canvas.h"
 #include "render/passes/Fog.h"
 #include "render/passes/Grid.h"
 #include "render/passes/Lines.h"
@@ -72,10 +73,12 @@ int main(int argc, char** argv)
 
         auto grid = std::make_shared<br::render::Grid>();
         auto worldAxis = std::make_shared<br::render::WorldAxis>();
+        auto canvas = std::make_shared<br::render::Canvas>();
 
         br::render::Renderer::registerPrePass(grid);
         br::render::Renderer::registerPrePass(worldAxis);
         br::render::Renderer::registerOverlayPass(lines);
+        br::render::Renderer::registerOverlayPass(canvas);
         br::render::Renderer::registerPostPass(std::make_shared<br::render::Fog>(true, 20.0f, 70.0f));
 
         // scene
@@ -108,6 +111,8 @@ int main(int argc, char** argv)
         editor.addEditorPass(grid);
         editor.addEditorPass(worldAxis);
         editor.addEditorPass(lines);
+
+        editor.addGamePass(canvas);
 
         editor.openFirstScene();
 
@@ -214,6 +219,7 @@ int main(int argc, char** argv)
             editor.draw();
 
             world.flush();
+            canvas->endFrame();
             br::utils::Input::instance().endFrame();
         });
     }
