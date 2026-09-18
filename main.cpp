@@ -19,6 +19,7 @@
 #include "app/Application.h"
 #include "assets/Loaders.h"
 #include "ecs/Ecs.h"
+#include "ecs/systems/CanvasSystem.h"
 #include "ecs/systems/DebugDrawSystem.h"
 #include "ecs/systems/HierarchySystem.h"
 #include "ecs/systems/InputSystem.h"
@@ -105,6 +106,7 @@ int main(int argc, char** argv)
         interface::Editor editor(world, physicsSystem, debugDrawSystem);
 
         ecs::systems::ScriptSystem scriptSystem(physicsSystem, editor);
+        ecs::systems::CanvasSystem canvasSystem(scriptSystem);
         scriptSystem.observe(world);
 
         // its own tools, the game view goes without them
@@ -201,6 +203,10 @@ int main(int argc, char** argv)
         scheduler.add(app::Phase::Render, [&debugDrawSystem, &editor, &physicsSystem](const app::FrameContext& frame) {
             debugDrawSystem.draw(*frame.world, editor.getSelection(), physicsSystem.getContacts());
         }, 10, "debug draw");
+
+        scheduler.add(app::Phase::RenderUi, [&canvasSystem, &canvas](const app::FrameContext& frame) {
+            canvasSystem.draw(*frame.world, *canvas);
+        }, 0, "canvas");
 
         // input
         ecs::systems::InputSystem inputSystem;

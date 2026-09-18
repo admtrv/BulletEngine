@@ -81,6 +81,15 @@ public:
     void setScriptKey(const std::string& key);
 };
 
+// surface script draws interface on, entity script fills it every frame
+class CanvasComponent : public Component {
+public:
+    // lower draws first, so higher ends up over it
+    int order = 0;
+
+    bool visible = true;
+};
+
 class RigidBodyComponent : public Component {
 public:
     BulletPhysics::dynamics::RigidBody body;

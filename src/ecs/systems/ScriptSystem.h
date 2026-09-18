@@ -7,11 +7,13 @@
 #include "ecs/Ecs.h"
 #include "ecs/systems/PhysicsEvents.h"
 
+#include "render/passes/Canvas.h"
+
 #include <sol/sol.hpp>
 
 #include <unordered_map>
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
 namespace BulletEngine {
 
@@ -43,6 +45,9 @@ public:
     // what simulation ran into, told to entities involved
     void deliver(World& world, const std::vector<ContactEvent>& events);
 
+    // one entity draws its interface, caller decides who and in what order
+    void drawCanvas(ecs::Entity entity, BulletRender::render::Canvas& canvas);
+
 private:
     // types
 
@@ -52,6 +57,7 @@ private:
         Update,
         FixedUpdate,
         LateUpdate,
+        CanvasDraw,
         Destroy,
         CollisionEnter,
         CollisionExit,

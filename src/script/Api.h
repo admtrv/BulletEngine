@@ -22,10 +22,17 @@ namespace script {
 // registered type by name, complains once per name so script cannot flood console
 const reflect::Type* findType(const std::string& name);
 
+// canvas comes as an argument, so its type is bound once for whole state
+void bindCanvas(sol::state& lua);
+
+// fonts stay loaded while scripts run, this lets go of them
+void releaseFonts();
+
 // what script reaches beyond its own components, one file per subject
 
 void installComponents(sol::environment& environment, ecs::World& world, ecs::Entity entity);
 void installInput(sol::environment& environment);
+
 void installPhysics(sol::environment& environment, ecs::World& world, ecs::Entity entity, ecs::systems::PhysicsSystem& simulation);
 void installWorld(sol::environment& environment, ecs::World& world);
 void installScene(sol::environment& environment, interface::Editor& editor);

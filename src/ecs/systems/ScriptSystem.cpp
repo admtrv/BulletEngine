@@ -20,6 +20,7 @@ constexpr const char* CALLBACK_NAMES[] = {
     "onUpdate",
     "onFixedUpdate",
     "onLateUpdate",
+    "onCanvasDraw",
     "onDestroy",
     "onCollisionEnter",
     "onCollisionExit",
@@ -39,6 +40,7 @@ ScriptSystem::ScriptSystem(PhysicsSystem& physics, interface::Editor& editor)
 void ScriptSystem::bind()
 {
     script::bindTypes(m_lua);
+    script::bindCanvas(m_lua);
 
     // print reaches editor console, streams mirrored there
     m_lua.set_function("print", [](sol::variadic_args args) {
@@ -152,6 +154,8 @@ void ScriptSystem::stop()
     m_running = false;
     m_instances.clear();
     m_broken.clear();
+
+    script::releaseFonts();
 }
 
 // frame
@@ -208,6 +212,32 @@ void ScriptSystem::deliver(World& world, const std::vector<ContactEvent>& events
 
         callContact(it->second, callback, event);
     }
+}
+
+void ScriptSystem::drawCanvas(Entity entity, BulletRender::render::Canvas& canvas)
+{
+    if (!m_running)
+    {
+        return;
+    }
+
+    const auto it = m_instances.find(entity);
+
+    // canvas without script has nothing to draw on it
+    if (it == m_instances.end())
+    {
+        return;
+    }
+
+    Instance& instance = it->second;
+    sol::protected_function& callback = instance.callbacks[static_cast<size_t>(Callback::CanvasDraw)];
+
+    if (!callback.valid())
+    {
+        return;
+    }
+
+    report(instance, Callback::CanvasDraw, callback(std::ref(canvas)));
 }
 
 // calls

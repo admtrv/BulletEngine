@@ -198,6 +198,12 @@ REFLECT(ScriptComponent)
     ASSET()
 END_REFLECT()
 
+REFLECT(CanvasComponent)
+    BASE(Component)
+    FIELD("order", order)
+    FIELD("visible", visible)
+END_REFLECT()
+
 REFLECT(RigidBodyComponent)
     BASE(Component)
     NESTED("motion", body, getMotionType, setMotionType)
