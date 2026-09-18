@@ -8,6 +8,7 @@
 #include "project/Project.h"
 #include "script/Script.h"
 
+#include "render/text/FontLoader.h"
 #include "render/textures/TextureLoader.h"
 #include "scene/models/Model.h"
 #include "scene/models/ModelLoader.h"
@@ -117,6 +118,10 @@ void registerLoaders()
 
     registry.setLoader<BulletRender::render::Texture2D>([](const std::string& key) {
         return BulletRender::render::TextureLoader::instance().load(project::Project::instance().getPath(key));
+    });
+
+    registry.setLoader<BulletRender::render::Font>([](const std::string& key) {
+        return BulletRender::render::FontLoader::instance().load(project::Project::instance().getPath(key));
     });
 
     registry.setLoader<script::Script>(loadScript);
