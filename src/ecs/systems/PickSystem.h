@@ -17,17 +17,16 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-// entity under the cursor, found by casting a ray into the world
+// entity under cursor, found by casting ray into world
 class PickSystem {
 public:
-    PickSystem(BulletRender::scene::Camera& camera, const PhysicsSystem& physics);
+    explicit PickSystem(const PhysicsSystem& physics);
 
-    Entity pick(World& world, const glm::vec2& cursor, const glm::vec2& viewport) const;
+    Entity pick(World& world, const BulletRender::scene::Camera& camera, const glm::vec2& cursor, const glm::vec2& viewport) const;     // camera comes along, editor may be looking through another one by now
 
 private:
-    BulletPhysics::collision::Ray rayThroughCursor(const glm::vec2& cursor, const glm::vec2& viewport) const;
+    static BulletPhysics::collision::Ray rayThroughCursor(const BulletRender::scene::Camera& camera, const glm::vec2& cursor, const glm::vec2& viewport);
 
-    BulletRender::scene::Camera& m_camera;
     const PhysicsSystem& m_physics;
 };
 

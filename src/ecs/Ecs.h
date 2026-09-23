@@ -31,13 +31,11 @@ public:
 
     Entity create();
 
-    // marked now and dropped by flush
-    void destroy(Entity entity);
-    void clear();               // all at once, walking getEntities while destroying would skip half
+    void destroy(Entity entity);     // marked now and dropped by flush
+    void clear();                    // all at once, walking getEntities while destroying would skip half
     void flush();
 
-    // called with each entity right before its components go
-    void addListener(Listener listener) { m_listeners.push_back(std::move(listener)); }
+    void addListener(Listener listener) { m_listeners.push_back(std::move(listener)); }  // called with each entity right before its components go
 
     bool isAlive(Entity entity) const;
 

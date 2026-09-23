@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "project/Settings.h"
+
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -27,27 +29,26 @@ class Project {
 public:
     static Project& instance();
 
-    bool open(const std::string& path);
+    bool open(const std::string& path);             // folder holding project file, what editor is pointed at
     bool isOpen() const { return !m_root.empty(); }
+    static bool create(const std::string& folder, const Settings& settings);    // fills fresh folder with project file and first scene
+
+    const Settings& getSettings() const { return m_settings; }
+    bool setSettings(const Settings& settings);     // writes them back to project file
 
     const std::string& getRoot() const { return m_root; }
-    const std::string& getName() const { return m_name; }
+    const std::string& getName() const { return m_settings.name; }
+    std::string getPath(const std::string& key) const;      // key is relative to root, loaders need whole path
 
-    // key is relative to root, loaders need whole path
-    std::string getPath(const std::string& key) const;
-
+    // tree
     const Entry& getTree() const { return m_tree; }
     void rescan();
-
-    // every file of a kind, in tree order
-    std::vector<std::string> getKeys(std::string_view extension) const;
+    std::vector<std::string> getKeys(std::string_view extension) const;     // every file of a kind, in tree order
+    std::vector<std::string> poll(float dt);                                // rescans on change, returns keys that went stale
 
     // contents, tree is rescanned on success
     bool move(const std::string& key, const std::string& folder);
     bool remove(const std::string& key);
-
-    // rescans on change, returns keys that went stale
-    std::vector<std::string> poll(float dt);
 
 private:
     Project() = default;
@@ -56,7 +57,8 @@ private:
     Project& operator=(const Project&) = delete;
 
     std::string m_root;
-    std::string m_name;
+    std::string m_projectKey;    // file this project was opened by
+    Settings m_settings;
     Entry m_tree;
 
     // write times of last scan, keyed as asset field is

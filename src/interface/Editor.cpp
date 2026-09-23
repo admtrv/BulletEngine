@@ -13,6 +13,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
+#include <cmath>
 #include <cstdio>
 #include <iostream>
 #include <string_view>
@@ -24,7 +25,7 @@ namespace interface {
 constexpr const char* DOCK_ID = "EngineDockSpace";
 constexpr float SIDE_PANEL_FRACTION = 0.20f;
 constexpr float CONSOLE_PANEL_FRACTION = 0.25f;
-constexpr float VIEW_SPLIT_FRACTION = 0.5f;     // scene and game share the middle
+constexpr float VIEW_SPLIT_FRACTION = 0.5f;     // scene and game share middle
 constexpr float NAME_FIELD_CHARS = 12.0f;       // save as field width, in font sizes
 
 // where scene panel starts looking from
@@ -34,7 +35,13 @@ constexpr float EDITOR_CAMERA_PITCH = -35.0f;
 
 Editor::Editor(ecs::World& world, ecs::systems::PhysicsSystem& physics, ecs::systems::DebugDrawSystem& debugDraw)
     : m_world(world), m_physics(physics), m_debugDraw(debugDraw),
-      m_camera(std::make_unique<BulletRender::scene::FlyCamera>(EDITOR_CAMERA_POSITION, EDITOR_CAMERA_YAW, EDITOR_CAMERA_PITCH)) {}
+      m_camera(std::make_unique<BulletRender::scene::FlyCamera>(EDITOR_CAMERA_POSITION, EDITOR_CAMERA_YAW, EDITOR_CAMERA_PITCH)),
+      m_flatCamera(std::make_unique<BulletRender::scene::PanCamera>()) {}
+
+BulletRender::scene::Camera& Editor::getCamera()
+{
+    return m_flatView ? static_cast<BulletRender::scene::Camera&>(*m_flatCamera) : *m_camera;
+}
 
 void Editor::beforeFrame()
 {
@@ -135,7 +142,7 @@ void Editor::openPanel(bool& shown, const char* name)
 {
     shown = true;
 
-    // a panel opened just now has no window yet, focus waits until it does
+    // panel opened just now has no window yet, focus waits until it does
     m_focusPanel = name;
 }
 
@@ -174,6 +181,71 @@ void Editor::savePrefab(ecs::Entity entity)
     }
 
     project::Project::instance().rescan();
+}
+
+void Editor::drawProjectMenu()
+{
+    project::Project& project = project::Project::instance();
+    project::Settings settings = project.getSettings();
+
+    if (ImGui::BeginMenu("Name"))
+    {
+        // field opens on current name, ready to edit or keep
+        if (ImGui::IsWindowAppearing())
+        {
+            std::snprintf(m_projectName, sizeof(m_projectName), "%s", settings.name.c_str());
+        }
+
+        ImGui::SetNextItemWidth(ImGui::GetFontSize() * NAME_FIELD_CHARS);
+
+        if (ImGui::InputText("##name", m_projectName, sizeof(m_projectName), ImGuiInputTextFlags_EnterReturnsTrue) && m_projectName[0])
+        {
+            settings.name = m_projectName;
+            project.setSettings(settings);
+
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Mode"))
+    {
+        static const project::Mode MODES[] = {project::Mode::Mode2D, project::Mode::Mode3D};
+
+        for (project::Mode mode : MODES)
+        {
+            if (ImGui::MenuItem(project::toString(mode), nullptr, mode == settings.mode))
+            {
+                settings.mode = mode;
+                project.setSettings(settings);
+            }
+        }
+
+        ImGui::EndMenu();
+    }
+
+    // scene it opens with, and what build would start from
+    if (ImGui::BeginMenu("Start Scene"))
+    {
+        const std::vector<std::string> scenes = project.getKeys(SCENE_EXTENSION);
+
+        if (scenes.empty())
+        {
+            ImGui::TextDisabled("No scenes");
+        }
+
+        for (const std::string& key : scenes)
+        {
+            if (ImGui::MenuItem(key.c_str(), nullptr, key == settings.startScene))
+            {
+                settings.startScene = key;
+                project.setSettings(settings);
+            }
+        }
+
+        ImGui::EndMenu();
+    }
 }
 
 void Editor::drawSceneMenu()
@@ -267,7 +339,7 @@ void Editor::drawDebugMenu()
     }
 }
 
-// play takes a snapshot, stop puts the world back
+// play takes snapshot, stop puts world back
 void Editor::setMode(Mode mode)
 {
     if (mode == m_mode)
@@ -317,6 +389,12 @@ void Editor::drawMenuBar()
 {
     if (ImGui::BeginMenuBar())
     {
+        if (ImGui::BeginMenu("Project"))
+        {
+            drawProjectMenu();
+            ImGui::EndMenu();
+        }
+
         if (ImGui::BeginMenu("Scene"))
         {
             drawSceneMenu();

@@ -16,7 +16,7 @@ namespace ecs { class World; }
 
 namespace app {
 
-// drives one frame through the phases
+// drives one frame through phases
 class Application {
 public:
     Application() = default;

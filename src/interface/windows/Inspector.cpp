@@ -7,10 +7,13 @@
 #include "assets/Loaders.h"
 #include "ecs/Components.h"
 #include "interface/elements/Widgets.h"
+#include "project/Project.h"
 #include "reflect/Registry.h"
 #include "reflect/Type.h"
 
 #include "imgui.h"
+
+#include <cstdio>
 
 #include <typeindex>
 
@@ -21,7 +24,7 @@ constexpr float DRAG_SPEED_DEFAULT = 0.05f;
 constexpr float DRAG_SPEED_ROTATION = 0.5f;
 constexpr float DRAG_LIMIT = 10000.0f;
 constexpr int MASK_BITS = 32;                   // layers physics carries, one per bit
-constexpr size_t AXIS_COUNT = 3;                // fields an axes row claims
+constexpr size_t AXIS_COUNT = 3;                // fields axes row claims
 
 void Editor::drawInspector()
 {
@@ -68,7 +71,7 @@ void Editor::drawInspector()
 
         const bool open = ImGui::CollapsingHeader(type->getLabel().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
 
-        // menu opens over the header, id keeps them apart per component
+        // menu opens over header, id keeps them apart per component
         ImGui::PushID(type);
 
         BulletRender::interface::contextMenu("component", [&]() {
@@ -92,7 +95,7 @@ void Editor::drawInspector()
             continue;
         }
 
-        // the body carries the pose, either side has to reach it
+        // body carries pose, either side has to reach it
         if (dynamic_cast<const ecs::TransformComponent*>(component.get()))
         {
             syncBody(m_selection);
@@ -106,7 +109,7 @@ void Editor::drawInspector()
     ImGui::End();
 }
 
-// every component type known to the registry
+// every component type known to registry
 void Editor::drawAddMenu()
 {
     const reflect::Type* base = reflect::Registry::instance().find<ecs::Component>();
@@ -138,7 +141,7 @@ void Editor::drawAddMenu()
             continue;
         }
 
-        // a type already there scrolls into view instead of being added twice
+        // type already there scrolls into view instead of being added twice
         if (m_world.has(m_selection, type->getIndex()))
         {
             m_focusComponent = type;
@@ -162,7 +165,7 @@ void Editor::removeComponent(ecs::Entity entity, std::type_index type)
     m_pendingRemove.push_back({entity, type});
 }
 
-// physics owns the pose of a body, an edit must reach it
+// physics owns pose of body, edit must reach it
 void Editor::syncBody(ecs::Entity entity)
 {
     auto* transform = m_world.get<ecs::TransformComponent>(entity);
@@ -179,7 +182,7 @@ void Editor::syncBody(ecs::Entity entity)
     rigidBody->body.setPosition({position.x, position.y, position.z});
     rigidBody->body.setOrientation({rotation.w, rotation.x, rotation.y, rotation.z});
 
-    // a collider may keep only part of what it was given
+    // collider may keep only part of what it was given
     auto* collider = m_world.get<ecs::ColliderComponent>(entity);
 
     if (!collider || !collider->collider)
@@ -196,7 +199,7 @@ void Editor::syncBody(ecs::Entity entity)
         static_cast<float>(kept.x), static_cast<float>(kept.y), static_cast<float>(kept.z)
     });
 
-    // a shape with no facing keeps neither turn nor size
+    // shape with no facing keeps neither turn nor size
     if (!collider->collider->isOrientable())
     {
         rigidBody->body.setOrientation({});
@@ -206,7 +209,7 @@ void Editor::syncBody(ecs::Entity entity)
     }
 }
 
-// a collider moved by hand pulls body and transform along
+// collider moved by hand pulls body and transform along
 void Editor::syncCollider(ecs::Entity entity)
 {
     auto* collider = m_world.get<ecs::ColliderComponent>(entity);
@@ -228,7 +231,7 @@ void Editor::syncCollider(ecs::Entity entity)
     }
 }
 
-// term the asset may fill instead, toggle clears it back to whatever came with the model
+// term asset may fill instead, toggle clears it back to whatever came with model
 bool Editor::drawOptional(const reflect::Field& field, void* instance)
 {
     bool enabled = field.has(instance);
@@ -236,7 +239,7 @@ bool Editor::drawOptional(const reflect::Field& field, void* instance)
     const char* label = field.getLabel().c_str();
     const reflect::Value value = field.get(instance);
 
-    // override draws caption and toggle, so the control below carries none
+    // override draws caption and toggle, so control below carries none
     const bool isColor = field.getType() == reflect::ValueType::Vec3;
 
     glm::vec3 color = isColor ? value.get<glm::vec3>() : glm::vec3{};
@@ -333,8 +336,15 @@ bool Editor::drawValue(const reflect::Field& field, void* instance)
 
             if (field.isAsset())
             {
-                // state types a path, it never mirrors the key a preset carries
+                // state types path, it never mirrors key preset carries
                 BulletRender::interface::AssetFieldState& slot = m_assetPaths[field.getName()];
+
+                // assets live under project, no sense starting anywhere else
+                if (slot.browser.root[0] == '\0')
+                {
+                    std::snprintf(slot.browser.root, sizeof(slot.browser.root), "%s",
+                                  project::Project::instance().getRoot().c_str());
+                }
 
                 switch (BulletRender::interface::assetField(name, assets::toLabel(v).c_str(), !v.empty(), slot, ASSET_DRAG_TYPE))
                 {
@@ -347,7 +357,7 @@ bool Editor::drawValue(const reflect::Field& field, void* instance)
                     case BulletRender::interface::AssetAction::Load:
                         field.set(instance, std::string(slot.path));
 
-                        // the key only sticks when the asset behind it loaded
+                        // key only sticks when asset behind it loaded
                         slot.error = field.get(instance).get<std::string>() == slot.path
                             ? std::string{}
                             : "failed to load " + std::string(slot.path);
@@ -419,7 +429,7 @@ bool Editor::drawValue(const reflect::Field& field, void* instance)
     return changed;
 }
 
-// every scalar the type declares, keyed by name
+// every scalar type declares, keyed by name
 void Editor::collectValues(const reflect::Type& type, const void* instance, ValueMap& out) const
 {
     for (const reflect::Field* field : type.getAllFields())
@@ -471,7 +481,7 @@ void Editor::applyValues(const reflect::Type& type, void* instance, const ValueM
     }
 }
 
-// picks the concrete type a polymorphic field holds
+// picks concrete type polymorphic field holds
 bool Editor::drawObjectType(const reflect::Field& field, void* instance, const reflect::Type* current)
 {
     const reflect::Type* base = field.getBaseType();
@@ -512,7 +522,7 @@ bool Editor::drawObjectType(const reflect::Field& field, void* instance, const r
         return false;
     }
 
-    // physics holds a raw pointer, the old object leaves the world first
+    // physics holds raw pointer, old object leaves world first
     m_physics.detach(m_world, m_selection);
     field.build(instance, *options[selected]);
 
@@ -579,7 +589,7 @@ bool Editor::drawField(const reflect::Field& field, void* instance)
 static const reflect::Field* at(const reflect::Field* fields, size_t index) { return fields + index; }
 static const reflect::Field* at(const reflect::Field* const* fields, size_t index) { return fields[index]; }
 
-// three bool fields the first one claims, drawn as one x y z row
+// three bool fields first one claims, drawn as one x y z row
 bool Editor::drawAxes(const reflect::Field* const axes[AXIS_COUNT], void* instance)
 {
     bool axis[AXIS_COUNT] = {};
@@ -611,7 +621,7 @@ bool Editor::drawRange(F fields, size_t count, void* instance)
     {
         const reflect::Field* field = at(fields, i);
 
-        // a claimed triple leaves only its own row behind, a broken one falls back to plain fields
+        // claimed triple leaves only its own row behind, broken one falls back to plain fields
         if (field->isAxes() && i + AXIS_COUNT <= count)
         {
             const reflect::Field* axes[AXIS_COUNT];
@@ -640,14 +650,14 @@ bool Editor::drawFields(const reflect::Type& type, void* instance, bool splitOwn
         return drawRange(fields.data(), fields.size(), instance);
     }
 
-    // what only this type has belongs to the row above, indented under it
+    // what only this type has belongs to row above, indented under it
     const std::vector<reflect::Field>& own = type.getFields();
 
     ImGui::Indent();
     bool changed = drawRange(own.data(), own.size(), instance);
     ImGui::Unindent();
 
-    // what the base declares describes the component itself, back on its level
+    // what base declares describes component itself, back on its level
     if (const reflect::Type* base = type.getBase())
     {
         changed |= drawFields(*base, instance);

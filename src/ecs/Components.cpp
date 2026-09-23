@@ -4,10 +4,12 @@
 
 #include "Components.h"
 
+#include "assets/Loaders.h"
 #include "assets/Registry.h"
 #include "reflect/Reflect.h"
 
 #include "collision/collider/BoxCollider.h"
+#include "collision/collider/CylinderCollider.h"
 #include "collision/collider/GroundCollider.h"
 #include "collision/collider/SphereCollider.h"
 
@@ -15,55 +17,72 @@ using namespace BulletEngine::ecs;
 using namespace BulletPhysics::collision;
 using namespace BulletPhysics::collision::collider;
 using namespace BulletRender::render;
-using namespace BulletRender::scene;
+// scene namespace is left out, its Mesh is gpu geometry rather than what entity shows
+using BulletRender::scene::Light;
+using BulletRender::scene::AmbientLight;
+using BulletRender::scene::DirectionalLight;
+using BulletRender::scene::PointLight;
+using BulletRender::scene::SpotLight;
 
-// assets
-
-void RenderableComponent::setModelKey(const std::string& key)
+// key that loads nothing leaves what is already there
+template<class T>
+static bool reload(BulletEngine::assets::Handle<T>& handle, const std::string& key)
 {
     if (key.empty())
     {
-        model.reset();
-        return;
+        handle.reset();
+        return true;
     }
 
-    // a key that loads nothing leaves what is already there
-    if (auto loaded = BulletEngine::assets::Registry::instance().load<BulletRender::scene::Model>(key))
+    if (auto loaded = BulletEngine::assets::Registry::instance().load<T>(key))
     {
-        model = std::move(loaded);
-    }
-}
-
-void RenderableComponent::setTextureKey(const std::string& key)
-{
-    if (key.empty())
-    {
-        texture.reset();
-        material.clearTexture(ALBEDO_UNIFORM);
-        return;
+        handle = std::move(loaded);
+        return true;
     }
 
-    // a key that loads nothing leaves what is already there
-    if (auto loaded = BulletEngine::assets::Registry::instance().load<BulletRender::render::Texture2D>(key))
-    {
-        texture = std::move(loaded);
-        material.setTexture(ALBEDO_UNIFORM, texture.getShared(), ALBEDO_UNIT);
-    }
+    return false;
 }
 
 void ScriptComponent::setScriptKey(const std::string& key)
 {
-    if (key.empty())
+    reload(script, key);
+}
+
+// renderables
+
+void Renderable::setTextureKey(const std::string& key)
+{
+    if (!reload(m_texture, key))
     {
-        script.reset();
         return;
     }
 
-    // a key that loads nothing leaves what is already there
-    if (auto loaded = BulletEngine::assets::Registry::instance().load<BulletEngine::script::Script>(key))
-    {
-        script = std::move(loaded);
-    }
+    m_texture ? material.setTexture(ALBEDO_UNIFORM, m_texture.getShared(), ALBEDO_UNIT) : material.clearTexture(ALBEDO_UNIFORM);
+
+    onTextureChanged();
+}
+
+void Mesh::setModelKey(const std::string& key)
+{
+    reload(m_model, key);
+}
+
+Sprite::Sprite()
+{
+    material.setUnlit(true);
+    setShape(int(Shape::Quad));
+}
+
+// only picture may have holes in it, plain colour fills its shape whole
+void Sprite::onTextureChanged()
+{
+    material.setTransparent(!getTextureKey().empty());
+}
+
+void Sprite::setShape(int kind)
+{
+    m_kind = kind == int(Shape::Circle) ? Shape::Circle : Shape::Quad;
+    m_shape = BulletEngine::assets::Registry::instance().load<BulletRender::scene::Model>(m_kind == Shape::Circle ? BulletEngine::assets::CIRCLE_KEY : BulletEngine::assets::QUAD_KEY);
 }
 
 // shapes
@@ -74,6 +93,9 @@ REFLECT(PhysicsMaterial)
 END_REFLECT()
 
 REFLECT(Collider)
+    // where the shape sits on the entity, so it need not be centred or square to it
+    PROPERTY("offset", getLocalPosition, setLocalPosition)
+    PROPERTY("rotation", getLocalRotation, setLocalRotation)
     PROPERTY("trigger", isTrigger, setTrigger)
     // bits, what collider is and what it meets
     PROPERTY("layer", getLayer, setLayer)
@@ -95,13 +117,20 @@ REFLECT(SphereCollider)
     PROPERTY("radius", getRadius, setRadius)
 END_REFLECT()
 
+REFLECT(CylinderCollider)
+    LABEL("Cylinder")
+    BASE(Collider)
+    PROPERTY("radius", getRadius, setRadius)
+    PROPERTY("height", getHeight, setHeight)
+END_REFLECT()
+
 REFLECT(GroundCollider)
     LABEL("Ground")
     BASE(Collider)
     PROPERTY("level", getGroundY, setGroundY)
 END_REFLECT()
 
-// lights, pose comes from the entity transform
+// lights, pose comes from entity transform
 
 REFLECT(Light)
     PROPERTY("color", getColor, setColor)
@@ -155,13 +184,10 @@ REFLECT(TransformComponent)
     SPEED(0.01f)
 END_REFLECT()
 
-REFLECT(RenderableComponent)
-    BASE(Component)
-    PROPERTY("model", getModelKey, setModelKey)
-    ASSET()
+REFLECT(Renderable)
     PROPERTY("texture", getTextureKey, setTextureKey)
     ASSET()
-    // unset terms leave whatever the model brought from its mtl
+    // unset terms leave whatever model brought from its mtl
     NESTED("color", material, getColor, setColor)
     COLOR()
     OPTIONAL(material, hasColor, clearColor)
@@ -174,6 +200,26 @@ REFLECT(RenderableComponent)
     NESTED("shininess", material, getShininess, setShininess)
     RANGE(1.0f, 256.0f)
     OPTIONAL(material, hasShininess, clearShininess)
+END_REFLECT()
+
+REFLECT(Mesh)
+    LABEL("Mesh")
+    BASE(Renderable)
+    PROPERTY("model", getModelKey, setModelKey)
+    ASSET()
+END_REFLECT()
+
+REFLECT(Sprite)
+    LABEL("Sprite")
+    BASE(Renderable)
+    // set when it is made, like cube never turns into sphere
+    PROPERTY("shape", getShape, setShape)
+    HIDE_FIELD()
+END_REFLECT()
+
+REFLECT(RenderableComponent)
+    BASE(Component)
+    OBJECT("renderable", renderable)
 END_REFLECT()
 
 REFLECT(CameraComponent)
@@ -213,6 +259,7 @@ REFLECT(RigidBodyComponent)
     NESTED("angularVelocity", body, getAngularVelocity, setAngularVelocity)
     NESTED("linearDamping", body, getLinearDamping, setLinearDamping)
     NESTED("angularDamping", body, getAngularDamping, setAngularDamping)
+    NESTED("continuous", body, isContinuous, setContinuous)
     // axes body may not move or turn along
     FLAG("freezePositionX", body, getConstraints, setConstraints, BulletPhysics::dynamics::FREEZE_POSITION_X)
     AXES("Freeze Position")

@@ -49,28 +49,61 @@ static reflect::Value fromLua(const sol::object& object, reflect::ValueType type
     }
 }
 
-// looked up every access, entity may die while script holds handle
-void* Handle::resolve() const
+// looked up every access, entity may die while script holds handle, outType lands on what path led to
+void* Handle::resolve(const reflect::Type*& outType) const
 {
+    outType = nullptr;
+
     if (!world || !type || !world->isAlive(entity))
     {
         return nullptr;
     }
 
+    void* instance = nullptr;
+
     for (const std::unique_ptr<ecs::Component>& component : world->getComponents(entity))
     {
         if (std::type_index(typeid(*component)) == type->getIndex())
         {
-            return component.get();
+            instance = component.get();
+            break;
         }
     }
 
-    return nullptr;
+    if (!instance)
+    {
+        return nullptr;
+    }
+
+    // path walks object fields down from component, empty one stops here
+    const reflect::Type* found = type;
+
+    for (const std::string& step : path)
+    {
+        const reflect::Field* field = found->findField(step);
+
+        if (!field || field->getKind() != reflect::FieldKind::Object)
+        {
+            return nullptr;
+        }
+
+        instance = field->resolve(instance, &found);
+
+        // object field may hold nothing yet, nothing below it exists either
+        if (!instance)
+        {
+            return nullptr;
+        }
+    }
+
+    outType = found;
+    return instance;
 }
 
 sol::object Handle::get(const std::string& name, sol::this_state state) const
 {
-    void* instance = resolve();
+    const reflect::Type* found = nullptr;
+    void* instance = resolve(found);
 
     // asked before touching fields, missing component answers nothing else
     if (name == VALID_FIELD)
@@ -78,11 +111,25 @@ sol::object Handle::get(const std::string& name, sol::this_state state) const
         return sol::make_object(state, instance != nullptr);
     }
 
-    const reflect::Field* field = type ? type->findField(name) : nullptr;
-
-    if (!field || !instance)
+    if (!instance)
     {
         return sol::lua_nil;
+    }
+
+    const reflect::Field* field = found->findField(name);
+
+    if (!field)
+    {
+        return sol::lua_nil;
+    }
+
+    // object answers with handle one step deeper, so its own fields are reachable
+    if (field->getKind() == reflect::FieldKind::Object)
+    {
+        Handle nested{world, entity, type, path};
+        nested.path.push_back(name);
+
+        return sol::make_object(state, nested);
     }
 
     return toLua(field->get(instance), state);
@@ -90,7 +137,8 @@ sol::object Handle::get(const std::string& name, sol::this_state state) const
 
 void Handle::set(const std::string& name, const sol::object& value)
 {
-    void* instance = resolve();
+    const reflect::Type* found = nullptr;
+    void* instance = resolve(found);
 
     // entity may simply not carry this component, which is no mistake
     if (!instance)
@@ -98,15 +146,15 @@ void Handle::set(const std::string& name, const sol::object& value)
         return;
     }
 
-    const reflect::Field* field = type ? type->findField(name) : nullptr;
+    const reflect::Field* field = found->findField(name);
 
     if (!field)
     {
-        std::cerr << "script wrote to unknown field: " << type->getName() << '.' << name << '\n';
+        std::cerr << "script wrote to unknown field: " << found->getName() << '.' << name << '\n';
         return;
     }
 
-    // object field holds a type, not a value, script names the one it wants
+    // object field holds type, not value, script names one it wants
     if (field->getKind() == reflect::FieldKind::Object)
     {
         const std::string wanted = value.as<std::string>();

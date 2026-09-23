@@ -17,11 +17,14 @@
 #include "scene/models/Model.h"
 
 #include "collision/collider/BoxCollider.h"
+#include "collision/collider/CylinderCollider.h"
 #include "collision/collider/GroundCollider.h"
+#include "collision/collider/SphereCollider.h"
 
 #include "imgui.h"
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 
 namespace BulletEngine {
@@ -29,8 +32,80 @@ namespace interface {
 
 constexpr const char* ENTITY_DRAG_TYPE = "BE_ENTITY";
 constexpr int MAX_TREE_DEPTH = 64;
-constexpr float AMBIENT_INTENSITY = 0.3f;   // fill light, directional one does the shaping
-constexpr float LIGHT_HEIGHT = 5.0f;        // sun stands off the scene, gizmo has to clear it
+constexpr float AMBIENT_INTENSITY = 0.3f;   // fill light, directional one does shaping
+constexpr float LIGHT_HEIGHT = 5.0f;        // sun stands off scene, gizmo has to clear it
+constexpr float FLAT_INTENSITY = 1.0f;      // flat world has no sun, ambient carries it alone
+
+constexpr float BODY_HEIGHT = 0.5f;         // half its size, so it rests on ground
+
+// where fresh scene puts its camera, back enough to hold what fills it
+constexpr glm::vec3 CAMERA_SOLID{0.0f, 2.0f, 6.0f};
+constexpr glm::vec3 CAMERA_FLAT{0.0f, 0.0f, 10.0f};
+
+// flat world keeps depth for ordering alone, so nothing drifts along it
+constexpr BulletPhysics::dynamics::Constraints FLAT_CONSTRAINTS =
+    BulletPhysics::dynamics::FREEZE_POSITION_Z | BulletPhysics::dynamics::FREEZE_ROTATION_X | BulletPhysics::dynamics::FREEZE_ROTATION_Y;
+
+// shape matching what the entity shows, a flat one is a solid squashed along depth
+static std::unique_ptr<BulletPhysics::collision::collider::Collider> makeCollider(Preset preset)
+{
+    using namespace BulletPhysics::collision::collider;
+    using BulletPhysics::math::Quat;
+    using BulletPhysics::math::Vec3;
+
+    switch (preset)
+    {
+        case Preset::Sphere:
+            return std::make_unique<SphereCollider>(0.5);
+
+        case Preset::Circle:
+        {
+            auto cylinder = std::make_unique<CylinderCollider>(0.5, THICKNESS_2D);
+
+            // laid on its side, so its caps face the flat view
+            cylinder->setLocalRotation(Quat::fromAxisAngle({1.0, 0.0, 0.0}, M_PI * 0.5));
+            return cylinder;
+        }
+
+        case Preset::Square:
+        case Preset::Sprite:
+            return std::make_unique<BoxCollider>(Vec3{1.0, 1.0, THICKNESS_2D});
+
+        default:
+            return std::make_unique<BoxCollider>(Vec3{1.0, 1.0, 1.0});
+    }
+}
+
+// what a preset lies in, flat ones keep depth for ordering alone
+static bool isFlat(Preset preset)
+{
+    return preset == Preset::Square || preset == Preset::Circle || preset == Preset::Sprite;
+}
+
+// shapes world of one kind is built from
+void Editor::drawPresetMenu(const char* label, std::initializer_list<Preset> presets)
+{
+    if (!ImGui::BeginMenu(label))
+    {
+        return;
+    }
+
+    for (const Preset* preset = presets.begin(); preset != presets.end(); preset++)
+    {
+        // last one waits for asset, ready shapes stand apart from it
+        if (preset == presets.end() - 1)
+        {
+            ImGui::Separator();
+        }
+
+        if (ImGui::MenuItem(toString(*preset).c_str()))
+        {
+            createEntity(*preset);
+        }
+    }
+
+    ImGui::EndMenu();
+}
 
 void Editor::drawHierarchy()
 {
@@ -61,18 +136,15 @@ void Editor::drawHierarchy()
 
     if (ImGui::BeginPopup("entities"))
     {
-        // shapes first, bare entity closes the list
-        for (const Preset preset : {Preset::Box, Preset::Sphere, Preset::Empty})
-        {
-            if (preset == Preset::Empty)
-            {
-                ImGui::Separator();
-            }
+        // solid and flat live apart, bare entity belongs to neither
+        drawPresetMenu("3D", {Preset::Cube, Preset::Sphere, Preset::Model});
+        drawPresetMenu("2D", {Preset::Square, Preset::Circle, Preset::Sprite});
 
-            if (ImGui::MenuItem(toString(preset).c_str()))
-            {
-                createEntity(preset);
-            }
+        ImGui::Separator();
+
+        if (ImGui::MenuItem(toString(Preset::Empty).c_str()))
+        {
+            createEntity(Preset::Empty);
         }
 
         ImGui::EndPopup();
@@ -104,7 +176,7 @@ void Editor::drawHierarchy()
 
 void Editor::drawEntityNode(ecs::Entity entity, bool last, int depth)
 {
-    // a hand edited file may loop parents back on themselves
+    // hand edited file may loop parents back on themselves
     if (depth > MAX_TREE_DEPTH)
     {
         return;
@@ -122,7 +194,7 @@ void Editor::drawEntityNode(ecs::Entity entity, bool last, int depth)
         m_selection = entity;
     }
 
-    // menus and payloads below share the row, id keeps them apart per entity
+    // menus and payloads below share row, id keeps them apart per entity
     ImGui::PushID(id);
 
     BulletRender::interface::contextMenu("entity", [&]() {
@@ -153,7 +225,7 @@ void Editor::drawEntityNode(ecs::Entity entity, bool last, int depth)
             ecs::systems::HierarchySystem::attach(m_world, *static_cast<const ecs::Entity*>(payload->Data), entity);
         }
 
-        // prefab dropped on a row becomes its child
+        // prefab dropped on row becomes its child
         acceptPrefabDrop(entity);
 
         ImGui::EndDragDropTarget();
@@ -219,12 +291,12 @@ void Editor::createEntity(Preset preset)
     m_pendingCreate.push_back(preset);
 }
 
-// builds what a preset describes, physics is left to inspector
+// builds what a preset describes, shape and body matching what it shows
 ecs::Entity Editor::spawnEntity(Preset preset)
 {
     const ecs::Entity entity = m_world.create();
 
-    m_world.add<ecs::IdentityComponent>(entity).name = toString(preset) + std::string(" ") + std::to_string(entity);
+    m_world.add<ecs::IdentityComponent>(entity).name = toString(preset);
     m_world.add<ecs::TransformComponent>(entity);
 
     if (preset == Preset::Empty)
@@ -232,14 +304,45 @@ ecs::Entity Editor::spawnEntity(Preset preset)
         return entity;
     }
 
-    auto& renderable = m_world.add<ecs::RenderableComponent>(entity);
-    renderable.model = assets::Registry::instance().load<BulletRender::scene::Model>(
-        preset == Preset::Box ? assets::BOX_KEY : assets::SPHERE_KEY);
+    const bool flat = isFlat(preset);
+
+    // flat ones are sprites, whether picture fills them or only colour does
+    std::unique_ptr<ecs::Renderable> renderable;
+
+    if (flat)
+    {
+        auto sprite = std::make_unique<ecs::Sprite>();
+        sprite->setShape(int(preset == Preset::Circle ? ecs::Sprite::Shape::Circle : ecs::Sprite::Shape::Quad));
+
+        renderable = std::move(sprite);
+    }
+    else
+    {
+        auto mesh = std::make_unique<ecs::Mesh>();
+
+        // one waiting for an asset stays empty until the inspector fills it
+        if (preset != Preset::Model)
+        {
+            mesh->setModelKey(preset == Preset::Cube ? assets::BOX_KEY : assets::SPHERE_KEY);
+        }
+
+        renderable = std::move(mesh);
+    }
+
+    m_world.add<ecs::RenderableComponent>(entity).renderable = std::move(renderable);
+    m_world.add<ecs::ColliderComponent>(entity).collider = makeCollider(preset);
+
+    auto& rigidBody = m_world.add<ecs::RigidBodyComponent>(entity);
+
+    if (flat)
+    {
+        rigidBody.body.setConstraints(FLAT_CONSTRAINTS);
+    }
 
     return entity;
 }
 
-// prefab file read into the world, attached where it was dropped
+// prefab file read into world, attached where it was dropped
 ecs::Entity Editor::spawnPrefab(const std::string& key, ecs::Entity parent)
 {
     const ecs::Entity entity = scene::loadPrefab(m_world, project::Project::instance().getPath(key));
@@ -261,6 +364,19 @@ ecs::Entity Editor::spawnPrefab(const std::string& key, ecs::Entity parent)
 // what empty project starts from, floor, something on it and light
 void Editor::fillNewScene()
 {
+    const bool flat = project::Project::instance().getSettings().mode == project::Mode::Mode2D;
+
+    {
+        const ecs::Entity entity = m_world.create();
+
+        m_world.add<ecs::IdentityComponent>(entity).name = "Camera";
+        m_world.add<ecs::TransformComponent>(entity).transform.setPosition(flat ? CAMERA_FLAT : CAMERA_SOLID);
+
+        auto& camera = m_world.add<ecs::CameraComponent>(entity);
+        camera.projection = flat ? BulletRender::scene::Projection::Orthographic : BulletRender::scene::Projection::Perspective;
+        camera.main = true;
+    }
+
     {
         const ecs::Entity entity = m_world.create();
 
@@ -268,17 +384,19 @@ void Editor::fillNewScene()
         m_world.add<ecs::TransformComponent>(entity);
 
         auto light = std::make_shared<BulletRender::scene::AmbientLight>();
-        light->setIntensity(AMBIENT_INTENSITY);
+        light->setIntensity(flat ? FLAT_INTENSITY : AMBIENT_INTENSITY);
 
         m_world.add<ecs::LightComponent>(entity).light = std::move(light);
     }
 
+    // flat world is lit evenly, shaping it would only fight art
+    if (!flat)
     {
         const ecs::Entity entity = m_world.create();
 
         m_world.add<ecs::IdentityComponent>(entity).name = "Directional Light";
 
-        // light points the way entity faces, default direction sets that pose
+        // light points way entity faces, default direction sets that pose
         auto& transform = m_world.add<ecs::TransformComponent>(entity);
 
         auto light = std::make_shared<BulletRender::scene::DirectionalLight>();
@@ -299,39 +417,30 @@ void Editor::fillNewScene()
             std::make_unique<BulletPhysics::collision::collider::GroundCollider>(0.0);
     }
 
+    // same thing the menu spawns, only lifted off the ground it rests on
     {
-        const BulletPhysics::math::Vec3 size{1.0, 1.0, 1.0};
-        const BulletPhysics::math::Vec3 position{0.0, 0.5, 0.0};
+        const ecs::Entity entity = spawnEntity(flat ? Preset::Square : Preset::Cube);
+        const glm::vec3 position{0.0f, BODY_HEIGHT, 0.0f};
 
-        const ecs::Entity entity = m_world.create();
-
-        m_world.add<ecs::IdentityComponent>(entity).name = "Cube";
-        m_world.add<ecs::TransformComponent>(entity).transform.setPosition({0.0f, 0.5f, 0.0f});
-
-        m_world.add<ecs::RenderableComponent>(entity).model =
-            assets::Registry::instance().load<BulletRender::scene::Model>(assets::BOX_KEY);
-
-        auto& rigidBody = m_world.add<ecs::RigidBodyComponent>(entity);
-        rigidBody.body.setMass(1.0);
-        rigidBody.body.setPosition(position);
-
-        m_world.add<ecs::ColliderComponent>(entity).collider =
-            std::make_unique<BulletPhysics::collision::collider::BoxCollider>(size);
+        m_world.get<ecs::IdentityComponent>(entity)->name = flat ? "Square" : "Cube";
+        m_world.get<ecs::TransformComponent>(entity)->transform.setPosition(position);
+        m_world.get<ecs::RigidBodyComponent>(entity)->body.setPosition({position.x, position.y, position.z});
     }
 }
 
-void Editor::openFirstScene()
+void Editor::openStartScene()
 {
-    const std::vector<std::string> scenes = project::Project::instance().getKeys(SCENE_EXTENSION);
+    const project::Project& project = project::Project::instance();
+    const std::string& key = project.getSettings().startScene;
 
-    if (scenes.empty())
+    // game names what it starts with, project without it opens empty
+    if (key.empty() || !scene::load(m_world, project.getPath(key)))
     {
         fillNewScene();
         return;
     }
 
-    m_sceneKey = scenes.front();
-    scene::load(m_world, project::Project::instance().getPath(m_sceneKey));
+    m_sceneKey = key;
 }
 
 void Editor::destroyEntity(ecs::Entity entity)
@@ -339,10 +448,10 @@ void Editor::destroyEntity(ecs::Entity entity)
     m_pendingDestroy.push_back(entity);
 }
 
-// children of a dead parent go with it
+// children of dead parent go with it
 void Editor::collectSubtree(ecs::Entity entity, std::vector<ecs::Entity>& out) const
 {
-    // a hand edited file may loop parents back on themselves
+    // hand edited file may loop parents back on themselves
     if (std::find(out.begin(), out.end(), entity) != out.end())
     {
         return;
@@ -431,7 +540,7 @@ void Editor::applyCommands()
 
     for (const auto& [entity, type] : m_pendingRemove)
     {
-        // physics holds raw pointers into the components it was given
+        // physics holds raw pointers into components it was given
         m_physics.detach(m_world, entity);
         m_world.detach(entity, type);
     }

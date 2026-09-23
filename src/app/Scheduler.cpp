@@ -99,7 +99,7 @@ void Scheduler::run(Phase phase, const FrameContext& context)
 
     m_running = true;
 
-    // hook registered during the run waits for next frame
+    // hook registered during run waits for next frame
     const size_t bound = hooks.size();
 
     for (size_t i = 0; i < bound && i < hooks.size(); i++)
@@ -109,7 +109,7 @@ void Scheduler::run(Phase phase, const FrameContext& context)
             continue;
         }
 
-        // copied, bucket may reallocate while the hook runs
+        // copied, bucket may reallocate while hook runs
         HookFn fn = hooks[i].fn;
         fn(context);
     }

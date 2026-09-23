@@ -18,17 +18,18 @@
 #include "dynamics/body/RigidBody.h"
 #include "collision/collider/Collider.h"
 
+#include <cstdint>
 #include <memory>
 #include <string>
 
 namespace BulletEngine {
 namespace ecs {
 
-// what an entity is called and what group it belongs to
+// what entity is called and what group it belongs to
 class IdentityComponent : public Component {
 public:
     std::string name = "Entity";
-    std::string tag;                // empty for an entity nothing looks for
+    std::string tag;                // empty for entity nothing looks for
 };
 
 class TransformComponent : public Component {
@@ -38,21 +39,61 @@ public:
     Entity parent = INVALID_ENTITY;
 };
 
-class RenderableComponent : public Component {
+class Renderable {
 public:
-    assets::Handle<BulletRender::scene::Model> model;
-    assets::Handle<BulletRender::render::Texture2D> texture;
+    virtual ~Renderable() = default;
+
+    virtual const assets::Handle<BulletRender::scene::Model>& getModel() const = 0;
+
+    const std::string& getTextureKey() const { return m_texture.getKey(); }
+    void setTextureKey(const std::string& key);
+
     BulletRender::render::Material material;
 
-    // the key is what a scene file carries, the handle follows it
-    const std::string& getModelKey() const { return model.getKey(); }
-    void setModelKey(const std::string& key);
+protected:
+    virtual void onTextureChanged() {}
 
-    const std::string& getTextureKey() const { return texture.getKey(); }
-    void setTextureKey(const std::string& key);
+    assets::Handle<BulletRender::render::Texture2D> m_texture;
 };
 
-// what the game looks through, entity transform places it
+class Mesh : public Renderable {
+public:
+    const assets::Handle<BulletRender::scene::Model>& getModel() const override { return m_model; }
+
+    const std::string& getModelKey() const { return m_model.getKey(); }
+    void setModelKey(const std::string& key);
+
+private:
+    assets::Handle<BulletRender::scene::Model> m_model;
+};
+
+class Sprite : public Renderable {
+public:
+    enum class Shape : uint8_t {
+        Quad,
+        Circle
+    };
+
+    Sprite();
+
+    const assets::Handle<BulletRender::scene::Model>& getModel() const override { return m_shape; }
+
+    int getShape() const { return int(m_kind); }
+    void setShape(int kind);
+
+protected:
+    void onTextureChanged() override;
+
+private:
+    Shape m_kind = Shape::Quad;
+    assets::Handle<BulletRender::scene::Model> m_shape;
+};
+
+class RenderableComponent : public Component {
+public:
+    std::unique_ptr<Renderable> renderable;
+};
+
 class CameraComponent : public Component {
 public:
     BulletRender::scene::Projection projection = BulletRender::scene::Projection::Perspective;
@@ -63,8 +104,7 @@ public:
     float nearPlane = 0.1f;
     float farPlane = 500.0f;
 
-    // one camera renders, first found when none is marked
-    bool main = false;
+    bool main = false;          // one camera renders, first found when none is marked
 };
 
 class LightComponent : public Component {
@@ -72,7 +112,6 @@ public:
     std::shared_ptr<BulletRender::scene::Light> light;
 };
 
-// behaviour of entity, one lua file
 class ScriptComponent : public Component {
 public:
     assets::Handle<script::Script> script;
@@ -81,11 +120,9 @@ public:
     void setScriptKey(const std::string& key);
 };
 
-// surface script draws interface on, entity script fills it every frame
 class CanvasComponent : public Component {
 public:
-    // lower draws first, so higher ends up over it
-    int order = 0;
+    int order = 0;              // lower draws first, so higher ends up over it
 
     bool visible = true;
 };

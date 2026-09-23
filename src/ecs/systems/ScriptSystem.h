@@ -43,11 +43,9 @@ public:
     void fixedUpdate(World& world, float dt);   // in step with physics, where forces belong
     void lateUpdate(World& world, float dt);    // after everything moved, where followers belong
 
-    // what simulation ran into, told to entities involved
-    void deliver(World& world, const std::vector<ContactEvent>& events);
+    void deliver(World& world, const std::vector<ContactEvent>& events);                 // what simulation ran into, told to entities involved
 
-    // one entity draws its interface, caller decides who and in what order
-    void drawCanvas(ecs::Entity entity, BulletRender::render::Canvas& canvas);
+    void drawCanvas(ecs::Entity entity, BulletRender::render::Canvas& canvas);           // one entity draws its interface, caller decides who and in what order
 
 private:
     // types
@@ -82,8 +80,7 @@ private:
     void dispatch(World& world, Callback callback, float dt);       // one callback on every live instance
     void call(Instance& instance, Callback callback, float dt = 0.0f);
 
-    // contact callbacks take what was hit, not how long frame was
-    void callContact(Instance& instance, Callback callback, const ContactEvent& event);
+    void callContact(Instance& instance, Callback callback, const ContactEvent& event);  // contact callbacks take what was hit, not how long frame was
 
     void report(Instance& instance, Callback callback, const sol::protected_function_result& result);
 

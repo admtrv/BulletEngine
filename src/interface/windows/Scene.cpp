@@ -15,6 +15,9 @@
 namespace BulletEngine {
 namespace interface {
 
+constexpr float TOGGLE_MARGIN = 8.0f;       // gap between toggle and panel edge
+constexpr float TOGGLE_WIDTH = 34.0f;
+
 // keeps view sized to its panel, empty panel drops it
 static void resizeView(std::unique_ptr<BulletRender::render::FrameBuffer>& view, const glm::vec2& size)
 {
@@ -37,7 +40,7 @@ static void resizeView(std::unique_ptr<BulletRender::render::FrameBuffer>& view,
     }
 }
 
-// entity the world plays through, marked main or first there is
+// entity world plays through, marked main or first there is
 static ecs::Entity findGameCamera(ecs::World& world)
 {
     ecs::Entity found = ecs::INVALID_ENTITY;
@@ -72,13 +75,14 @@ void Editor::renderViews(BulletRender::scene::Scene& scene)
 
     if (m_sceneView)
     {
-        // scene is the world being arranged, player interface has no place over it
+        // scene is world being arranged, player interface has no place over it
         for (auto& pass : m_gamePasses)
         {
             pass->setEnabled(false);
         }
 
-        scene.setActiveCamera(m_camera.get());
+        scene.setActiveCamera(&getCamera());
+
         BulletRender::render::Renderer::renderTo(scene, *m_sceneView);
 
         for (auto& pass : m_gamePasses)
@@ -118,7 +122,7 @@ void Editor::renderViews(BulletRender::scene::Scene& scene)
     const auto& component = *m_world.get<ecs::CameraComponent>(entity);
     const auto& transform = m_world.get<ecs::TransformComponent>(entity)->transform;
 
-    // static camera looks at a point, entity says which way
+    // static camera looks at point, entity says which way
     const glm::vec3 position = transform.getPosition();
 
     m_gameCamera->setPosition(position);
@@ -137,7 +141,7 @@ void Editor::renderViews(BulletRender::scene::Scene& scene)
     }
 }
 
-// panel showing one view, tells where its image was clicked
+// panel showing one view, says whether its image is up, tells where it was clicked
 static bool drawView(const char* title, bool& shown, const BulletRender::render::FrameBuffer* view,
                      glm::vec2& size, glm::vec2& clicked)
 {
@@ -154,18 +158,45 @@ static bool drawView(const char* title, bool& shown, const BulletRender::render:
 
     const ImVec2 origin = ImGui::GetCursorScreenPos();
 
-    // texture origin sits at the bottom, uv flipped to match
+    // texture origin sits at bottom, uv flipped to match
     ImGui::Image(static_cast<ImTextureID>(view->getColorTexture()), available, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 
     if (ImGui::IsItemClicked())
     {
         const ImVec2 cursor = ImGui::GetMousePos();
         clicked = {cursor.x - origin.x, cursor.y - origin.y};
-
-        return true;
     }
 
-    return false;
+    return true;
+}
+
+// where cursor sits over view, from its middle out to its edge
+static glm::vec2 viewAnchor(const ImVec2& origin, const glm::vec2& size)
+{
+    if (size.x <= 0.0f || size.y <= 0.0f)
+    {
+        return {0.0f, 0.0f};
+    }
+
+    const ImVec2 cursor = ImGui::GetMousePos();
+
+    return {(cursor.x - origin.x) / size.x * 2.0f - 1.0f,
+            1.0f - (cursor.y - origin.y) / size.y * 2.0f};
+}
+
+// sits over far corner of view, says which camera looks through it
+void Editor::drawProjectionToggle()
+{
+    // view was last thing drawn, so its corner is where toggle belongs
+    const ImVec2 min = ImGui::GetItemRectMin();
+    const ImVec2 max = ImGui::GetItemRectMax();
+
+    ImGui::SetCursorScreenPos({max.x - TOGGLE_MARGIN - TOGGLE_WIDTH, min.y + TOGGLE_MARGIN});
+
+    if (ImGui::Button(m_flatView ? "2D" : "3D", {TOGGLE_WIDTH, 0.0f}))
+    {
+        m_flatView = !m_flatView;
+    }
 }
 
 void Editor::drawScene()
@@ -178,9 +209,18 @@ void Editor::drawScene()
     }
 
     // click asks for whatever entity sits under it
-    drawView(SCENE_PANEL, m_showScene, m_sceneView.get(), m_sceneSize, m_scenePick);
+    if (drawView(SCENE_PANEL, m_showScene, m_sceneView.get(), m_sceneSize, m_scenePick))
+    {
+        // wheel closes in on what cursor points at, rather than on middle
+        if (ImGui::IsItemHovered())
+        {
+            m_flatCamera->setZoomAnchor(viewAnchor(ImGui::GetItemRectMin(), m_sceneSize));
+        }
 
-    // the camera listens over the scene, and keeps listening until a look ends
+        drawProjectionToggle();
+    }
+
+    // camera listens over scene, and keeps listening until look ends
     const bool looking = ImGui::IsMouseDown(ImGuiMouseButton_Right);
 
     m_sceneFocused = looking ? m_sceneFocused : (ImGui::IsWindowFocused() || ImGui::IsWindowHovered());

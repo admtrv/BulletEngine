@@ -64,7 +64,7 @@ void saveObject(Node& node, const reflect::Type& type, const void* instance)
             const reflect::Type* nested = nullptr;
             const void* object = field->resolve(instance, &nested);
 
-            // concrete type on the line
+            // concrete type on line
             if (nested && object)
             {
                 child.setValue(nested->getName());
@@ -94,7 +94,7 @@ void loadObject(const Node& node, const reflect::Type& type, void* instance)
             const reflect::Type* nested = nullptr;
             void* object = field->resolve(instance, &nested);
 
-            // empty slot built from the type named on the line
+            // empty slot built from type named on line
             if (!object && field->isBuildable())
             {
                 nested = reflect::Registry::instance().find(child->getValue());

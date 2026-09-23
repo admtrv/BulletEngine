@@ -40,7 +40,7 @@ void Editor::drawExplorer()
     ImGui::End();
 }
 
-// either rebuilds the tree, so both wait until it is walked
+// either rebuilds tree, so both wait until it is walked
 void Editor::applyEntryCommands()
 {
     project::Project& project = project::Project::instance();
@@ -84,26 +84,27 @@ void Editor::acceptEntryDrop(const std::string& folder)
 
 void Editor::drawEntry(const project::Entry& entry, bool last)
 {
-    const bool folded = m_folded.count(entry.key) != 0;
+    // shut until asked, project opens on its own terms rather than spilling every folder
+    const bool opened = m_opened.count(entry.key) != 0;
 
-    if (m_explorerTree.row(&entry, entry.name.c_str(), last, m_explorerSelection == entry.key, entry.directory, folded))
+    if (m_explorerTree.row(&entry, entry.name.c_str(), last, m_explorerSelection == entry.key, entry.directory, !opened))
     {
         m_explorerSelection = entry.key;
     }
 
     if (m_explorerTree.toggled())
     {
-        if (folded)
+        if (opened)
         {
-            m_folded.erase(entry.key);
+            m_opened.erase(entry.key);
         }
         else
         {
-            m_folded.insert(entry.key);
+            m_opened.insert(entry.key);
         }
     }
 
-    // menus and payloads share the row, id keeps them apart per entry
+    // menus and payloads share row, id keeps them apart per entry
     ImGui::PushID(entry.key.c_str());
 
     BulletRender::interface::contextMenu("entry", [&]() {
@@ -130,7 +131,7 @@ void Editor::drawEntry(const project::Entry& entry, bool last)
 
     ImGui::PopID();
 
-    if (!entry.directory || folded || entry.children.empty())
+    if (!entry.directory || !opened || entry.children.empty())
     {
         return;
     }

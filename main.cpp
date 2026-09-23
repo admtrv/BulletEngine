@@ -29,6 +29,7 @@
 #include "ecs/systems/RenderSystem.h"
 #include "ecs/systems/ScriptSystem.h"
 #include "interface/Editor.h"
+#include "interface/Launcher.h"
 #include "io/Log.h"
 #include "project/Project.h"
 #include "script/Api.h"
@@ -42,20 +43,14 @@ namespace br = BulletRender;
 static const std::string VERTEX_SHADER_PATH = "assets/shaders/normal.vert.glsl";
 static const std::string FRAGMENT_SHADER_PATH = "assets/shaders/normal.frag.glsl";
 
-int main(int argc, char** argv)
+int main()
 {
     // streams reach editor from here on, terminal still gets them
     io::Log::instance().capture();
 
-    // folder editor opens, working one when none is named
-    if (!project::Project::instance().open(argc > 1 ? argv[1] : "."))
-    {
-        return -1;
-    }
-
     // window
     br::app::Loop::setDocking(true);
-    br::app::Loop::setDrawScene(false);      // editor draws the scene into its panels
+    br::app::Loop::setDrawScene(false);      // editor draws scene into its panels
 
     br::app::WindowConfig windowCfg{1600, 900, "BulletEngine", true, true};
     if (!br::app::Window::init(windowCfg))
@@ -63,7 +58,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    // gl objects must die before the context does
+    // gl objects must die before context does
     {
         // renderer
         br::render::RenderConfig renderCfg{{0.05f, 0.05f, 0.08f, 1.0f}};
@@ -109,17 +104,15 @@ int main(int argc, char** argv)
         ecs::systems::CanvasSystem canvasSystem(scriptSystem);
         scriptSystem.observe(world);
 
-        // its own tools, the game view goes without them
+        // its own tools, game view goes without them
         editor.addEditorPass(grid);
         editor.addEditorPass(worldAxis);
         editor.addEditorPass(lines);
 
         editor.addGamePass(canvas);
 
-        editor.openFirstScene();
-
-        // picking looks through the camera editor owns
-        ecs::systems::PickSystem pickSystem(editor.getCamera(), physicsSystem);
+        // picking casts through whichever camera scene panel shows
+        ecs::systems::PickSystem pickSystem(physicsSystem);
 
         // phases
         app::Application app;
@@ -155,7 +148,7 @@ int main(int argc, char** argv)
             scriptSystem.update(*frame.world, frame.deltaTime);
         }, 0, "scripts");
 
-        // forces land before the step that reads them
+        // forces land before step that reads them
         scheduler.add(app::Phase::FixedUpdate, [&scriptSystem](const app::FrameContext& frame) {
             scriptSystem.fixedUpdate(*frame.world, frame.fixedDeltaTime);
         }, -10, "scripts fixed");
@@ -176,7 +169,7 @@ int main(int argc, char** argv)
             }
         }, 0, "physics");
 
-        // contacts reach scripts once the step is over, so they may spawn and destroy freely
+        // contacts reach scripts once step is over, so they may spawn and destroy freely
         scheduler.add(app::Phase::FixedUpdate, [&scriptSystem, &physicsSystem](const app::FrameContext& frame) {
             scriptSystem.deliver(*frame.world, physicsSystem.getEvents());
             physicsSystem.clearEvents();
@@ -188,7 +181,7 @@ int main(int argc, char** argv)
                 return;
             }
 
-            editor.setSelection(pickSystem.pick(*frame.world, editor.getScenePick(), editor.getSceneSize()));
+            editor.setSelection(pickSystem.pick(*frame.world, editor.getCamera(), editor.getScenePick(), editor.getSceneSize()));
             editor.clearScenePick();
         }, 0, "pick");
 
@@ -219,7 +212,23 @@ int main(int argc, char** argv)
         br::app::Loop loop(scene);
         loop.setBeforeFrame([&editor]() { editor.beforeFrame(); });
 
+        interface::Launcher launcher;
+        bool opened = false;
+
         loop.run([&](float dt) {
+            // editor waits until there is project under it
+            if (!project::Project::instance().isOpen())
+            {
+                launcher.draw();
+                return;
+            }
+
+            if (!opened)
+            {
+                opened = true;
+                editor.openStartScene();
+            }
+
             app.tick(dt);
             editor.renderViews(scene);
             editor.draw();

@@ -4,6 +4,8 @@
 
 #include "Project.h"
 
+#include "scene/Serializer.h"
+
 #include <algorithm>
 #include <filesystem>
 #include <iostream>
@@ -14,6 +16,10 @@ namespace project {
 namespace fs = std::filesystem;
 
 constexpr float POLL_INTERVAL = 1.0f;       // seconds between looks
+
+constexpr const char* PROJECT_EXTENSION = ".project";
+constexpr const char* PROJECT_FILE = "Project.project";     // same name everywhere, folder says which project it is
+constexpr const char* SCENE_EXTENSION = ".scene";
 
 // folders first, then names, as file manager reads
 static bool byKind(const Entry& a, const Entry& b)
@@ -87,10 +93,58 @@ bool Project::open(const std::string& path)
     }
 
     m_root = root.generic_string();
-    m_name = root.filename().string();
-
     rescan();
+
+    // project file says what it is, first one found stands for it
+    const std::vector<std::string> files = getKeys(PROJECT_EXTENSION);
+
+    if (files.empty() || !readSettings(m_settings, getPath(files.front())))
+    {
+        std::cerr << "project open failed: " << path << " (no project file)\n";
+
+        m_root.clear();
+        return false;
+    }
+
+    m_projectKey = files.front();
     return true;
+}
+
+bool Project::create(const std::string& folder, const Settings& settings)
+{
+    std::error_code error;
+    fs::create_directories(folder, error);
+
+    if (error)
+    {
+        std::cerr << "project create failed: " << folder << '\n';
+        return false;
+    }
+
+    const fs::path root(folder);
+
+    if (!writeSettings(settings, (root / PROJECT_FILE).generic_string()))
+    {
+        return false;
+    }
+
+    // scene it starts with, so fresh project opens into something
+    const fs::path scene = root / settings.startScene;
+    fs::create_directories(scene.parent_path(), error);
+
+    ecs::World world;
+    return scene::save(world, scene.generic_string());
+}
+
+bool Project::setSettings(const Settings& settings)
+{
+    if (m_projectKey.empty())
+    {
+        return false;
+    }
+
+    m_settings = settings;
+    return writeSettings(m_settings, getPath(m_projectKey));
 }
 
 std::string Project::getPath(const std::string& key) const
@@ -113,7 +167,7 @@ void Project::rescan()
         return;
     }
 
-    m_tree.name = m_name;
+    m_tree.name = fs::path(m_root).filename().string();
     m_tree.directory = true;
 
     scan(m_root, m_root, m_tree);

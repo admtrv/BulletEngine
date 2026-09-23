@@ -35,15 +35,11 @@ public:
 
     // contacts
     const std::vector<BulletPhysics::collision::Manifold>& getContacts() const { return m_physicsWorld.getContacts(); }
-
-    // what last step ran into, taken by whoever acts on it
-    const std::vector<ContactEvent>& getEvents() const { return m_events; }
+    const std::vector<ContactEvent>& getEvents() const { return m_events; }     // what last step ran into, taken by whoever acts on it
     void clearEvents() { m_events.clear(); }
 
-    // queries
+    // queries, second one answers with entity rather than collider
     bool raycast(const BulletPhysics::collision::Ray& ray, BulletPhysics::collision::RayHit& outHit) const { return m_physicsWorld.raycast(ray, outHit); }
-
-    // answers with entity rather than collider, what scripts and gameplay ask for
     RayResult raycast(const glm::vec3& origin, const glm::vec3& direction, float distance, BulletPhysics::collision::collider::LayerMask mask = BulletPhysics::collision::collider::LAYER_ALL) const;
 
 private:
@@ -51,23 +47,17 @@ private:
     void onContactBegin(const BulletPhysics::collision::Manifold& manifold) override;
     void onContactEnd(BulletPhysics::collision::collider::Collider* a, BulletPhysics::collision::collider::Collider* b) override;
 
-    // both sides hear about pair, each with other named
-    void report(ContactPhase phase, BulletPhysics::collision::collider::Collider* a, BulletPhysics::collision::collider::Collider* b, const glm::vec3& point, const glm::vec3& normal, float depth);
+    void report(ContactPhase phase, BulletPhysics::collision::collider::Collider* a, BulletPhysics::collision::collider::Collider* b, const glm::vec3& point, const glm::vec3& normal, float depth);     // both sides hear about pair, each with other named
 
     Entity entityOf(const BulletPhysics::collision::collider::Collider* collider) const;
 
     void publishTransforms(World& world);
 
     BulletPhysics::dynamics::PhysicsWorld m_physicsWorld;
+    std::unordered_set<Entity> m_simulated;                                                       // entities simulation already owns, new one still takes its pose from transform
+    std::unordered_map<const BulletPhysics::collision::collider::Collider*, Entity> m_owners;     // rebuilt by sync, so contact can name entity behind collider
 
-    // entities the simulation already owns, a new one still takes its pose from the transform
-    std::unordered_set<Entity> m_simulated;
-
-    // rebuilt by sync, so contact can name entity behind collider
-    std::unordered_map<const BulletPhysics::collision::collider::Collider*, Entity> m_owners;
-
-    // filled mid step, emptied by whoever delivered them
-    std::vector<ContactEvent> m_events;
+    std::vector<ContactEvent> m_events;                                                  // filled mid step, emptied by whoever delivered them
 };
 
 } // namespace systems

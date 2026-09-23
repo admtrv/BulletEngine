@@ -11,15 +11,14 @@
 namespace BulletEngine {
 namespace assets {
 
-// reference to a loaded asset, carries the key it was loaded by
+// reference to loaded asset, carries key it was loaded by
 template<class T>
 class Handle {
 public:
     Handle() = default;
     Handle(std::string key, std::shared_ptr<T> asset) : m_key(std::move(key)), m_asset(std::move(asset)) {}
 
-    // identity, what gets written to a scene file
-    const std::string& getKey() const { return m_key; }
+    const std::string& getKey() const { return m_key; }      // what gets written to scene file
 
     // access
     T* get() const { return m_asset.get(); }

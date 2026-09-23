@@ -23,7 +23,7 @@ void HierarchySystem::update(World& world)
 
         auto* parent = find(world, component->parent);
 
-        // parent gone or never set leaves the node at the root
+        // parent gone or never set leaves node at root
         if (!parent)
         {
             component->parent = INVALID_ENTITY;

@@ -47,7 +47,7 @@ void installPhysics(sol::environment& environment, ecs::World& world, ecs::Entit
     body["addImpulse"] = [&world, entity](const glm::vec3& impulse) {
         auto* rigid = bodyOf(world, entity);
 
-        // inverse mass is zero for bodies the simulation never moves
+        // inverse mass is zero for bodies simulation never moves
         if (!rigid || rigid->getInverseMass() == 0.0)
         {
             return;

@@ -15,7 +15,7 @@ Registry& Registry::instance()
 
 Type& Registry::add(std::type_index index, std::string name)
 {
-    // registering twice returns the same type
+    // registering twice returns same type
     if (const auto it = m_byIndex.find(index); it != m_byIndex.end())
     {
         return *it->second;

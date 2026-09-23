@@ -32,8 +32,7 @@ public:
 
     const std::vector<Type*>& getTypes() const { return m_order; }
 
-    // types that derive from the given one and can be built
-    std::vector<const Type*> getDerived(const Type& base) const;
+    std::vector<const Type*> getDerived(const Type& base) const;                         // types that derive from the given one and can be built
 
 private:
     Registry() = default;

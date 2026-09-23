@@ -24,7 +24,7 @@ void Editor::drawConsole()
 
     ImGui::Begin(CONSOLE_PANEL, &m_showConsole);
 
-    // the journal is copied only when it moved, the field reads it every frame
+    // journal is copied only when it moved, field reads it every frame
     const uint32_t revision = io::Log::instance().getRevision();
 
     if (m_consoleRevision != revision)
@@ -38,7 +38,7 @@ void Editor::drawConsole()
 
     ImGui::BeginChild("lines", {0.0f, 0.0f}, ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
 
-    // the field spans the whole text, the child window around it is what scrolls
+    // field spans whole text, child window around it is what scrolls
     ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
     ImGui::InputTextMultiline("##log", &m_consoleText, {-FLT_MIN, ImGui::GetTextLineHeight() * m_consoleLines},
                               ImGuiInputTextFlags_ReadOnly);

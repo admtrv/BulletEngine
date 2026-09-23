@@ -33,7 +33,7 @@ void World::destroy(Entity entity)
 
     m_entities.erase(it);
 
-    // out of the world at once, its components live until the frame ends
+    // out of world at once, its components live until frame ends
     m_destroyed.push_back(entity);
 }
 

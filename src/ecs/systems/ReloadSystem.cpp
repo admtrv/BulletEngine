@@ -42,22 +42,28 @@ void ReloadSystem::reload(World& world, const std::vector<std::string>& keys)
     // key set back on itself pulls asset in again, past empty cache
     for (Entity entity : world.getEntities())
     {
-        auto* renderable = world.get<RenderableComponent>(entity);
+        auto* component = world.get<RenderableComponent>(entity);
 
-        if (!renderable)
+        if (!component || !component->renderable)
         {
             continue;
         }
 
-        // key is copied out, setting it replaces handle getter points into
-        if (const std::string key = renderable->getModelKey(); std::find(keys.begin(), keys.end(), key) != keys.end())
+        Renderable& renderable = *component->renderable;
+
+        // only mesh reads model off disk, sprite builds its own
+        if (auto* mesh = dynamic_cast<Mesh*>(&renderable))
         {
-            renderable->setModelKey(key);
+            // key is copied out, setting it replaces handle getter points into
+            if (const std::string key = mesh->getModelKey(); std::find(keys.begin(), keys.end(), key) != keys.end())
+            {
+                mesh->setModelKey(key);
+            }
         }
 
-        if (const std::string key = renderable->getTextureKey(); std::find(keys.begin(), keys.end(), key) != keys.end())
+        if (const std::string key = renderable.getTextureKey(); std::find(keys.begin(), keys.end(), key) != keys.end())
         {
-            renderable->setTextureKey(key);
+            renderable.setTextureKey(key);
         }
     }
 }

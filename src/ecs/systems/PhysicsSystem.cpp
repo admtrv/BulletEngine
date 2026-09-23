@@ -34,7 +34,7 @@ void PhysicsSystem::report(ContactPhase phase, BulletPhysics::collision::collide
 
     const bool trigger = (a && a->isTrigger()) || (b && b->isTrigger());
 
-    // normal runs from a to b, so it points away from whoever is told
+    // normal runs from to b, so it points away from whoever is told
     m_events.push_back({phase, first, second, point, normal, depth, trigger});
     m_events.push_back({phase, second, first, point, -normal, depth, trigger});
 }
@@ -120,19 +120,44 @@ void PhysicsSystem::sync(World& world, bool adoptPoses)
 
     for (auto entity : world.getEntities())
     {
+        auto* colliderComponent = world.get<ColliderComponent>(entity);
+        auto* collider = colliderComponent ? colliderComponent->collider.get() : nullptr;
         auto* rigidBodyComponent = world.get<RigidBodyComponent>(entity);
+
+        if (!collider && !rigidBodyComponent)
+        {
+            continue;
+        }
+
+        if (collider)
+        {
+            m_owners.emplace(collider, entity);
+        }
+
+        const auto* transformComponent = world.get<TransformComponent>(entity);
+
+        // a shape without a body is placed straight from transform, nothing simulates it
         if (!rigidBodyComponent)
         {
+            if (transformComponent)
+            {
+                const glm::vec3 position = transformComponent->transform.getPosition();
+                const glm::quat rotation = transformComponent->transform.getRotation();
+
+                collider->place({position.x, position.y, position.z}, {rotation.w, rotation.x, rotation.y, rotation.z});
+            }
+
+            m_physicsWorld.addCollider(collider);
             continue;
         }
 
         alive.insert(&rigidBodyComponent->body);
 
-        // a body born mid play has never been stepped, it still owes its pose to the transform
+        // body born mid play has never been stepped, it still owes its pose to transform
         const bool isNew = m_simulated.insert(entity).second;
 
-        // transform owns the pose, simulation takes over once it runs
-        if (const auto* transformComponent = world.get<TransformComponent>(entity); transformComponent && (adoptPoses || isNew))
+        // transform owns pose, simulation takes over once it runs
+        if (transformComponent && (adoptPoses || isNew))
         {
             const glm::vec3 position = transformComponent->transform.getPosition();
             const glm::quat rotation = transformComponent->transform.getRotation();
@@ -141,26 +166,20 @@ void PhysicsSystem::sync(World& world, bool adoptPoses)
             rigidBodyComponent->body.setOrientation({rotation.w, rotation.x, rotation.y, rotation.z});
         }
 
-        auto* colliderComponent = world.get<ColliderComponent>(entity);
-        auto* collider = colliderComponent ? colliderComponent->collider.get() : nullptr;
-
+        // shape and mass decide how body spins, both may change between steps
         if (collider)
         {
-            // shape and mass decide how the body spins, both may change between steps
-            rigidBodyComponent->body.setInverseInertiaLocal(
-                collider->inverseInertia(rigidBodyComponent->body.getMass()));
-
-            m_owners.emplace(collider, entity);
+            rigidBodyComponent->body.setInverseInertiaLocal(collider->inverseInertia(rigidBodyComponent->body.getMass()));
         }
 
-        // the world takes each body once, a second call would list it twice
+        // world takes each body once, second call would list it twice
         m_physicsWorld.addBody(&rigidBodyComponent->body, collider);
     }
 
-    // an entity that dropped its body starts over if it gets another
+    // entity that dropped its body starts over if it gets another
     std::erase_if(m_simulated, [&world](Entity entity) { return !world.has<RigidBodyComponent>(entity); });
 
-    // a body whose entity is gone has nothing left to follow
+    // body whose entity is gone has nothing left to follow
     const auto& bodies = m_physicsWorld.getBodies();
 
     for (size_t i = bodies.size(); i > 0; i--)

@@ -26,7 +26,7 @@ std::string toLabel(std::string_view name)
     {
         const char c = name[i];
 
-        // a capital starts a new word, unless it continues an acronym
+        // capital starts new word, unless it continues acronym
         if (i > 0 && std::isupper(static_cast<unsigned char>(c)) && !std::isupper(static_cast<unsigned char>(name[i - 1])))
         {
             label += ' ';
@@ -38,7 +38,7 @@ std::string toLabel(std::string_view name)
     return label;
 }
 
-// own fields first, what the type is reads before how it behaves
+// own fields first, what type is reads before how it behaves
 std::vector<const Field*> Type::getAllFields() const
 {
     std::vector<const Field*> fields;

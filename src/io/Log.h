@@ -28,8 +28,7 @@ public:
 
     std::string getText() const;
 
-    // grows on every change, reader knows its copy went stale
-    uint32_t getRevision() const;
+    uint32_t getRevision() const;                                                        // grows on every change, reader knows its copy went stale
 
 private:
     Log() = default;

@@ -9,7 +9,7 @@
 namespace BulletEngine {
 namespace io {
 
-constexpr size_t MAX_TEXT = 64 * 1024;      // oldest lines go once the journal is full
+constexpr size_t MAX_TEXT = 64 * 1024;      // oldest lines go once journal is full
 
 Log::Sink::Sink(std::ostream& stream) : m_stream(stream)
 {
@@ -42,7 +42,7 @@ void Log::Sink::write(const char* data, std::streamsize count)
 {
     m_origin->sputn(data, count);
 
-    // a crash must not take the tail of the log with it
+    // crash must not take tail of log with it
     m_origin->pubsync();
 
     Log::instance().append({data, static_cast<size_t>(count)});
@@ -113,7 +113,7 @@ void Log::trim()
         return;
     }
 
-    // cut on a line boundary, a half line would read as garbage
+    // cut on line boundary, half line would read as garbage
     const size_t excess = m_text.size() - MAX_TEXT;
     const size_t line = m_text.find('\n', excess);
 

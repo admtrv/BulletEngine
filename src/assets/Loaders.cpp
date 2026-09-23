@@ -50,27 +50,69 @@ static bool startsWith(const std::string& key, const char* prefix)
     return key.rfind(prefix, 0) == 0;
 }
 
+// shape key spells out, built from numbers following its prefix
+struct Primitive {
+    const char* prefix;
+    const char* label;
+    size_t arity;       // how many numbers it takes, shorter key gets default size instead
+
+    using Model = std::shared_ptr<BulletRender::scene::Model>;
+
+    Model (*build)(const std::vector<float>& args);
+    Model (*fallback)();
+};
+
+template<class Shape>
+static Primitive::Model makeDefault()
+{
+    return std::make_shared<Shape>();
+}
+
+static const Primitive PRIMITIVES[] = {
+    {BOX_PREFIX, "Box", 3, [](const std::vector<float>& a) -> Primitive::Model {
+        return std::make_shared<BulletRender::scene::Box>(a[0], a[1], a[2]);
+    }, makeDefault<BulletRender::scene::Box>},
+
+    {SPHERE_PREFIX, "Sphere", 3, [](const std::vector<float>& a) -> Primitive::Model {
+        return std::make_shared<BulletRender::scene::Sphere>(a[0], static_cast<int>(a[1]), static_cast<int>(a[2]));
+    }, makeDefault<BulletRender::scene::Sphere>},
+
+    {QUAD_PREFIX, "Quad", 2, [](const std::vector<float>& a) -> Primitive::Model {
+        return std::make_shared<BulletRender::scene::Quad>(a[0], a[1]);
+    }, makeDefault<BulletRender::scene::Quad>},
+
+    {CIRCLE_PREFIX, "Circle", 2, [](const std::vector<float>& a) -> Primitive::Model {
+        return std::make_shared<BulletRender::scene::Circle>(a[0], static_cast<int>(a[1]));
+    }, makeDefault<BulletRender::scene::Circle>}
+};
+
+// primitive key names, nothing when it points at file instead
+static const Primitive* findPrimitive(const std::string& key)
+{
+    for (const Primitive& primitive : PRIMITIVES)
+    {
+        if (startsWith(key, primitive.prefix))
+        {
+            return &primitive;
+        }
+    }
+
+    return nullptr;
+}
+
 static std::shared_ptr<BulletRender::scene::Model> loadModel(const std::string& key)
 {
-    if (startsWith(key, BOX_PREFIX))
-    {
-        const auto size = parseNumbers(std::string_view(key).substr(std::string_view(BOX_PREFIX).size()));
+    const Primitive* primitive = findPrimitive(key);
 
-        return size.size() >= 3
-            ? std::make_shared<BulletRender::scene::Box>(size[0], size[1], size[2])
-            : std::make_shared<BulletRender::scene::Box>();
+    if (!primitive)
+    {
+        return BulletRender::scene::ModelLoader::instance().load(project::Project::instance().getPath(key));
     }
 
-    if (startsWith(key, SPHERE_PREFIX))
-    {
-        const auto args = parseNumbers(std::string_view(key).substr(std::string_view(SPHERE_PREFIX).size()));
+    const std::vector<float> args = parseNumbers(std::string_view(key).substr(std::string_view(primitive->prefix).size()));
 
-        return args.size() >= 3
-            ? std::make_shared<BulletRender::scene::Sphere>(args[0], static_cast<int>(args[1]), static_cast<int>(args[2]))
-            : std::make_shared<BulletRender::scene::Sphere>();
-    }
-
-    return BulletRender::scene::ModelLoader::instance().load(project::Project::instance().getPath(key));
+    // key short of numbers still names shape, one of default size
+    return args.size() >= primitive->arity ? primitive->build(args) : primitive->fallback();
 }
 
 static std::shared_ptr<script::Script> loadScript(const std::string& key)
@@ -96,14 +138,9 @@ std::string toLabel(const std::string& key)
         return "None";
     }
 
-    if (startsWith(key, BOX_PREFIX))
+    if (const Primitive* primitive = findPrimitive(key))
     {
-        return "Box";
-    }
-
-    if (startsWith(key, SPHERE_PREFIX))
-    {
-        return "Sphere";
+        return primitive->label;
     }
 
     const size_t slash = key.find_last_of("/\\");
@@ -117,7 +154,11 @@ void registerLoaders()
     registry.setLoader<BulletRender::scene::Model>(loadModel);
 
     registry.setLoader<BulletRender::render::Texture2D>([](const std::string& key) {
-        return BulletRender::render::TextureLoader::instance().load(project::Project::instance().getPath(key));
+        // image files run top down, gl reads bottom up
+        BulletRender::render::TextureLoadOptions options;
+        options.flipVertically = true;
+
+        return BulletRender::render::TextureLoader::instance().load(project::Project::instance().getPath(key), options);
     });
 
     registry.setLoader<BulletRender::render::Font>([](const std::string& key) {

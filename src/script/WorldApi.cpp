@@ -25,7 +25,7 @@ static Handle addComponent(ecs::World& world, ecs::Entity entity, const std::str
         return {};
     }
 
-    // entity already carrying it keeps the one it has
+    // entity already carrying it keeps one it has
     if (world.has(entity, type->getIndex()))
     {
         return {&world, entity, type};
@@ -47,7 +47,7 @@ void installWorld(sol::environment& environment, ecs::World& world)
 {
     sol::table table = environment.create_named("world");
 
-    // named entity at the origin, caller adds the rest
+    // named entity at origin, caller adds rest
     table["spawn"] = [&world](sol::optional<std::string> name) {
         const ecs::Entity entity = world.create();
 
@@ -69,7 +69,7 @@ void installWorld(sol::environment& environment, ecs::World& world)
         return entity != ecs::INVALID_ENTITY ? sol::optional<ecs::Entity>(entity) : sol::nullopt;
     };
 
-    // marked now, components live until the frame ends
+    // marked now, components live until frame ends
     table["destroy"] = [&world](ecs::Entity entity) {
         world.destroy(entity);
     };
@@ -78,7 +78,7 @@ void installWorld(sol::environment& environment, ecs::World& world)
         return world.isAlive(entity);
     };
 
-    // component by reflected name, handle lets the script fill it in
+    // component by reflected name, handle lets script fill it in
     table["add"] = [&world](ecs::Entity entity, const std::string& name) {
         return addComponent(world, entity, name);
     };
@@ -104,7 +104,7 @@ void installWorld(sol::environment& environment, ecs::World& world)
         return sol::nullopt;
     };
 
-    // every entity sharing a tag, nothing matches the empty one
+    // every entity sharing tag, nothing matches empty one
     table["findByTag"] = [&world](const std::string& tag, sol::this_state state) {
         sol::table found = sol::state_view(state).create_table();
 
@@ -126,7 +126,7 @@ void installWorld(sol::environment& environment, ecs::World& world)
         return found;
     };
 
-    // every entity carrying a component, by its reflected name
+    // every entity carrying component, by its reflected name
     table["findWith"] = [&world](const std::string& name, sol::this_state state) {
         sol::table found = sol::state_view(state).create_table();
         const reflect::Type* type = findType(name);

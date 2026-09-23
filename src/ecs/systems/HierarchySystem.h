@@ -14,7 +14,7 @@ class TransformComponent;
 
 namespace systems {
 
-// keeps transform links in step with the parent each component names
+// keeps transform links in step with parent each component names
 class HierarchySystem {
 public:
     void update(World& world);

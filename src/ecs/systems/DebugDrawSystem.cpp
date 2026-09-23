@@ -8,6 +8,7 @@
 #include "render/Renderer.h"
 
 #include "collision/collider/BoxCollider.h"
+#include "collision/collider/CylinderCollider.h"
 #include "collision/collider/SphereCollider.h"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -18,10 +19,10 @@ namespace systems {
 
 namespace bpc = BulletPhysics::collision::collider;
 
-static constexpr float GROUND_RADIUS = 1.5f;    // the plane is endless, only a patch of it is hinted
+static constexpr float GROUND_RADIUS = 1.5f;    // plane is endless, only patch of it is hinted
 static constexpr float VELOCITY_SCALE = 0.2f;   // metres per second to arrow length
 static constexpr float CONTACT_LENGTH = 0.5f;
-static constexpr float SLOWEST_SHOWN = 0.1f;    // slower ones clutter the view
+static constexpr float SLOWEST_SHOWN = 0.1f;    // slower ones clutter view
 
 static const glm::vec3 UP{0.0f, 1.0f, 0.0f};
 
@@ -89,7 +90,7 @@ void DebugDrawSystem::drawColliders(World& world)
             const auto half = box->getSize() * 0.5;
             const auto* axes = box->getAxes();
 
-            // sign of each axis picked by the bits of the corner index
+            // sign of each axis picked by bits of corner index
             glm::vec3 corners[8];
 
             for (int i = 0; i < 8; i++)
@@ -104,6 +105,14 @@ void DebugDrawSystem::drawColliders(World& world)
             }
 
             m_debugDraw.drawBox(corners, BulletRender::colors::White);
+        }
+        else if (collider->getShape() == bpc::CollisionShape::Cylinder)
+        {
+            const auto* cylinder = static_cast<const bpc::CylinderCollider*>(collider);
+
+            m_debugDraw.drawCylinder(toGlm(cylinder->getPosition()), toGlm(cylinder->getAxis()),
+                                     static_cast<float>(cylinder->getRadius()), static_cast<float>(cylinder->getHeight()),
+                                     BulletRender::colors::White);
         }
         else if (collider->getShape() == bpc::CollisionShape::Ground)
         {
@@ -166,7 +175,7 @@ void DebugDrawSystem::drawCameras(World& world)
             continue;
         }
 
-        // view is built from pose alone, scale would bend the frustum
+        // view is built from pose alone, scale would bend frustum
         const glm::vec3 position = transform->transform.getPosition();
 
         m_debugDraw.drawFrustum(glm::lookAt(position, position + transform->transform.getForward(), UP),

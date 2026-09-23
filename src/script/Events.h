@@ -21,11 +21,9 @@ namespace script {
 // gameplay systems stay apart
 class EventBus {
 public:
-    // handler stands until entity that made it goes
-    void listen(const std::string& name, ecs::Entity owner, sol::protected_function handler);
+    void listen(const std::string& name, ecs::Entity owner, sol::protected_function handler);  // handler stands until entity that made it goes
 
-    // handlers run before this returns, in order they subscribed
-    void emit(const std::string& name, sol::variadic_args args);
+    void emit(const std::string& name, sol::variadic_args args);                         // handlers run before this returns, in order they subscribed
 
     void forget(ecs::Entity owner);     // entity died, its handlers go with it
     void clear();                       // play stopped, nothing survives it
@@ -38,8 +36,7 @@ private:
 
     void drop(const std::string& name, size_t index);
 
-    // events already running, so handler emitting into itself is caught
-    int m_depth = 0;
+    int m_depth = 0;                                                                     // events already running, so handler emitting into itself is caught
 
     std::unordered_map<std::string, std::vector<Listener>> m_listeners;
 };

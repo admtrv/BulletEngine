@@ -81,7 +81,7 @@ void ScriptSystem::attach(World& world, Entity entity)
         std::cerr << "script failed: " << component->getScriptKey()
                   << " (" << result.get<sol::error>().what() << ")\n";
 
-        // compiling it again every frame would flood the console
+        // compiling it again every frame would flood console
         m_broken.insert(entity);
         return;
     }
@@ -137,7 +137,7 @@ void ScriptSystem::start(World& world)
 
     m_running = true;
 
-    // onStart may spawn, which would grow the list being walked
+    // onStart may spawn, which would grow list being walked
     const std::vector<Entity> entities = world.getEntities();
 
     for (Entity entity : entities)
@@ -148,7 +148,7 @@ void ScriptSystem::start(World& world)
 
 void ScriptSystem::stop()
 {
-    // whatever the world listener did not take, ends here
+    // whatever world listener did not take, ends here
     for (auto& [entity, instance] : m_instances)
     {
         call(instance, Callback::Destroy);
@@ -166,10 +166,10 @@ void ScriptSystem::stop()
 
 void ScriptSystem::update(World& world, float dt)
 {
-    // entities spawned since last frame get script here, dispatch checks the rest
+    // entities spawned since last frame get script here, dispatch checks rest
     if (m_running)
     {
-        // a script may spawn while this walks, so the list is taken by value
+        // script may spawn while this walks, so list is taken by value
         const std::vector<Entity> entities = world.getEntities();
 
         for (Entity entity : entities)

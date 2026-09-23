@@ -53,7 +53,7 @@ int Application::consumeFixedSteps(float deltaTime)
 
     if (steps > m_maxFixedSteps)
     {
-        // drop backlog, better slow motion for a moment than a stall
+        // drop backlog, better slow motion for moment than stall
         steps = m_maxFixedSteps;
         m_accumulator = 0.0f;
 

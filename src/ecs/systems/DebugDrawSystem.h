@@ -17,7 +17,7 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-// gizmos over the scene, each layer on its own
+// gizmos over scene, each layer on its own
 class DebugDrawSystem {
 public:
     explicit DebugDrawSystem(std::shared_ptr<BulletRender::render::Lines> lines);

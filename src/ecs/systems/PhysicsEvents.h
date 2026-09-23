@@ -32,8 +32,7 @@ struct ContactEvent {
     glm::vec3 normal{};      // points away from self
     float depth = 0.0f;      // how far they overlapped
 
-    // either collider may be trigger, which reports but never pushes
-    bool trigger = false;
+    bool trigger = false;                                                                // either collider may be trigger, which reports but never pushes
 };
 
 // what ray met, empty when it met nothing

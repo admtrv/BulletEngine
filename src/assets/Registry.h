@@ -20,7 +20,7 @@ class Registry {
 public:
     static Registry& instance();
 
-    // how a type is built from a key
+    // how type is built from key
     template<class T>
     using Loader = std::function<std::shared_ptr<T>(const std::string&)>;
 
