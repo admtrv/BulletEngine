@@ -6,7 +6,10 @@
 
 #include "assets/Loaders.h"
 #include "assets/Registry.h"
+#include "project/Project.h"
 #include "reflect/Reflect.h"
+
+#include <array>
 
 #include "collision/collider/BoxCollider.h"
 #include "collision/collider/CylinderCollider.h"
@@ -46,6 +49,59 @@ static bool reload(BulletEngine::assets::Handle<T>& handle, const std::string& k
 void ScriptComponent::setScriptKey(const std::string& key)
 {
     reload(script, key);
+}
+
+// environment
+
+void EnvironmentComponent::setLayout(int layout)
+{
+    m_layout = layout == int(Layout::Faces) ? Layout::Faces : Layout::Cross;
+}
+
+void EnvironmentComponent::setCrossKey(const std::string& key)
+{
+    reload(m_cross, key);
+}
+
+void EnvironmentComponent::setFaceKey(int face, const std::string& key)
+{
+    m_faceKeys[face] = key;
+
+    buildFaces();
+}
+
+void EnvironmentComponent::buildFaces()
+{
+    std::array<std::string, 6> paths;
+
+    for (int face = 0; face < 6; face++)
+    {
+        if (m_faceKeys[face].empty())
+        {
+            m_faces.reset();
+            return;
+        }
+
+        paths[face] = project::Project::instance().getPath(m_faceKeys[face]);
+    }
+
+    m_faces = std::make_shared<BulletRender::render::CubeMap>(paths);
+}
+
+// sky covers whole view, what lies under it is never seen
+glm::vec3 EnvironmentComponent::getClearColor() const
+{
+    return isSkybox() ? glm::vec3(0.0f) : m_color;
+}
+
+std::shared_ptr<BulletRender::render::CubeMap> EnvironmentComponent::getSkybox() const
+{
+    if (isCross())
+    {
+        return m_cross.getShared();
+    }
+
+    return isFaces() ? m_faces : nullptr;
 }
 
 // renderables
@@ -242,6 +298,39 @@ REFLECT(ScriptComponent)
     BASE(Component)
     PROPERTY("script", getScriptKey, setScriptKey)
     ASSET()
+END_REFLECT()
+
+REFLECT(EnvironmentComponent)
+    BASE(Component)
+    PROPERTY("background", getBackground, setBackground)
+    OPTIONS("Color", "Skybox")
+    PROPERTY("color", getColor, setColor)
+    COLOR()
+    SHOWN_WHEN(!self.isSkybox())
+    PROPERTY("layout", getLayout, setLayout)
+    OPTIONS("Cross", "Faces")
+    SHOWN_WHEN(self.isSkybox())
+    PROPERTY("texture", getCrossKey, setCrossKey)
+    ASSET()
+    SHOWN_WHEN(self.isCross())
+    PROPERTY("right", getRightKey, setRightKey)
+    ASSET()
+    SHOWN_WHEN(self.isFaces())
+    PROPERTY("left", getLeftKey, setLeftKey)
+    ASSET()
+    SHOWN_WHEN(self.isFaces())
+    PROPERTY("top", getTopKey, setTopKey)
+    ASSET()
+    SHOWN_WHEN(self.isFaces())
+    PROPERTY("bottom", getBottomKey, setBottomKey)
+    ASSET()
+    SHOWN_WHEN(self.isFaces())
+    PROPERTY("front", getFrontKey, setFrontKey)
+    ASSET()
+    SHOWN_WHEN(self.isFaces())
+    PROPERTY("back", getBackKey, setBackKey)
+    ASSET()
+    SHOWN_WHEN(self.isFaces())
 END_REFLECT()
 
 REFLECT(CanvasComponent)

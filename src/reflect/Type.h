@@ -57,6 +57,11 @@ public:
     bool isHidden() const { return m_hidden; }
     void setHidden(bool hidden) { m_hidden = hidden; }
 
+    using Condition = std::function<bool(const void*)>;
+
+    void setCondition(Condition condition) { m_condition = std::move(condition); }
+    bool isShown(const void* instance) const { return !m_condition || m_condition(instance); }
+
     bool isColor() const { return m_color; }        // channels rather than axes, drawn with a swatch
     void setColor(bool color) { m_color = color; }
 
@@ -105,6 +110,7 @@ private:
 
     std::vector<std::string> m_options;
     bool m_hidden = false;
+    Condition m_condition;
     bool m_color = false;
     bool m_asset = false;
     bool m_bits = false;

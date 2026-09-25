@@ -91,6 +91,13 @@ inline std::string toString(Preset preset)
     }
 }
 
+// editor camera
+inline constexpr float EDITOR_CAMERA_FAR = 40.0f;
+
+// ground overlays, shares of camera far plane so grid never leaves before objects on it
+inline constexpr float GROUND_FADE_START = 0.7f;
+inline constexpr float GROUND_FADE_END = 1.0f;
+
 // docked panels driving the world
 class Editor {
 public:
@@ -101,7 +108,7 @@ public:
     void renderViews(BulletRender::scene::Scene& scene);     // draws open panels, each into its own texture
 
     // passes one view shows and other does without
-    void addEditorPass(std::shared_ptr<BulletRender::render::IRenderPass> pass) { m_editorPasses.push_back(std::move(pass)); }
+    void addEditorPass(std::shared_ptr<BulletRender::render::IRenderPass> pass, const char* name) { m_editorPasses.push_back({std::move(pass), name, true}); }
     void addGamePass(std::shared_ptr<BulletRender::render::IRenderPass> pass) { m_gamePasses.push_back(std::move(pass)); }
 
     // scenes
@@ -140,6 +147,7 @@ private:
     void drawProjectMenu();
     void drawSceneMenu();
     void drawDebugMenu();
+    void drawEditorMenu();
     void setMode(Mode mode);
     void drawPlayBar();
     void drawMenuBar();
@@ -231,7 +239,6 @@ private:
 
     // journal as field sees it, copied when it changes
     std::string m_consoleText;
-    float m_consoleLines = 1.0f;
     uint32_t m_consoleRevision = 0;
     bool m_consoleTail = true;      // scrolls down once after new lines arrive
 
@@ -242,7 +249,13 @@ private:
     bool m_layoutBuilt = false;
 
     // passes one view shows and other does without
-    std::vector<std::shared_ptr<BulletRender::render::IRenderPass>> m_editorPasses;
+    struct EditorPass {
+        std::shared_ptr<BulletRender::render::IRenderPass> pass;
+        const char* name = nullptr;     // named ones reach settings menu
+        bool shown = true;
+    };
+
+    std::vector<EditorPass> m_editorPasses;
     std::vector<std::shared_ptr<BulletRender::render::IRenderPass>> m_gamePasses;
 
     // what each panel draws into, sized to fill it

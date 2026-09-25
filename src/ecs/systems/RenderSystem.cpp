@@ -4,6 +4,8 @@
 
 #include "RenderSystem.h"
 
+#include "render/Renderer.h"
+
 namespace BulletEngine {
 namespace ecs {
 namespace systems {
@@ -25,7 +27,8 @@ static void apply(const BulletRender::render::Material& from, BulletRender::rend
     }
 }
 
-RenderSystem::RenderSystem(BulletRender::scene::Scene& scene) : m_scene(scene) {}
+RenderSystem::RenderSystem(BulletRender::scene::Scene& scene, std::shared_ptr<BulletRender::render::SkyBox> skybox)
+    : m_scene(scene), m_skybox(std::move(skybox)) {}
 
 void RenderSystem::render(World& world)
 {
@@ -60,6 +63,39 @@ void RenderSystem::render(World& world)
             lightComponent->light->getTransform().setMatrix(matrix);
             m_scene.addLight(lightComponent->light);
         }
+    }
+
+    applyEnvironment(world);
+}
+
+// scene paints its own backdrop, one without environment keeps what stood there
+void RenderSystem::applyEnvironment(World& world)
+{
+    for (Entity entity : world.getEntities())
+    {
+        const auto* component = world.get<EnvironmentComponent>(entity);
+
+        if (!component)
+        {
+            continue;
+        }
+
+        const std::shared_ptr<BulletRender::render::CubeMap> sky = component->getSkybox();
+
+        BulletRender::render::Renderer::setBackgroundColor(glm::vec4(component->getClearColor(), 1.0f));
+
+        if (m_skybox)
+        {
+            m_skybox->setCubeMap(sky);
+            m_skybox->setEnabled(sky != nullptr);
+        }
+
+        return;
+    }
+
+    if (m_skybox)
+    {
+        m_skybox->setEnabled(false);
     }
 }
 

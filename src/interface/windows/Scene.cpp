@@ -109,9 +109,9 @@ void Editor::renderViews(BulletRender::scene::Scene& scene)
     }
 
     // game sees world as player would, without tools laid over it
-    for (auto& pass : m_editorPasses)
+    for (auto& entry : m_editorPasses)
     {
-        pass->setEnabled(false);
+        entry.pass->setEnabled(false);
     }
 
     if (!m_gameCamera)
@@ -135,9 +135,10 @@ void Editor::renderViews(BulletRender::scene::Scene& scene)
     scene.setActiveCamera(m_gameCamera.get());
     BulletRender::render::Renderer::renderTo(scene, *m_gameView);
 
-    for (auto& pass : m_editorPasses)
+    // each tool goes back to what settings asked of it, not simply on
+    for (auto& entry : m_editorPasses)
     {
-        pass->setEnabled(true);
+        entry.pass->setEnabled(entry.shown);
     }
 }
 

@@ -531,7 +531,7 @@ bool Editor::drawObjectType(const reflect::Field& field, void* instance, const r
 
 bool Editor::drawField(const reflect::Field& field, void* instance)
 {
-    if (field.isHidden())
+    if (field.isHidden() || !field.isShown(instance))
     {
         return false;
     }

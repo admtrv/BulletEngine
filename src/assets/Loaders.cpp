@@ -9,6 +9,7 @@
 #include "script/Script.h"
 
 #include "render/text/FontLoader.h"
+#include "render/textures/CubeMap.h"
 #include "render/textures/TextureLoader.h"
 #include "scene/models/Model.h"
 #include "scene/models/ModelLoader.h"
@@ -147,6 +148,12 @@ std::string toLabel(const std::string& key)
     return slash == std::string::npos ? key : key.substr(slash + 1);
 }
 
+// faces given one by one build their own cubemap, so this key always names cross
+static std::shared_ptr<BulletRender::render::CubeMap> loadCubeMap(const std::string& key)
+{
+    return std::make_shared<BulletRender::render::CubeMap>(project::Project::instance().getPath(key));
+}
+
 void registerLoaders()
 {
     Registry& registry = Registry::instance();
@@ -164,6 +171,8 @@ void registerLoaders()
     registry.setLoader<BulletRender::render::Font>([](const std::string& key) {
         return BulletRender::render::FontLoader::instance().load(project::Project::instance().getPath(key));
     });
+
+    registry.setLoader<BulletRender::render::CubeMap>(loadCubeMap);
 
     registry.setLoader<script::Script>(loadScript);
 }

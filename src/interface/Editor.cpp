@@ -32,10 +32,14 @@ constexpr float NAME_FIELD_CHARS = 12.0f;       // save as field width, in font 
 constexpr glm::vec3 EDITOR_CAMERA_POSITION{0.0f, 5.0f, 6.0f};
 constexpr float EDITOR_CAMERA_YAW = -90.0f;
 constexpr float EDITOR_CAMERA_PITCH = -35.0f;
+constexpr float EDITOR_CAMERA_FOV = 60.0f;
+constexpr float EDITOR_CAMERA_SPEED = 3.0f;
+constexpr float EDITOR_CAMERA_NEAR = 0.1f;
 
 Editor::Editor(ecs::World& world, ecs::systems::PhysicsSystem& physics, ecs::systems::DebugDrawSystem& debugDraw)
     : m_world(world), m_physics(physics), m_debugDraw(debugDraw),
-      m_camera(std::make_unique<BulletRender::scene::FlyCamera>(EDITOR_CAMERA_POSITION, EDITOR_CAMERA_YAW, EDITOR_CAMERA_PITCH)),
+      m_camera(std::make_unique<BulletRender::scene::FlyCamera>(EDITOR_CAMERA_POSITION, EDITOR_CAMERA_YAW, EDITOR_CAMERA_PITCH,
+                                                               EDITOR_CAMERA_FOV, EDITOR_CAMERA_SPEED, EDITOR_CAMERA_NEAR, EDITOR_CAMERA_FAR)),
       m_flatCamera(std::make_unique<BulletRender::scene::PanCamera>()) {}
 
 BulletRender::scene::Camera& Editor::getCamera()
@@ -308,6 +312,18 @@ void Editor::drawSceneMenu()
     }
 }
 
+// nameless tool is not for menu to touch
+void Editor::drawEditorMenu()
+{
+    for (EditorPass& entry : m_editorPasses)
+    {
+        if (entry.name && ImGui::MenuItem(entry.name, nullptr, &entry.shown))
+        {
+            entry.pass->setEnabled(entry.shown);
+        }
+    }
+}
+
 void Editor::drawDebugMenu()
 {
     bool colliders = m_debugDraw.isShowColliders();
@@ -453,6 +469,12 @@ void Editor::drawMenuBar()
 
         if (ImGui::BeginMenu("Settings"))
         {
+            if (ImGui::BeginMenu("Editor"))
+            {
+                drawEditorMenu();
+                ImGui::EndMenu();
+            }
+
             if (ImGui::BeginMenu("Debug"))
             {
                 drawDebugMenu();

@@ -6,9 +6,9 @@
 #include "app/Loop.h"
 #include "app/Window.h"
 #include "render/passes/Canvas.h"
-#include "render/passes/Fog.h"
 #include "render/passes/Grid.h"
 #include "render/passes/Lines.h"
+#include "render/passes/SkyBox.h"
 #include "render/passes/WorldAxis.h"
 #include "render/Renderer.h"
 #include "render/Shader.h"
@@ -61,8 +61,7 @@ int main()
     // gl objects must die before context does
     {
         // renderer
-        br::render::RenderConfig renderCfg{{0.05f, 0.05f, 0.08f, 1.0f}};
-        br::render::Renderer::init(renderCfg);
+        br::render::Renderer::init();
 
         auto lines = std::make_shared<br::render::Lines>(1.5f);
         lines->setDepthTest(false);     // gizmos stay visible through geometry
@@ -71,11 +70,17 @@ int main()
         auto worldAxis = std::make_shared<br::render::WorldAxis>();
         auto canvas = std::make_shared<br::render::Canvas>();
 
+        auto skybox = std::make_shared<br::render::SkyBox>(nullptr);
+        skybox->setEnabled(false);
+
+        grid->setFade(interface::GROUND_FADE_START, interface::GROUND_FADE_END);
+        worldAxis->setFade(interface::GROUND_FADE_START, interface::GROUND_FADE_END);
+
+        br::render::Renderer::registerPrePass(skybox);
         br::render::Renderer::registerPrePass(grid);
         br::render::Renderer::registerPrePass(worldAxis);
         br::render::Renderer::registerOverlayPass(lines);
         br::render::Renderer::registerOverlayPass(canvas);
-        br::render::Renderer::registerPostPass(std::make_shared<br::render::Fog>(true, 20.0f, 70.0f));
 
         // scene
         br::scene::Scene scene;
@@ -93,7 +98,7 @@ int main()
         physicsSystem.watch(world);
 
         ecs::systems::HierarchySystem hierarchySystem;
-        ecs::systems::RenderSystem renderSystem(scene);
+        ecs::systems::RenderSystem renderSystem(scene, skybox);
         ecs::systems::DebugDrawSystem debugDrawSystem(lines);
         ecs::systems::ReloadSystem reloadSystem;
 
@@ -105,9 +110,9 @@ int main()
         scriptSystem.observe(world);
 
         // its own tools, game view goes without them
-        editor.addEditorPass(grid);
-        editor.addEditorPass(worldAxis);
-        editor.addEditorPass(lines);
+        editor.addEditorPass(grid, "Grid");
+        editor.addEditorPass(worldAxis, "Axes");
+        editor.addEditorPass(lines, nullptr);
 
         editor.addGamePass(canvas);
 

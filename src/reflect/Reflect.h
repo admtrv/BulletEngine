@@ -275,6 +275,11 @@ Field makeMemberField(std::string name, M C::* member)
 #define HIDE_FIELD()                                                                    \
             type.getLastField().setHidden(true);
 
+// field only some settings call for, dropped while they do not ask
+#define SHOWN_WHEN(CONDITION)                                                           \
+            type.getLastField().setCondition(                                           \
+                [](const void* instance) { const Self& self = *static_cast<const Self*>(instance); return (CONDITION); });
+
 #define COLOR()                                                                         \
             type.getLastField().setColor(true);
 

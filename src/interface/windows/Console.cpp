@@ -7,10 +7,7 @@
 #include "io/Log.h"
 
 #include "imgui.h"
-#include "imgui_stdlib.h"
 
-#include <algorithm>
-#include <cfloat>
 
 namespace BulletEngine {
 namespace interface {
@@ -31,18 +28,13 @@ void Editor::drawConsole()
     {
         m_consoleRevision = revision;
         m_consoleText = io::Log::instance().getText();
-        m_consoleLines = float(std::count(m_consoleText.begin(), m_consoleText.end(), '\n') + 1);
 
         m_consoleTail = true;
     }
 
     ImGui::BeginChild("lines", {0.0f, 0.0f}, ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
 
-    // field spans whole text, child window around it is what scrolls
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-    ImGui::InputTextMultiline("##log", &m_consoleText, {-FLT_MIN, ImGui::GetTextLineHeight() * m_consoleLines},
-                              ImGuiInputTextFlags_ReadOnly);
-    ImGui::PopStyleColor();
+    ImGui::TextUnformatted(m_consoleText.c_str());
 
     if (m_consoleTail)
     {
