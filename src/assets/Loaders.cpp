@@ -14,6 +14,7 @@
 #include "scene/models/Model.h"
 #include "scene/models/ModelLoader.h"
 
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -132,6 +133,15 @@ static std::shared_ptr<script::Script> loadScript(const std::string& key)
     return std::make_shared<script::Script>(script::Script{std::move(buffer).str()});
 }
 
+// trimmed, so proportions that come out the same share one model
+std::string quadKey(const glm::vec2& size)
+{
+    char key[64];
+    std::snprintf(key, sizeof(key), "%s%.4f,%.4f", QUAD_PREFIX, size.x, size.y);
+
+    return key;
+}
+
 std::string toLabel(const std::string& key)
 {
     if (key.empty())
@@ -161,11 +171,7 @@ void registerLoaders()
     registry.setLoader<BulletRender::scene::Model>(loadModel);
 
     registry.setLoader<BulletRender::render::Texture2D>([](const std::string& key) {
-        // image files run top down, gl reads bottom up
-        BulletRender::render::TextureLoadOptions options;
-        options.flipVertically = true;
-
-        return BulletRender::render::TextureLoader::instance().load(project::Project::instance().getPath(key), options);
+        return BulletRender::render::TextureLoader::instance().load(project::Project::instance().getPath(key));
     });
 
     registry.setLoader<BulletRender::render::Font>([](const std::string& key) {

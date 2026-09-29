@@ -30,6 +30,7 @@ template<> struct Tag<float>      { static constexpr ValueType TYPE = ValueType:
 template<> struct Tag<double>     { static constexpr ValueType TYPE = ValueType::Float;  using Stored = float; };
 template<> struct Tag<std::string>{ static constexpr ValueType TYPE = ValueType::String; using Stored = std::string; };
 template<> struct Tag<glm::vec2>  { static constexpr ValueType TYPE = ValueType::Vec2;   using Stored = glm::vec2; };
+template<> struct Tag<glm::ivec2> { static constexpr ValueType TYPE = ValueType::Vec2;   using Stored = glm::vec2; };
 template<> struct Tag<glm::vec3>  { static constexpr ValueType TYPE = ValueType::Vec3;   using Stored = glm::vec3; };
 template<> struct Tag<glm::vec4>  { static constexpr ValueType TYPE = ValueType::Vec4;   using Stored = glm::vec4; };
 template<> struct Tag<glm::quat>  { static constexpr ValueType TYPE = ValueType::Quat;   using Stored = glm::quat; };
@@ -166,8 +167,8 @@ Field makeValueObjectField(std::string name, N C::* member)
     );
 }
 
-// field reached through nested member
-template<class C, class N, class Getter, class Setter>
+// field reached through nested member, owner may inherit the member it is reached by
+template<class Owner, class C, class N, class Getter, class Setter>
 Field makeNestedField(std::string name, N C::* member, Getter getter, Setter setter)
 {
     using Raw = Bare<std::invoke_result_t<Getter, const N&>>;
@@ -177,11 +178,11 @@ Field makeNestedField(std::string name, N C::* member, Getter getter, Setter set
         std::move(name),
         TagOf<Raw>::TYPE,
         [member, getter](const void* instance) -> Value {
-            const N& nested = static_cast<const C*>(instance)->*member;
+            const N& nested = static_cast<const Owner*>(instance)->*member;
             return Value(convert<Stored>((nested.*getter)()));
         },
         [member, setter](void* instance, const Value& value) {
-            N& nested = static_cast<C*>(instance)->*member;
+            N& nested = static_cast<Owner*>(instance)->*member;
             (nested.*setter)(convert<Raw>(value.get<Stored>()));
         }
     );
@@ -294,6 +295,10 @@ Field makeMemberField(std::string name, M C::* member)
             type.getLastField().setOptional(                                            \
                 [](const void* instance) { return (static_cast<const Self*>(instance)->MEMBER).HAS(); },  \
                 [](void* instance) { (static_cast<Self*>(instance)->MEMBER).CLEAR(); });
+
+// object with no row of its own, its first field takes the name instead
+#define INLINE()                                                                        \
+            type.getLastField().setInline(true);
 
 // marks first of three bool fields, editor draws them as one x y z row under TEXT
 #define AXES(TEXT)                                                                      \

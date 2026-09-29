@@ -34,6 +34,7 @@ ecs::Entity loadPrefab(ecs::World& world, const std::string& path);
 // same entity again, built from what it holds right now
 ecs::Entity clone(ecs::World& world, ecs::Entity entity);
 
+// objects
 void saveObject(Node& node, const reflect::Type& type, const void* instance);
 void loadObject(const Node& node, const reflect::Type& type, void* instance);
 

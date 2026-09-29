@@ -14,6 +14,7 @@
 #include "imgui.h"
 
 #include <cstdio>
+#include <iostream>
 
 #include <typeindex>
 
@@ -71,7 +72,7 @@ void Editor::drawInspector()
 
         const bool open = ImGui::CollapsingHeader(type->getLabel().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
 
-        // menu opens over header, id keeps them apart per component
+        // menu opens over header, and components share field names
         ImGui::PushID(type);
 
         BulletRender::interface::contextMenu("component", [&]() {
@@ -81,26 +82,16 @@ void Editor::drawInspector()
             }
         });
 
+        const bool edited = open && drawFields(*type, component.get());
+
         ImGui::PopID();
 
-        if (!open)
-        {
-            continue;
-        }
-
-        const bool edited = drawFields(*type, component.get());
-
-        if (!edited)
-        {
-            continue;
-        }
-
         // body carries pose, either side has to reach it
-        if (dynamic_cast<const ecs::TransformComponent*>(component.get()))
+        if (edited && dynamic_cast<const ecs::TransformComponent*>(component.get()))
         {
             syncBody(m_selection);
         }
-        else if (dynamic_cast<const ecs::ColliderComponent*>(component.get()))
+        else if (edited && dynamic_cast<const ecs::ColliderComponent*>(component.get()))
         {
             syncCollider(m_selection);
         }
@@ -182,7 +173,7 @@ void Editor::syncBody(ecs::Entity entity)
     rigidBody->body.setPosition({position.x, position.y, position.z});
     rigidBody->body.setOrientation({rotation.w, rotation.x, rotation.y, rotation.z});
 
-    // collider may keep only part of what it was given
+    // shape follows the body, keeping whatever offset of its own it was given
     auto* collider = m_world.get<ecs::ColliderComponent>(entity);
 
     if (!collider || !collider->collider)
@@ -190,14 +181,7 @@ void Editor::syncBody(ecs::Entity entity)
         return;
     }
 
-    collider->collider->setPosition(rigidBody->body.getPosition());
-
-    const auto& kept = collider->collider->getPosition();
-    rigidBody->body.setPosition(kept);
-
-    transform->transform.setPosition({
-        static_cast<float>(kept.x), static_cast<float>(kept.y), static_cast<float>(kept.z)
-    });
+    collider->collider->place(rigidBody->body.getPosition(), rigidBody->body.getOrientation());
 
     // shape with no facing keeps neither turn nor size
     if (!collider->collider->isOrientable())
@@ -209,26 +193,21 @@ void Editor::syncBody(ecs::Entity entity)
     }
 }
 
-// collider moved by hand pulls body and transform along
+// shape edited by hand is put back where whatever carries it says it belongs
 void Editor::syncCollider(ecs::Entity entity)
 {
     auto* collider = m_world.get<ecs::ColliderComponent>(entity);
-    auto* rigidBody = m_world.get<ecs::RigidBodyComponent>(entity);
+    auto* transform = m_world.get<ecs::TransformComponent>(entity);
 
-    if (!collider || !collider->collider || !rigidBody)
+    if (!collider || !collider->collider || !transform)
     {
         return;
     }
 
-    const auto& position = collider->collider->getPosition();
-    rigidBody->body.setPosition(position);
+    const glm::vec3 position = transform->transform.getPosition();
+    const glm::quat rotation = transform->transform.getRotation();
 
-    if (auto* transform = m_world.get<ecs::TransformComponent>(entity))
-    {
-        transform->transform.setPosition({
-            static_cast<float>(position.x), static_cast<float>(position.y), static_cast<float>(position.z)
-        });
-    }
+    collider->collider->place({position.x, position.y, position.z}, {rotation.w, rotation.x, rotation.y, rotation.z});
 }
 
 // term asset may fill instead, toggle clears it back to whatever came with model
@@ -268,9 +247,8 @@ bool Editor::drawOptional(const reflect::Field& field, void* instance)
 }
 
 // one value of any supported type
-bool Editor::drawValue(const reflect::Field& field, void* instance)
+bool Editor::drawValue(const reflect::Field& field, void* instance, const char* name)
 {
-    const char* name = field.getLabel().c_str();
     const reflect::Value value = field.get(instance);
 
     bool changed = false;
@@ -321,13 +299,21 @@ bool Editor::drawValue(const reflect::Field& field, void* instance)
                 break;
             }
 
-            if (BulletRender::interface::dragScalarField(name, v, 0, 0, "%d")) { field.set(instance, v); changed = true; }
+            // field naming no range holds whatever fits
+            const int intMin = field.hasRange() ? int(field.getMin()) : -int(DRAG_LIMIT);
+            const int intMax = field.hasRange() ? int(field.getMax()) : int(DRAG_LIMIT);
+
+            if (BulletRender::interface::dragScalarField(name, v, intMin, intMax, "%d")) { field.set(instance, v); changed = true; }
             break;
         }
         case reflect::ValueType::Float:
         {
             float v = value.get<float>();
-            if (BulletRender::interface::dragScalarField(name, v, -DRAG_LIMIT, DRAG_LIMIT, "%.3f")) { field.set(instance, v); changed = true; }
+
+            const float min = field.hasRange() ? field.getMin() : -DRAG_LIMIT;
+            const float max = field.hasRange() ? field.getMax() : DRAG_LIMIT;
+
+            if (BulletRender::interface::dragScalarField(name, v, min, max, "%.3f")) { field.set(instance, v); changed = true; }
             break;
         }
         case reflect::ValueType::String:
@@ -391,6 +377,15 @@ bool Editor::drawValue(const reflect::Field& field, void* instance)
                 changed = true;
             }
 
+            break;
+        }
+        case reflect::ValueType::Vec2:
+        {
+            glm::vec2 v = value.get<glm::vec2>();
+
+            const float speed = field.getSpeed() > 0.0f ? field.getSpeed() : DRAG_SPEED_DEFAULT;
+
+            if (BulletRender::interface::dragVector2(name, v, speed, -DRAG_LIMIT, DRAG_LIMIT, "%.2f")) { field.set(instance, v); changed = true; }
             break;
         }
         case reflect::ValueType::Vec3:
@@ -529,14 +524,17 @@ bool Editor::drawObjectType(const reflect::Field& field, void* instance, const r
     return true;
 }
 
-bool Editor::drawField(const reflect::Field& field, void* instance)
+bool Editor::drawField(const reflect::Field& field, void* instance, const char* name)
 {
     if (field.isHidden() || !field.isShown(instance))
     {
         return false;
     }
 
-    const char* name = field.getLabel().c_str();
+    if (!name)
+    {
+        name = field.getLabel().c_str();
+    }
 
     if (field.getKind() == reflect::FieldKind::Object)
     {
@@ -552,7 +550,8 @@ bool Editor::drawField(const reflect::Field& field, void* instance)
 
         bool changed = false;
 
-        if (drawObjectType(field, instance, object ? nested : nullptr))
+        // inline object draws no type row of its own
+        if (!field.isInline() && drawObjectType(field, instance, object ? nested : nullptr))
         {
             changed = true;
             object = field.resolve(instance, &nested);
@@ -560,10 +559,17 @@ bool Editor::drawField(const reflect::Field& field, void* instance)
 
         if (nested && object)
         {
+            // two nested objects of one component may carry the same field names
+            ImGui::PushID(name);
+
             // buildable object splits itself, plain one sits under its label
             if (field.isBuildable())
             {
                 changed |= drawFields(*nested, object, true);
+            }
+            else if (field.isInline())
+            {
+                changed |= drawFields(*nested, object, false, name);
             }
             else
             {
@@ -571,6 +577,8 @@ bool Editor::drawField(const reflect::Field& field, void* instance)
                 changed |= drawFields(*nested, object);
                 ImGui::Unindent();
             }
+
+            ImGui::PopID();
         }
 
         return changed;
@@ -582,7 +590,7 @@ bool Editor::drawField(const reflect::Field& field, void* instance)
         return false;
     }
 
-    return field.isOptional() ? drawOptional(field, instance) : drawValue(field, instance);
+    return field.isOptional() ? drawOptional(field, instance) : drawValue(field, instance, name);
 }
 
 // fields arrive either as values or as pointers, one walk serves both
@@ -613,7 +621,7 @@ bool Editor::drawAxes(const reflect::Field* const axes[AXIS_COUNT], void* instan
 }
 
 template<class F>
-bool Editor::drawRange(F fields, size_t count, void* instance)
+bool Editor::drawRange(F fields, size_t count, void* instance, const char* first)
 {
     bool changed = false;
 
@@ -636,18 +644,19 @@ bool Editor::drawRange(F fields, size_t count, void* instance)
             continue;
         }
 
-        changed |= drawField(*field, instance);
+        // inline object hands its name to first field
+        changed |= drawField(*field, instance, i == 0 ? first : nullptr);
     }
 
     return changed;
 }
 
-bool Editor::drawFields(const reflect::Type& type, void* instance, bool splitOwn)
+bool Editor::drawFields(const reflect::Type& type, void* instance, bool splitOwn, const char* first)
 {
     if (!splitOwn)
     {
         const std::vector<const reflect::Field*> fields = type.getAllFields();
-        return drawRange(fields.data(), fields.size(), instance);
+        return drawRange(fields.data(), fields.size(), instance, first);
     }
 
     // what only this type has belongs to row above, indented under it

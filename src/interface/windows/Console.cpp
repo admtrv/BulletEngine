@@ -8,6 +8,8 @@
 
 #include "imgui.h"
 
+#include <algorithm>
+
 
 namespace BulletEngine {
 namespace interface {
@@ -34,7 +36,19 @@ void Editor::drawConsole()
 
     ImGui::BeginChild("lines", {0.0f, 0.0f}, ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
 
-    ImGui::TextUnformatted(m_consoleText.c_str());
+    // field holds whole text, so child scrolls instead of it and text stays selectable
+    const ImVec2 text = ImGui::CalcTextSize(m_consoleText.c_str());
+    const ImVec2 padding = ImGui::GetStyle().FramePadding;
+
+    const ImVec2 size{std::max(text.x + padding.x * 2.0f, ImGui::GetContentRegionAvail().x),
+                      std::max(text.y + padding.y * 2.0f, ImGui::GetContentRegionAvail().y)};
+
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+
+    ImGui::InputTextMultiline("##log", m_consoleText.data(), m_consoleText.size() + 1, size,
+                              ImGuiInputTextFlags_ReadOnly | ImGuiInputTextFlags_NoHorizontalScroll);
+
+    ImGui::PopStyleColor();
 
     if (m_consoleTail)
     {

@@ -74,6 +74,9 @@ public:
     bool isAxes() const { return m_axes; }          // first of three, drawn as one row of x y z
     void setAxes(bool axes) { m_axes = axes; }
 
+    bool isInline() const { return m_inline; }      // object whose first field speaks for it, sharing one row
+    void setInline(bool merged) { m_inline = merged; }
+
     // unset until someone asks for it, so whatever the asset brought stands
     bool isOptional() const { return m_has != nullptr; }
     bool has(const void* instance) const { return m_has && m_has(instance); }
@@ -115,6 +118,7 @@ private:
     bool m_asset = false;
     bool m_bits = false;
     bool m_axes = false;
+    bool m_inline = false;
 
     Query m_has;
     Clear m_clear;

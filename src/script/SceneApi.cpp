@@ -19,6 +19,11 @@ void installScene(sol::environment& environment, interface::Editor& editor)
     scene["load"] = [&editor](const std::string& key) {
         editor.requestScene(key);
     };
+
+    // what is playing, so one script may serve every scene it knows of
+    scene["current"] = [&editor]() {
+        return editor.getSceneKey();
+    };
 }
 
 } // namespace script

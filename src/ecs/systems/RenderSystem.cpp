@@ -6,26 +6,11 @@
 
 #include "render/Renderer.h"
 
+#include <glm/gtc/matrix_transform.hpp>
+
 namespace BulletEngine {
 namespace ecs {
 namespace systems {
-
-// what component overrides lands on model, what it leaves alone keeps its mtl value
-static void apply(const BulletRender::render::Material& from, BulletRender::render::Material& to)
-{
-    to.setTransparent(from.isTransparent());
-    to.setUnlit(from.isUnlit());
-
-    if (from.hasColor())      { to.setColor(from.getColor()); }
-    if (from.hasSpecular())   { to.setSpecular(from.getSpecular()); }
-    if (from.hasShininess())  { to.setShininess(from.getShininess()); }
-    if (from.hasEmissive())   { to.setEmissive(from.getEmissive()); }
-
-    for (const BulletRender::render::TextureSlot& slot : from.getTextures())
-    {
-        to.setTexture(slot.uniformName, slot.texture, slot.unit);
-    }
-}
 
 RenderSystem::RenderSystem(BulletRender::scene::Scene& scene, std::shared_ptr<BulletRender::render::SkyBox> skybox)
     : m_scene(scene), m_skybox(std::move(skybox)) {}
@@ -49,12 +34,20 @@ void RenderSystem::render(World& world)
         // renderable without geometry has nothing to show yet, asset may still be coming
         if (auto* component = world.get<RenderableComponent>(entity); component && component->renderable && component->renderable->getModel())
         {
-            const Renderable& renderable = *component->renderable;
+            Renderable& renderable = *component->renderable;
             auto* object = m_scene.addObject(renderable.getModel().getShared());
 
-            // only terms component set reach object, rest stays as model loaded it
-            apply(renderable.material, object->getMaterial());
-            object->getTransform().setMatrix(matrix);
+            renderable.material.fill(object->getMaterial());
+
+            // picture sprite shows may have arrived since frame was chosen
+            if (auto* sprite = dynamic_cast<Sprite*>(&renderable))
+            {
+                sprite->fitFrame();
+                object->setFrame(sprite->getFrameScale(), sprite->getFrameOffset());
+            }
+
+            // model slides under the entity so its origin lands where the entity stands
+            object->getTransform().setMatrix(glm::translate(matrix, -renderable.origin));
         }
 
         // scene shares light component holds, entity pose places it

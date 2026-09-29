@@ -158,6 +158,25 @@ std::string Project::getPath(const std::string& key) const
     return key.empty() ? m_root : (fs::path(m_root) / key).generic_string();
 }
 
+// path outside the project has no key, it is left alone rather than guessed at
+std::string Project::getKey(const std::string& path) const
+{
+    if (m_root.empty() || path.empty())
+    {
+        return path;
+    }
+
+    std::error_code error;
+    const fs::path relative = fs::relative(path, m_root, error);
+
+    if (error || relative.empty() || *relative.begin() == "..")
+    {
+        return path;
+    }
+
+    return relative.generic_string();
+}
+
 void Project::rescan()
 {
     m_tree = Entry{};

@@ -114,6 +114,7 @@ public:
     // scenes
     void openStartScene();
     void requestScene(std::string key) { m_pendingOpen = std::move(key); }   // world is swapped between frames, script may ask mid update
+    const std::string& getSceneKey() const { return m_sceneKey; }            // what is open now, empty until saved somewhere
 
     // play mode
     bool isPlaying() const { return m_mode == Mode::Play; }
@@ -165,14 +166,14 @@ private:
     void applyEntryCommands();
     void acceptEntryDrop(const std::string& folder);
     void drawEntry(const project::Entry& entry, bool last);
-    bool drawField(const reflect::Field& field, void* instance);
+    bool drawField(const reflect::Field& field, void* instance, const char* name = nullptr);
     bool drawAxes(const reflect::Field* const axes[3], void* instance);
 
     template<class F>
-    bool drawRange(F fields, size_t count, void* instance);     // fields given as values or as pointers, defined where it is used
+    bool drawRange(F fields, size_t count, void* instance, const char* first = nullptr);     // fields given as values or as pointers, defined where it is used
 
-    bool drawFields(const reflect::Type& type, void* instance, bool splitOwn = false);
-    bool drawValue(const reflect::Field& field, void* instance);
+    bool drawFields(const reflect::Type& type, void* instance, bool splitOwn = false, const char* first = nullptr);
+    bool drawValue(const reflect::Field& field, void* instance, const char* name);
     bool drawOptional(const reflect::Field& field, void* instance);
     bool drawObjectType(const reflect::Field& field, void* instance, const reflect::Type* current);
 

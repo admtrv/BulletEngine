@@ -14,12 +14,14 @@
 #include "scene/models/Model.h"
 #include "Colors.h"
 #include "render/Material.h"
+#include "render/MaterialImport.h"
 #include "render/textures/CubeMap.h"
 #include "render/textures/Texture2D.h"
 
 #include "dynamics/body/RigidBody.h"
 #include "collision/collider/Collider.h"
 
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -41,21 +43,115 @@ public:
     Entity parent = INVALID_ENTITY;
 };
 
+// named by asset key, so scene can be written down
+class MaterialSlot {
+public:
+    const std::string& getTextureKey() const { return m_texture.getKey(); }
+    void setTextureKey(const std::string& key);
+
+    // sampling
+    int getFilter() const { return int(m_slot.sampler.filter); }
+    void setFilter(int filter) { m_slot.sampler.filter = BulletRender::render::TextureFilter(filter); }
+
+    int getWrapU() const { return int(m_slot.sampler.wrapU); }
+    void setWrapU(int wrap) { m_slot.sampler.wrapU = BulletRender::render::TextureWrap(wrap); }
+
+    int getWrapV() const { return int(m_slot.sampler.wrapV); }
+    void setWrapV(int wrap) { m_slot.sampler.wrapV = BulletRender::render::TextureWrap(wrap); }
+
+    bool isFlippedU() const { return m_slot.sampler.flipU; }
+    void setFlippedU(bool flipped) { m_slot.sampler.flipU = flipped; }
+
+    bool isFlippedV() const { return m_slot.sampler.flipV; }
+    void setFlippedV(bool flipped) { m_slot.sampler.flipV = flipped; }
+
+    // window into the picture
+    const glm::vec2& getTiling() const { return m_slot.uvScale; }
+    void setTiling(const glm::vec2& tiling) { m_slot.uvScale = tiling; }
+
+    const glm::vec2& getOffset() const { return m_slot.uvOffset; }
+    void setOffset(const glm::vec2& offset) { m_slot.uvOffset = offset; }
+
+    // what renderer and editor take
+    bool isFilled() const { return !m_slot.empty(); }
+    const BulletRender::render::TextureSlot& get() const { return m_slot; }
+    const assets::Handle<BulletRender::render::Texture2D>& getTexture() const { return m_texture; }
+
+private:
+    assets::Handle<BulletRender::render::Texture2D> m_texture;
+    BulletRender::render::TextureSlot m_slot;
+};
+
+struct ColorTerm {
+    explicit ColorTerm(const glm::vec3& tint = glm::vec3(1.0f)) : color(tint) {}
+
+    glm::vec3 color;
+    MaterialSlot texture;
+};
+
+struct SpecularTerm {
+    glm::vec3 color{0.5f};
+    MaterialSlot texture;
+
+    float shininess = 32.0f;     // phong ns, higher draws tighter highlight
+};
+
+// picture with nothing to tint, detail alone
+struct NormalTerm {
+    MaterialSlot texture;
+};
+
+// alpha and which way faces are seen
+class SettingsTerm {
+public:
+    // alpha, int for reflection and enum for renderer
+    int getAlphaMode() const { return int(m_alphaMode); }
+    void setAlphaMode(int mode) { m_alphaMode = BulletRender::render::AlphaMode(mode); }
+    BulletRender::render::AlphaMode getAlphaModeValue() const { return m_alphaMode; }
+    bool isMasked() const { return m_alphaMode == BulletRender::render::AlphaMode::Mask; }
+
+    float alphaCutoff = 0.5f;   // mask only, below it pixel is dropped
+    bool doubleSided = false;
+
+private:
+    BulletRender::render::AlphaMode m_alphaMode = BulletRender::render::AlphaMode::Opaque;
+};
+
+class MaterialComponent {
+public:
+    static constexpr int SLOT_COUNT = 4;
+
+    void importFrom(const std::string& mtlPath);    // once, from what model brought, never read again
+
+    // shading
+    int getShading() const { return int(m_shading); }
+    void setShading(int shading) { m_shading = BulletRender::render::Shading(shading); }
+    bool isLit() const { return m_shading == BulletRender::render::Shading::Lit; }
+
+    void fill(BulletRender::render::Material& material) const;      // what renderer draws with
+    std::array<MaterialSlot*, SLOT_COUNT> getSlots();               // in order inspector lays them out
+
+    // terms
+    ColorTerm diffuse;
+    SpecularTerm specular;
+    NormalTerm normal;                      // light shapes it, unlit has no use for it
+    ColorTerm emissive{glm::vec3(0.0f)};    // black gives off nothing, which is usual
+
+    SettingsTerm settings;
+
+private:
+    BulletRender::render::Shading m_shading = BulletRender::render::Shading::Lit;
+};
+
 class Renderable {
 public:
     virtual ~Renderable() = default;
 
     virtual const assets::Handle<BulletRender::scene::Model>& getModel() const = 0;
 
-    const std::string& getTextureKey() const { return m_texture.getKey(); }
-    void setTextureKey(const std::string& key);
+    glm::vec3 origin{0.0f};     // point of model that sits where entity does, middle unless moved
 
-    BulletRender::render::Material material;
-
-protected:
-    virtual void onTextureChanged() {}
-
-    assets::Handle<BulletRender::render::Texture2D> m_texture;
+    MaterialComponent material;
 };
 
 class Mesh : public Renderable {
@@ -76,19 +172,50 @@ public:
         Circle
     };
 
+    // whole picture, or one frame of a sheet cut into equal cells
+    enum class Source : uint8_t {
+        Single,
+        Sheet
+    };
+
     Sprite();
 
     const assets::Handle<BulletRender::scene::Model>& getModel() const override { return m_shape; }
 
-    int getShape() const { return int(m_kind); }
+    int getShape() const { return int(m_shapeType); }
     void setShape(int kind);
 
-protected:
-    void onTextureChanged() override;
+    int getSource() const { return int(m_source); }
+    void setSource(int source);
+    bool isSheet() const { return m_source == Source::Sheet; }
+
+    // sheet, cells across and down, script walks frames to animate
+    const glm::ivec2& getFrames() const { return m_frames; }
+    void setFrames(const glm::ivec2& frames);
+
+    int getFrame() const { return m_frame; }
+    void setFrame(int frame);
+
+    glm::vec2 getSheetSize() const;     // whole picture in pixels, zero until it arrives
+    glm::vec2 getFrameSize() const;     // one cell of it, same thing when there is one cell
+
+    void fitFrame();    // rebuilds shape when picture it is cut from changed size
+
+    // uv window onto cell shown, whole picture when there is no sheet
+    glm::vec2 getFrameScale() const;
+    glm::vec2 getFrameOffset() const;
 
 private:
-    Shape m_kind = Shape::Quad;
+    Shape m_shapeType = Shape::Quad;
     assets::Handle<BulletRender::scene::Model> m_shape;
+
+    Source m_source = Source::Single;
+    glm::ivec2 m_frames{1, 1};
+    int m_frame = 0;
+
+    // what shape was built for, picture may arrive long after frame was chosen
+    glm::vec2 m_fitted{0.0f};
+    Shape m_fittedShape = Shape::Quad;
 };
 
 class RenderableComponent : public Component {
@@ -135,6 +262,18 @@ public:
         Faces
     };
 
+    // in order gl reads them
+    enum Face {
+        Right,
+        Left,
+        Top,
+        Bottom,
+        Front,
+        Back,
+
+        FACE_COUNT
+    };
+
     // background
     int getBackground() const { return int(m_background); }
     void setBackground(int background) { m_background = Background(background); }
@@ -149,24 +288,24 @@ public:
     const std::string& getCrossKey() const { return m_cross.getKey(); }
     void setCrossKey(const std::string& key);
 
-    // faces, in the order gl reads them
-    const std::string& getRightKey() const { return m_faceKeys[0]; }
-    void setRightKey(const std::string& key) { setFaceKey(0, key); }
+    // faces
+    const std::string& getRightKey() const { return m_faceKeys[Right]; }
+    void setRightKey(const std::string& key) { setFaceKey(Right, key); }
 
-    const std::string& getLeftKey() const { return m_faceKeys[1]; }
-    void setLeftKey(const std::string& key) { setFaceKey(1, key); }
+    const std::string& getLeftKey() const { return m_faceKeys[Left]; }
+    void setLeftKey(const std::string& key) { setFaceKey(Left, key); }
 
-    const std::string& getTopKey() const { return m_faceKeys[2]; }
-    void setTopKey(const std::string& key) { setFaceKey(2, key); }
+    const std::string& getTopKey() const { return m_faceKeys[Top]; }
+    void setTopKey(const std::string& key) { setFaceKey(Top, key); }
 
-    const std::string& getBottomKey() const { return m_faceKeys[3]; }
-    void setBottomKey(const std::string& key) { setFaceKey(3, key); }
+    const std::string& getBottomKey() const { return m_faceKeys[Bottom]; }
+    void setBottomKey(const std::string& key) { setFaceKey(Bottom, key); }
 
-    const std::string& getFrontKey() const { return m_faceKeys[4]; }
-    void setFrontKey(const std::string& key) { setFaceKey(4, key); }
+    const std::string& getFrontKey() const { return m_faceKeys[Front]; }
+    void setFrontKey(const std::string& key) { setFaceKey(Front, key); }
 
-    const std::string& getBackKey() const { return m_faceKeys[5]; }
-    void setBackKey(const std::string& key) { setFaceKey(5, key); }
+    const std::string& getBackKey() const { return m_faceKeys[Back]; }
+    void setBackKey(const std::string& key) { setFaceKey(Back, key); }
 
     // what is chosen, editor asks before it draws a field
     bool isSkybox() const { return m_background == Background::Skybox; }
@@ -189,7 +328,7 @@ private:
     glm::vec3 m_color = BulletRender::colors::Background;
     assets::Handle<BulletRender::render::CubeMap> m_cross;
 
-    std::string m_faceKeys[6];
+    std::string m_faceKeys[FACE_COUNT];
     std::shared_ptr<BulletRender::render::CubeMap> m_faces;
 };
 

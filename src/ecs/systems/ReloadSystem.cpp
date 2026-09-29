@@ -61,9 +61,12 @@ void ReloadSystem::reload(World& world, const std::vector<std::string>& keys)
             }
         }
 
-        if (const std::string key = renderable.getTextureKey(); std::find(keys.begin(), keys.end(), key) != keys.end())
+        for (MaterialSlot* slot : renderable.material.getSlots())
         {
-            renderable.setTextureKey(key);
+            if (const std::string key = slot->getTextureKey(); std::find(keys.begin(), keys.end(), key) != keys.end())
+            {
+                slot->setTextureKey(key);
+            }
         }
     }
 }

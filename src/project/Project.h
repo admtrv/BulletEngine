@@ -39,6 +39,7 @@ public:
     const std::string& getRoot() const { return m_root; }
     const std::string& getName() const { return m_settings.name; }
     std::string getPath(const std::string& key) const;      // key is relative to root, loaders need whole path
+    std::string getKey(const std::string& path) const;      // back again, for paths a file outside brought in
 
     // tree
     const Entry& getTree() const { return m_tree; }

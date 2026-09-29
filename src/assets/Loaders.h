@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <glm/glm.hpp>
+
 #include <string>
 
 namespace BulletEngine {
@@ -20,6 +22,9 @@ constexpr const char* BOX_KEY = "box:1,1,1";
 constexpr const char* SPHERE_KEY = "sphere:0.5,32,16";
 constexpr const char* QUAD_KEY = "quad:1,1";
 constexpr const char* CIRCLE_KEY = "circle:0.5,32";
+
+// quad of given proportions, what a sprite needs to carry its picture undistorted
+std::string quadKey(const glm::vec2& size);
 
 // teaches registry to build engine asset types
 void registerLoaders();

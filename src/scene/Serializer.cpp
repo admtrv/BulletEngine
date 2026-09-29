@@ -5,6 +5,7 @@
 #include "Serializer.h"
 
 #include "Version.h"
+#include "ecs/Components.h"
 #include "ecs/Ecs.h"
 #include "reflect/Registry.h"
 
@@ -170,14 +171,41 @@ Node toNode(const ecs::World& world)
     return root;
 }
 
+// entities get fresh numbers as they are read, names in file mean nothing after that
 void fromNode(ecs::World& world, const Node& root)
 {
+    std::unordered_map<ecs::Entity, ecs::Entity> renamed;
+
     for (const Node& entityNode : root.getChildren())
     {
-        if (entityNode.getName() == ENTITY_NODE)
+        if (entityNode.getName() != ENTITY_NODE)
         {
-            loadEntity(world, entityNode);
+            continue;
         }
+
+        const ecs::Entity loaded = loadEntity(world, entityNode);
+
+        int written = 0;
+
+        if (fromText(entityNode.getValue(), written))
+        {
+            renamed.emplace(static_cast<ecs::Entity>(written), loaded);
+        }
+    }
+
+    // parents are patched once every child exists, a file may name one before it
+    for (const auto& [written, loaded] : renamed)
+    {
+        auto* transform = world.get<ecs::TransformComponent>(loaded);
+
+        if (!transform || transform->parent == ecs::INVALID_ENTITY)
+        {
+            continue;
+        }
+
+        const auto parent = renamed.find(transform->parent);
+
+        transform->parent = parent != renamed.end() ? parent->second : ecs::INVALID_ENTITY;
     }
 }
 
@@ -209,6 +237,7 @@ ecs::Entity loadPrefab(ecs::World& world, const std::string& path)
 
     return ecs::INVALID_ENTITY;
 }
+
 
 ecs::Entity clone(ecs::World& world, ecs::Entity entity)
 {

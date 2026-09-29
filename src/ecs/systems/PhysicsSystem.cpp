@@ -86,12 +86,21 @@ void PhysicsSystem::watch(World& world)
     world.addListener([this, &world](Entity entity) { detach(world, entity); });
 }
 
+// world holds raw pointers into components, so both have to go before they are freed
 void PhysicsSystem::detach(World& world, Entity entity)
 {
     if (auto* component = world.get<RigidBodyComponent>(entity))
     {
         m_physicsWorld.removeBody(&component->body);
     }
+
+    if (auto* component = world.get<ColliderComponent>(entity); component && component->collider)
+    {
+        m_physicsWorld.removeCollider(component->collider.get());
+        m_owners.erase(component->collider.get());
+    }
+
+    m_simulated.erase(entity);
 }
 
 void PhysicsSystem::update(World& world, float dt)

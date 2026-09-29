@@ -6,6 +6,7 @@
 
 #include "ecs/Components.h"
 #include "script/Api.h"
+#include "project/Project.h"
 #include "script/Binding.h"
 
 #include <iostream>
@@ -33,7 +34,7 @@ constexpr const char* CALLBACK_NAMES[] = {
 ScriptSystem::ScriptSystem(PhysicsSystem& physics, interface::Editor& editor)
     : m_physics(physics), m_editor(editor)
 {
-    m_lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
+    m_lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table, sol::lib::package);
     bind();
 }
 
@@ -136,6 +137,10 @@ void ScriptSystem::start(World& world)
     }
 
     m_running = true;
+
+    // scripts reach each other by key, the same way anything else in a project is named
+    const std::string root = project::Project::instance().getRoot();
+    m_lua["package"]["path"] = root + "/?.lua;" + root + "/?/init.lua";
 
     // onStart may spawn, which would grow list being walked
     const std::vector<Entity> entities = world.getEntities();
