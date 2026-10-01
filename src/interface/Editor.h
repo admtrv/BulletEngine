@@ -174,7 +174,6 @@ private:
 
     bool drawFields(const reflect::Type& type, void* instance, bool splitOwn = false, const char* first = nullptr);
     bool drawValue(const reflect::Field& field, void* instance, const char* name);
-    bool drawOptional(const reflect::Field& field, void* instance);
     bool drawObjectType(const reflect::Field& field, void* instance, const reflect::Type* current);
 
     using ValueMap = std::unordered_map<std::string, reflect::Value>;

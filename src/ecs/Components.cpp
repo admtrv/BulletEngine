@@ -10,7 +10,6 @@
 #include "scene/Serializer.h"
 
 #include <filesystem>
-#include "reflect/Reflect.h"
 
 #include <array>
 
@@ -22,7 +21,6 @@
 using namespace BulletEngine::ecs;
 using namespace BulletPhysics::collision;
 using namespace BulletPhysics::collision::collider;
-using namespace BulletRender::render;
 // scene namespace is left out, its Mesh is gpu geometry rather than what entity shows
 using BulletRender::scene::Light;
 using BulletRender::scene::AmbientLight;
@@ -118,7 +116,7 @@ void MaterialSlot::setTextureKey(const std::string& key)
 }
 
 // only what the file names is taken, an empty entry leaves its slot as it stands
-void MaterialComponent::importFrom(const std::string& mtlPath)
+void Material::importFrom(const std::string& mtlPath)
 {
     const project::Project& project = project::Project::instance();
     const std::vector<BulletRender::render::MaterialImport> imported = BulletRender::render::readMtl(mtlPath);
@@ -135,7 +133,7 @@ void MaterialComponent::importFrom(const std::string& mtlPath)
     specular.shininess = source.shininess;
     emissive.color = source.emissive;
 
-    const std::pair<MaterialSlot*, const std::string*> slots[SLOT_COUNT] = {
+    const std::pair<MaterialSlot*, const std::string*> slots[] = {
         {&diffuse.texture, &source.diffuseTexture},
         {&specular.texture, &source.specularTexture},
         {&normal.texture, &source.normalTexture},
@@ -152,15 +150,10 @@ void MaterialComponent::importFrom(const std::string& mtlPath)
     }
 }
 
-std::array<MaterialSlot*, MaterialComponent::SLOT_COUNT> MaterialComponent::getSlots()
-{
-    return {&diffuse.texture, &specular.texture, &normal.texture, &emissive.texture};
-}
-
 // what the component holds, handed over as the renderer reads it
-void MaterialComponent::fill(BulletRender::render::Material& material) const
+void Material::fill(BulletRender::render::Material& material) const
 {
-    material.shading = m_shading;
+    material.shading = shading;
 
     material.diffuse = diffuse.color;
     material.diffuseTexture = diffuse.texture.get();
@@ -174,7 +167,7 @@ void MaterialComponent::fill(BulletRender::render::Material& material) const
     material.emissive = emissive.color;
     material.emissiveTexture = emissive.texture.get();
 
-    material.alphaMode = settings.getAlphaModeValue();
+    material.alphaMode = settings.alphaMode;
     material.alphaCutoff = settings.alphaCutoff;
     material.doubleSided = settings.doubleSided;
 }
@@ -200,8 +193,8 @@ void Mesh::setModelKey(const std::string& key)
 Sprite::Sprite()
 {
     // flat picture carries own shading, and holes in it are point of it
-    material.setShading(int(BulletRender::render::Shading::Unlit));
-    material.settings.setAlphaMode(int(BulletRender::render::AlphaMode::Blend));
+    material.shading = BulletRender::render::Shading::Unlit;
+    material.settings.alphaMode = BulletRender::render::AlphaMode::Blend;
 
     // quad carries model uv, a picture read over it hangs upside down without this
     material.diffuse.texture.setFlippedV(true);
@@ -304,292 +297,3 @@ void Sprite::fitFrame()
 
     m_shape = assets::Registry::instance().load<BulletRender::scene::Model>(assets::quadKey(frame / longest));
 }
-
-// shapes
-
-REFLECT(PhysicsMaterial)
-    FIELD("friction", friction)
-    FIELD("restitution", restitution)
-END_REFLECT()
-
-REFLECT(Collider)
-    // where the shape sits on the entity, so it need not be centred or square to it
-    PROPERTY("offset", getLocalPosition, setLocalPosition)
-    PROPERTY("rotation", getLocalRotation, setLocalRotation)
-    PROPERTY("trigger", isTrigger, setTrigger)
-    // bits, what collider is and what it meets
-    PROPERTY("layer", getLayer, setLayer)
-    BITS()
-    PROPERTY("mask", getMask, setMask)
-    BITS()
-    OBJECT_REF("material", getMaterial)
-END_REFLECT()
-
-REFLECT(BoxCollider)
-    LABEL("Box")
-    BASE(Collider)
-    PROPERTY("size", getSize, setSize)
-END_REFLECT()
-
-REFLECT(SphereCollider)
-    LABEL("Sphere")
-    BASE(Collider)
-    PROPERTY("radius", getRadius, setRadius)
-END_REFLECT()
-
-REFLECT(CylinderCollider)
-    LABEL("Cylinder")
-    BASE(Collider)
-    PROPERTY("radius", getRadius, setRadius)
-    PROPERTY("height", getHeight, setHeight)
-END_REFLECT()
-
-REFLECT(GroundCollider)
-    LABEL("Ground")
-    BASE(Collider)
-    PROPERTY("level", getGroundY, setGroundY)
-END_REFLECT()
-
-// lights, pose comes from entity transform
-
-REFLECT(Light)
-    PROPERTY("color", getColor, setColor)
-    COLOR()
-    PROPERTY("intensity", getIntensity, setIntensity)
-    PROPERTY("shadow", getCastsShadow, setCastsShadow)
-END_REFLECT()
-
-REFLECT(AmbientLight)
-    LABEL("Ambient")
-    BASE(Light)
-END_REFLECT()
-
-REFLECT(DirectionalLight)
-    LABEL("Directional")
-    BASE(Light)
-END_REFLECT()
-
-REFLECT(PointLight)
-    LABEL("Point")
-    BASE(Light)
-    PROPERTY("range", getRange, setRange)
-END_REFLECT()
-
-REFLECT(SpotLight)
-    LABEL("Spot")
-    BASE(Light)
-    PROPERTY("range", getRange, setRange)
-END_REFLECT()
-
-// components
-
-REFLECT(Component)
-    HIDE_TYPE()
-END_REFLECT()
-
-REFLECT(IdentityComponent)
-    BASE(Component)
-    HIDE_TYPE()
-    FIELD("name", name)
-    FIELD("tag", tag)
-END_REFLECT()
-
-REFLECT(TransformComponent)
-    BASE(Component)
-    FIELD("parent", parent)
-    HIDE_FIELD()
-    NESTED("position", transform, getPosition, setPosition)
-    NESTED("rotation", transform, getRotation, setRotation)
-    NESTED_AS("scale", transform, getLocalScale, setLocalScale, const glm::vec3&)
-    SPEED(0.01f)
-END_REFLECT()
-
-// one picture, with how it is read and what part of it is taken
-REFLECT(MaterialSlot)
-    PROPERTY("texture", getTextureKey, setTextureKey)
-    ASSET()
-    PROPERTY("filter", getFilter, setFilter)
-    OPTIONS("Smooth", "Pixel")
-    SHOWN_WHEN(self.isFilled())
-    PROPERTY("wrapU", getWrapU, setWrapU)
-    OPTIONS("Repeat", "Clamp", "Mirror")
-    SHOWN_WHEN(self.isFilled())
-    PROPERTY("wrapV", getWrapV, setWrapV)
-    OPTIONS("Repeat", "Clamp", "Mirror")
-    SHOWN_WHEN(self.isFilled())
-    PROPERTY("flipU", isFlippedU, setFlippedU)
-    SHOWN_WHEN(self.isFilled())
-    PROPERTY("flipV", isFlippedV, setFlippedV)
-    SHOWN_WHEN(self.isFilled())
-    PROPERTY("tiling", getTiling, setTiling)
-    SHOWN_WHEN(self.isFilled())
-    PROPERTY("offset", getOffset, setOffset)
-    SHOWN_WHEN(self.isFilled())
-END_REFLECT()
-
-// the one place the look of a surface is answered, no file speaks for it
-REFLECT(ColorTerm)
-    FIELD("color", color)
-    COLOR()
-    OBJECT_VALUE("texture", texture)
-    INLINE()
-END_REFLECT()
-
-REFLECT(SpecularTerm)
-    FIELD("color", color)
-    COLOR()
-    OBJECT_VALUE("texture", texture)
-    INLINE()
-    FIELD("shininess", shininess)
-    RANGE(1.0f, 256.0f)
-END_REFLECT()
-
-REFLECT(NormalTerm)
-    OBJECT_VALUE("texture", texture)
-    INLINE()
-END_REFLECT()
-
-REFLECT(SettingsTerm)
-    PROPERTY("alphaMode", getAlphaMode, setAlphaMode)
-    OPTIONS("Opaque", "Mask", "Blend")
-    FIELD("alphaCutoff", alphaCutoff)
-    RANGE(0.0f, 1.0f)
-    SHOWN_WHEN(self.isMasked())
-    FIELD("doubleSided", doubleSided)
-END_REFLECT()
-
-REFLECT(MaterialComponent)
-    PROPERTY("shading", getShading, setShading)
-    OPTIONS("Lit", "Unlit")
-    OBJECT_VALUE("diffuse", diffuse)
-    // light shapes surface, flat picture it passes by
-    OBJECT_VALUE("specular", specular)
-    SHOWN_WHEN(self.isLit())
-    OBJECT_VALUE("normal", normal)
-    SHOWN_WHEN(self.isLit())
-    OBJECT_VALUE("emissive", emissive)
-    OBJECT_VALUE("settings", settings)
-END_REFLECT()
-
-REFLECT(Renderable)
-    FIELD("origin", origin)
-    SPEED(0.01f)
-    OBJECT_VALUE("material", material)
-END_REFLECT()
-
-REFLECT(Mesh)
-    LABEL("Mesh")
-    BASE(Renderable)
-    PROPERTY("model", getModelKey, setModelKey)
-    ASSET()
-END_REFLECT()
-
-REFLECT(Sprite)
-    LABEL("Sprite")
-    BASE(Renderable)
-    // set when it is made, like cube never turns into sphere
-    PROPERTY("shape", getShape, setShape)
-    HIDE_FIELD()
-    PROPERTY("source", getSource, setSource)
-    OPTIONS("Single", "Sheet")
-    PROPERTY("frames", getFrames, setFrames)
-    SHOWN_WHEN(self.isSheet())
-    PROPERTY("frame", getFrame, setFrame)
-    SHOWN_WHEN(self.isSheet())
-    READONLY("sheetSize", getSheetSize)
-    HIDE_FIELD()
-    READONLY("frameSize", getFrameSize)
-    HIDE_FIELD()
-END_REFLECT()
-
-REFLECT(RenderableComponent)
-    BASE(Component)
-    OBJECT("renderable", renderable)
-END_REFLECT()
-
-REFLECT(CameraComponent)
-    BASE(Component)
-    FIELD("projection", projection)
-    OPTIONS("Perspective", "Orthographic")
-    FIELD("fov", fov)
-    FIELD("height", height)
-    FIELD("near", nearPlane)
-    FIELD("far", farPlane)
-    FIELD("main", main)
-END_REFLECT()
-
-REFLECT(LightComponent)
-    BASE(Component)
-    OBJECT("light", light)
-END_REFLECT()
-
-REFLECT(ScriptComponent)
-    BASE(Component)
-    PROPERTY("script", getScriptKey, setScriptKey)
-    ASSET()
-END_REFLECT()
-
-REFLECT(EnvironmentComponent)
-    BASE(Component)
-    PROPERTY("background", getBackground, setBackground)
-    OPTIONS("Color", "Skybox")
-    PROPERTY("color", getColor, setColor)
-    COLOR()
-    SHOWN_WHEN(!self.isSkybox())
-    PROPERTY("layout", getLayout, setLayout)
-    OPTIONS("Cross", "Faces")
-    SHOWN_WHEN(self.isSkybox())
-    PROPERTY("texture", getCrossKey, setCrossKey)
-    ASSET()
-    SHOWN_WHEN(self.isCross())
-    PROPERTY("right", getRightKey, setRightKey)
-    ASSET()
-    SHOWN_WHEN(self.isFaces())
-    PROPERTY("left", getLeftKey, setLeftKey)
-    ASSET()
-    SHOWN_WHEN(self.isFaces())
-    PROPERTY("top", getTopKey, setTopKey)
-    ASSET()
-    SHOWN_WHEN(self.isFaces())
-    PROPERTY("bottom", getBottomKey, setBottomKey)
-    ASSET()
-    SHOWN_WHEN(self.isFaces())
-    PROPERTY("front", getFrontKey, setFrontKey)
-    ASSET()
-    SHOWN_WHEN(self.isFaces())
-    PROPERTY("back", getBackKey, setBackKey)
-    ASSET()
-    SHOWN_WHEN(self.isFaces())
-END_REFLECT()
-
-REFLECT(CanvasComponent)
-    BASE(Component)
-    FIELD("order", order)
-    FIELD("visible", visible)
-END_REFLECT()
-
-REFLECT(RigidBodyComponent)
-    BASE(Component)
-    NESTED("motion", body, getMotionType, setMotionType)
-    OPTIONS("Dynamic", "Kinematic", "Static")
-    NESTED("mass", body, getMass, setMass)
-    NESTED("velocity", body, getVelocity, setVelocity)
-    NESTED("angularVelocity", body, getAngularVelocity, setAngularVelocity)
-    NESTED("linearDamping", body, getLinearDamping, setLinearDamping)
-    NESTED("angularDamping", body, getAngularDamping, setAngularDamping)
-    NESTED("continuous", body, isContinuous, setContinuous)
-    // axes body may not move or turn along
-    FLAG("freezePositionX", body, getConstraints, setConstraints, BulletPhysics::dynamics::FREEZE_POSITION_X)
-    AXES("Freeze Position")
-    FLAG("freezePositionY", body, getConstraints, setConstraints, BulletPhysics::dynamics::FREEZE_POSITION_Y)
-    FLAG("freezePositionZ", body, getConstraints, setConstraints, BulletPhysics::dynamics::FREEZE_POSITION_Z)
-    FLAG("freezeRotationX", body, getConstraints, setConstraints, BulletPhysics::dynamics::FREEZE_ROTATION_X)
-    AXES("Freeze Rotation")
-    FLAG("freezeRotationY", body, getConstraints, setConstraints, BulletPhysics::dynamics::FREEZE_ROTATION_Y)
-    FLAG("freezeRotationZ", body, getConstraints, setConstraints, BulletPhysics::dynamics::FREEZE_ROTATION_Z)
-END_REFLECT()
-
-REFLECT(ColliderComponent)
-    BASE(Component)
-    OBJECT("shape", collider)
-END_REFLECT()

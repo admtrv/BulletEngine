@@ -7,8 +7,10 @@
 #include "reflect/Value.h"
 
 #include <functional>
+#include <memory>
 #include <string>
 #include <typeindex>
+#include <unordered_map>
 #include <vector>
 
 namespace BulletEngine {
@@ -32,8 +34,6 @@ public:
     using Getter = std::function<Value(const void*)>;
     using Setter = std::function<void(void*, const Value&)>;
     using Resolver = std::function<void*(const void*, const Type**)>;
-    using Query = std::function<bool(const void*)>;
-    using Clear = std::function<void(void*)>;
     using Builder = std::function<void*(void*, const Type&)>;
 
     Field(std::string name, ValueType type, Getter getter, Setter setter)
@@ -45,52 +45,37 @@ public:
     // identity
     const std::string& getName() const { return m_name; }
     const std::string& getLabel() const { return m_label; }
-    void setLabel(std::string label) { m_label = std::move(label); }
+    Field& setLabel(std::string label) { m_label = std::move(label); return *this; }
     FieldKind getKind() const { return m_kind; }
     ValueType getType() const { return m_type; }
 
-    // editor hints
     const std::vector<std::string>& getOptions() const { return m_options; }
-    void setOptions(std::vector<std::string> options) { m_options = std::move(options); }
+    Field& setOptions(std::vector<std::string> options) { m_options = std::move(options); return *this; }
     bool isEnum() const { return !m_options.empty(); }
 
-    bool isHidden() const { return m_hidden; }
-    void setHidden(bool hidden) { m_hidden = hidden; }
-
+    // asked before editor draws field
     using Condition = std::function<bool(const void*)>;
 
-    void setCondition(Condition condition) { m_condition = std::move(condition); }
+    Field& setCondition(Condition condition) { m_condition = std::move(condition); return *this; }
     bool isShown(const void* instance) const { return !m_condition || m_condition(instance); }
 
-    bool isColor() const { return m_color; }        // channels rather than axes, drawn with a swatch
-    void setColor(bool color) { m_color = color; }
+    // metadata, whatever field was told about itself, never read here
+    template<class T>
+    Field& metadata(T value)
+    {
+        m_metadata[std::type_index(typeid(T))] = std::make_shared<T>(std::move(value));
+        return *this;
+    }
 
-    bool isAsset() const { return m_asset; }        // an asset key, drawn with a load button
-    void setAsset(bool asset) { m_asset = asset; }
+    template<class T>
+    const T* metadata() const
+    {
+        const auto it = m_metadata.find(std::type_index(typeid(T)));
+        return it != m_metadata.end() ? static_cast<const T*>(it->second.get()) : nullptr;
+    }
 
-    bool isBits() const { return m_bits; }          // bit mask, drawn with a grid of checkboxes
-    void setBits(bool bits) { m_bits = bits; }
-
-    bool isAxes() const { return m_axes; }          // first of three, drawn as one row of x y z
-    void setAxes(bool axes) { m_axes = axes; }
-
-    bool isInline() const { return m_inline; }      // object whose first field speaks for it, sharing one row
-    void setInline(bool merged) { m_inline = merged; }
-
-    // unset until someone asks for it, so whatever the asset brought stands
-    bool isOptional() const { return m_has != nullptr; }
-    bool has(const void* instance) const { return m_has && m_has(instance); }
-    void clear(void* instance) const { if (m_clear) { m_clear(instance); } }
-    void setOptional(Query has, Clear clear) { m_has = std::move(has); m_clear = std::move(clear); }
-
-    float getSpeed() const { return m_speed; }      // how fast a drag walks the value, zero leaves it to the editor
-    void setSpeed(float speed) { m_speed = speed; }
-
-    // what the value may reach, equal bounds leave it to the editor
-    float getMin() const { return m_min; }
-    float getMax() const { return m_max; }
-    bool hasRange() const { return m_min < m_max; }
-    void setRange(float min, float max) { m_min = min; m_max = max; }
+    template<class T>
+    bool has() const { return m_metadata.contains(std::type_index(typeid(T))); }
 
     // value
     Value get(const void* instance) const { return m_getter ? m_getter(instance) : Value{}; }
@@ -112,19 +97,9 @@ private:
     ValueType m_type = ValueType::Bool;
 
     std::vector<std::string> m_options;
-    bool m_hidden = false;
     Condition m_condition;
-    bool m_color = false;
-    bool m_asset = false;
-    bool m_bits = false;
-    bool m_axes = false;
-    bool m_inline = false;
 
-    Query m_has;
-    Clear m_clear;
-    float m_speed = 0.0f;
-    float m_min = 0.0f;
-    float m_max = 0.0f;
+    std::unordered_map<std::type_index, std::shared_ptr<const void>> m_metadata;
 
     Getter m_getter;
     Setter m_setter;
@@ -152,6 +127,7 @@ public:
     Field& getLastField() { return m_fields.back(); }
     std::vector<const Field*> getAllFields() const;     // own first, then inherited
     const Field* findField(std::string_view name) const;
+    Field& field(std::string_view name);                // what reflection already made, to say more about it
 
     // construction
     void* create() const { return m_factory ? m_factory() : nullptr; }

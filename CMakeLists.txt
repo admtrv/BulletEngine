@@ -1,9 +1,23 @@
 # CMakeLists.txt
 
 cmake_minimum_required(VERSION 3.22)
+
+# gcc 16 is the currently supported compiler for c++26 reflection
+find_program(GCC_16 gcc-16)
+find_program(GXX_16 g++-16)
+
+if(NOT GCC_16 OR NOT GXX_16)
+    message(FATAL_ERROR "BulletEngine needs gcc 16 for c++26 reflection, install gcc-16 and g++-16")
+endif()
+
+set(CMAKE_C_COMPILER "${GCC_16}" CACHE FILEPATH "" FORCE)
+set(CMAKE_CXX_COMPILER "${GXX_16}" CACHE FILEPATH "" FORCE)
+
 project(BulletEngine)
 
-set(CMAKE_CXX_STANDARD 20)
+if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
+    message(FATAL_ERROR "BulletEngine needs gcc 16 or newer, found ${CMAKE_CXX_COMPILER_VERSION}")
+endif()
 
 # address sanitizer
 option(SANITIZE "enable AddressSanitizer with extended checks" OFF)
@@ -40,6 +54,10 @@ file(GLOB_RECURSE BULLET_ENGINE_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/s
 add_executable(BulletEngine ${CMAKE_SOURCE_DIR}/main.cpp ${BULLET_ENGINE_SOURCES})
 target_include_directories(BulletEngine PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/external/sol2/include)
 target_link_libraries(BulletEngine PRIVATE BulletRenderLib BulletPhysicsLib lua)
+
+# c++26 reflection
+target_compile_features(BulletEngine PRIVATE cxx_std_26)
+target_compile_options(BulletEngine PRIVATE -freflection)
 
 # editor resources
 foreach(RESOURCE shaders fonts)

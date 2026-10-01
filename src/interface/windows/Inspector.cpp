@@ -8,6 +8,7 @@
 #include "ecs/Components.h"
 #include "interface/elements/Widgets.h"
 #include "project/Project.h"
+#include "reflect/Annotations.h"
 #include "reflect/Registry.h"
 #include "reflect/Type.h"
 
@@ -210,42 +211,6 @@ void Editor::syncCollider(ecs::Entity entity)
     collider->collider->place({position.x, position.y, position.z}, {rotation.w, rotation.x, rotation.y, rotation.z});
 }
 
-// term asset may fill instead, toggle clears it back to whatever came with model
-bool Editor::drawOptional(const reflect::Field& field, void* instance)
-{
-    bool enabled = field.has(instance);
-
-    const char* label = field.getLabel().c_str();
-    const reflect::Value value = field.get(instance);
-
-    // override draws caption and toggle, so control below carries none
-    const bool isColor = field.getType() == reflect::ValueType::Vec3;
-
-    glm::vec3 color = isColor ? value.get<glm::vec3>() : glm::vec3{};
-    float scalar = isColor ? 0.0f : value.get<float>();
-
-    const float min = field.hasRange() ? field.getMin() : -DRAG_LIMIT;
-    const float max = field.hasRange() ? field.getMax() : DRAG_LIMIT;
-
-    const bool edited = isColor
-        ? BulletRender::interface::overrideField(label, enabled, color)
-        : BulletRender::interface::overrideField(label, enabled, scalar, min, max, "%.1f");
-
-    if (!edited)
-    {
-        return false;
-    }
-
-    if (!enabled)
-    {
-        field.clear(instance);
-        return true;
-    }
-
-    field.set(instance, isColor ? reflect::Value(color) : reflect::Value(scalar));
-    return true;
-}
-
 // one value of any supported type
 bool Editor::drawValue(const reflect::Field& field, void* instance, const char* name)
 {
@@ -286,7 +251,7 @@ bool Editor::drawValue(const reflect::Field& field, void* instance, const char* 
                 break;
             }
 
-            if (field.isBits())
+            if (field.has<reflect::Bits>())
             {
                 unsigned bits = static_cast<unsigned>(v);
 
@@ -300,8 +265,10 @@ bool Editor::drawValue(const reflect::Field& field, void* instance, const char* 
             }
 
             // field naming no range holds whatever fits
-            const int intMin = field.hasRange() ? int(field.getMin()) : -int(DRAG_LIMIT);
-            const int intMax = field.hasRange() ? int(field.getMax()) : int(DRAG_LIMIT);
+            const reflect::Range* range = field.metadata<reflect::Range>();
+
+            const int intMin = range ? int(range->min) : -int(DRAG_LIMIT);
+            const int intMax = range ? int(range->max) : int(DRAG_LIMIT);
 
             if (BulletRender::interface::dragScalarField(name, v, intMin, intMax, "%d")) { field.set(instance, v); changed = true; }
             break;
@@ -310,8 +277,10 @@ bool Editor::drawValue(const reflect::Field& field, void* instance, const char* 
         {
             float v = value.get<float>();
 
-            const float min = field.hasRange() ? field.getMin() : -DRAG_LIMIT;
-            const float max = field.hasRange() ? field.getMax() : DRAG_LIMIT;
+            const reflect::Range* range = field.metadata<reflect::Range>();
+
+            const float min = range ? range->min : -DRAG_LIMIT;
+            const float max = range ? range->max : DRAG_LIMIT;
 
             if (BulletRender::interface::dragScalarField(name, v, min, max, "%.3f")) { field.set(instance, v); changed = true; }
             break;
@@ -320,7 +289,7 @@ bool Editor::drawValue(const reflect::Field& field, void* instance, const char* 
         {
             std::string v = value.get<std::string>();
 
-            if (field.isAsset())
+            if (field.has<reflect::Asset>())
             {
                 // state types path, it never mirrors key preset carries
                 BulletRender::interface::AssetFieldState& slot = m_assetPaths[field.getName()];
@@ -383,7 +352,8 @@ bool Editor::drawValue(const reflect::Field& field, void* instance, const char* 
         {
             glm::vec2 v = value.get<glm::vec2>();
 
-            const float speed = field.getSpeed() > 0.0f ? field.getSpeed() : DRAG_SPEED_DEFAULT;
+            const reflect::Speed* step = field.metadata<reflect::Speed>();
+            const float speed = step ? step->value : DRAG_SPEED_DEFAULT;
 
             if (BulletRender::interface::dragVector2(name, v, speed, -DRAG_LIMIT, DRAG_LIMIT, "%.2f")) { field.set(instance, v); changed = true; }
             break;
@@ -392,13 +362,14 @@ bool Editor::drawValue(const reflect::Field& field, void* instance, const char* 
         {
             glm::vec3 v = value.get<glm::vec3>();
 
-            if (field.isColor())
+            if (field.has<reflect::Color>())
             {
                 if (BulletRender::interface::dragColor3(name, v)) { field.set(instance, v); changed = true; }
                 break;
             }
 
-            const float speed = field.getSpeed() > 0.0f ? field.getSpeed() : DRAG_SPEED_DEFAULT;
+            const reflect::Speed* step = field.metadata<reflect::Speed>();
+            const float speed = step ? step->value : DRAG_SPEED_DEFAULT;
 
             if (BulletRender::interface::dragVector3(name, v, speed, -DRAG_LIMIT, DRAG_LIMIT, "%.2f")) { field.set(instance, v); changed = true; }
             break;
@@ -526,7 +497,7 @@ bool Editor::drawObjectType(const reflect::Field& field, void* instance, const r
 
 bool Editor::drawField(const reflect::Field& field, void* instance, const char* name)
 {
-    if (field.isHidden() || !field.isShown(instance))
+    if (field.has<reflect::Hidden>() || !field.isShown(instance))
     {
         return false;
     }
@@ -551,7 +522,7 @@ bool Editor::drawField(const reflect::Field& field, void* instance, const char* 
         bool changed = false;
 
         // inline object draws no type row of its own
-        if (!field.isInline() && drawObjectType(field, instance, object ? nested : nullptr))
+        if (!field.has<reflect::Inline>() && drawObjectType(field, instance, object ? nested : nullptr))
         {
             changed = true;
             object = field.resolve(instance, &nested);
@@ -567,7 +538,7 @@ bool Editor::drawField(const reflect::Field& field, void* instance, const char* 
             {
                 changed |= drawFields(*nested, object, true);
             }
-            else if (field.isInline())
+            else if (field.has<reflect::Inline>())
             {
                 changed |= drawFields(*nested, object, false, name);
             }
@@ -590,7 +561,7 @@ bool Editor::drawField(const reflect::Field& field, void* instance, const char* 
         return false;
     }
 
-    return field.isOptional() ? drawOptional(field, instance) : drawValue(field, instance, name);
+    return drawValue(field, instance, name);
 }
 
 // fields arrive either as values or as pointers, one walk serves both
@@ -607,7 +578,9 @@ bool Editor::drawAxes(const reflect::Field* const axes[AXIS_COUNT], void* instan
         axis[i] = axes[i]->get(instance).get<bool>();
     }
 
-    if (!BulletRender::interface::checkboxAxes(axes[0]->getLabel().c_str(), axis[0], axis[1], axis[2]))
+    const reflect::Axes* caption = axes[0]->metadata<reflect::Axes>();
+
+    if (!BulletRender::interface::checkboxAxes(caption->text, axis[0], axis[1], axis[2]))
     {
         return false;
     }
@@ -630,7 +603,7 @@ bool Editor::drawRange(F fields, size_t count, void* instance, const char* first
         const reflect::Field* field = at(fields, i);
 
         // claimed triple leaves only its own row behind, broken one falls back to plain fields
-        if (field->isAxes() && i + AXIS_COUNT <= count)
+        if (field->has<reflect::Axes>() && i + AXIS_COUNT <= count)
         {
             const reflect::Field* axes[AXIS_COUNT];
 

@@ -19,7 +19,6 @@ constexpr float POLL_INTERVAL = 1.0f;       // seconds between looks
 
 constexpr const char* PROJECT_EXTENSION = ".project";
 constexpr const char* PROJECT_FILE = "Project.project";     // same name everywhere, folder says which project it is
-constexpr const char* SCENE_EXTENSION = ".scene";
 
 // folders first, then names, as file manager reads
 static bool byKind(const Entry& a, const Entry& b)

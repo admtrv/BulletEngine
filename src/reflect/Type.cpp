@@ -5,6 +5,7 @@
 #include "Type.h"
 
 #include <algorithm>
+#include <cassert>
 #include <cctype>
 
 namespace BulletEngine {
@@ -68,6 +69,17 @@ const Field* Type::findField(std::string_view name) const
     }
 
     return m_base ? m_base->findField(name) : nullptr;
+}
+
+// caller names field it just declared, missing one is mistake, not case to handle
+Field& Type::field(std::string_view name)
+{
+    const auto it = std::find_if(m_fields.begin(), m_fields.end(),
+        [name](const Field& field) { return field.getName() == name; });
+
+    assert(it != m_fields.end());
+
+    return *it;
 }
 
 bool Type::derivesFrom(const Type& type) const

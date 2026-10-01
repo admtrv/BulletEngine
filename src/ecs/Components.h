@@ -5,6 +5,7 @@
 #pragma once
 
 #include "assets/Handle.h"
+#include "reflect/Annotations.h"
 #include "ecs/Ecs.h"
 #include "script/Script.h"
 
@@ -21,7 +22,6 @@
 #include "dynamics/body/RigidBody.h"
 #include "collision/collider/Collider.h"
 
-#include <array>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -38,9 +38,9 @@ public:
 
 class TransformComponent : public Component {
 public:
-    BulletRender::scene::Transform transform;
+    [[= reflect::Skip{}]] BulletRender::scene::Transform transform;
 
-    Entity parent = INVALID_ENTITY;
+    [[= reflect::Hidden{}]] Entity parent = INVALID_ENTITY;      // hierarchy is dragged, not typed as id
 };
 
 // named by asset key, so scene can be written down
@@ -85,51 +85,41 @@ private:
 struct ColorTerm {
     explicit ColorTerm(const glm::vec3& tint = glm::vec3(1.0f)) : color(tint) {}
 
-    glm::vec3 color;
-    MaterialSlot texture;
+    [[= reflect::Color{}]] glm::vec3 color;
+    [[= reflect::Inline{}]] MaterialSlot texture;
 };
 
 struct SpecularTerm {
-    glm::vec3 color{0.5f};
-    MaterialSlot texture;
+    [[= reflect::Color{}]] glm::vec3 color{0.5f};
+    [[= reflect::Inline{}]] MaterialSlot texture;
 
-    float shininess = 32.0f;     // phong ns, higher draws tighter highlight
+    [[= reflect::Range{1.0f, 256.0f}]] float shininess = 32.0f;     // phong ns, higher draws tighter highlight
 };
 
 // picture with nothing to tint, detail alone
 struct NormalTerm {
-    MaterialSlot texture;
+    [[= reflect::Inline{}]] MaterialSlot texture;
 };
 
 // alpha and which way faces are seen
-class SettingsTerm {
-public:
-    // alpha, int for reflection and enum for renderer
-    int getAlphaMode() const { return int(m_alphaMode); }
-    void setAlphaMode(int mode) { m_alphaMode = BulletRender::render::AlphaMode(mode); }
-    BulletRender::render::AlphaMode getAlphaModeValue() const { return m_alphaMode; }
-    bool isMasked() const { return m_alphaMode == BulletRender::render::AlphaMode::Mask; }
+struct SettingsTerm {
+    BulletRender::render::AlphaMode alphaMode = BulletRender::render::AlphaMode::Opaque;
 
-    float alphaCutoff = 0.5f;   // mask only, below it pixel is dropped
+    [[= reflect::Range{0.0f, 1.0f}]] float alphaCutoff = 0.5f;   // mask only, below it pixel is dropped
     bool doubleSided = false;
 
-private:
-    BulletRender::render::AlphaMode m_alphaMode = BulletRender::render::AlphaMode::Opaque;
+    bool isMasked() const { return alphaMode == BulletRender::render::AlphaMode::Mask; }
 };
 
-class MaterialComponent {
+class Material {
 public:
-    static constexpr int SLOT_COUNT = 4;
-
     void importFrom(const std::string& mtlPath);    // once, from what model brought, never read again
 
-    // shading
-    int getShading() const { return int(m_shading); }
-    void setShading(int shading) { m_shading = BulletRender::render::Shading(shading); }
-    bool isLit() const { return m_shading == BulletRender::render::Shading::Lit; }
-
     void fill(BulletRender::render::Material& material) const;      // what renderer draws with
-    std::array<MaterialSlot*, SLOT_COUNT> getSlots();               // in order inspector lays them out
+
+    bool isLit() const { return shading == BulletRender::render::Shading::Lit; }
+
+    BulletRender::render::Shading shading = BulletRender::render::Shading::Lit;
 
     // terms
     ColorTerm diffuse;
@@ -138,9 +128,6 @@ public:
     ColorTerm emissive{glm::vec3(0.0f)};    // black gives off nothing, which is usual
 
     SettingsTerm settings;
-
-private:
-    BulletRender::render::Shading m_shading = BulletRender::render::Shading::Lit;
 };
 
 class Renderable {
@@ -149,9 +136,9 @@ public:
 
     virtual const assets::Handle<BulletRender::scene::Model>& getModel() const = 0;
 
-    glm::vec3 origin{0.0f};     // point of model that sits where entity does, middle unless moved
+    [[= reflect::Speed{0.01f}]] glm::vec3 origin{0.0f};     // point of model that sits where entity does, middle unless moved
 
-    MaterialComponent material;
+    Material material;
 };
 
 class Mesh : public Renderable {
@@ -230,8 +217,8 @@ public:
     float fov = 60.0f;          // perspective only, vertical angle
     float height = 10.0f;       // orthographic only, world units view spans
 
-    float nearPlane = 0.1f;
-    float farPlane = 500.0f;
+    [[= reflect::Name{"near"}]] float nearPlane = 0.1f;
+    [[= reflect::Name{"far"}]] float farPlane = 500.0f;
 
     bool main = false;          // one camera renders, first found when none is marked
 };
@@ -243,7 +230,7 @@ public:
 
 class ScriptComponent : public Component {
 public:
-    assets::Handle<script::Script> script;
+    [[= reflect::Skip{}]] assets::Handle<script::Script> script;
 
     const std::string& getScriptKey() const { return script.getKey(); }
     void setScriptKey(const std::string& key);
@@ -341,12 +328,12 @@ public:
 
 class RigidBodyComponent : public Component {
 public:
-    BulletPhysics::dynamics::RigidBody body;
+    [[= reflect::Skip{}]] BulletPhysics::dynamics::RigidBody body;
 };
 
 class ColliderComponent : public Component {
 public:
-    std::unique_ptr<BulletPhysics::collision::collider::Collider> collider;
+    [[= reflect::Name{"shape"}]] std::unique_ptr<BulletPhysics::collision::collider::Collider> collider;
 };
 
 } // namespace ecs

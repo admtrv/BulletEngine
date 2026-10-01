@@ -8,6 +8,7 @@
 #include <glm/gtc/quaternion.hpp>
 
 #include <cstdint>
+#include <meta>
 #include <string>
 #include <variant>
 
@@ -23,9 +24,7 @@ enum class ValueType : uint8_t {
     Vec2,
     Vec3,
     Vec4,
-    Quat,
-
-    Count
+    Quat
 };
 
 // tagged value carried between fields and readers
@@ -63,7 +62,7 @@ private:
     using Storage = std::variant<bool, int, float, std::string, glm::vec2, glm::vec3, glm::vec4, glm::quat>;
 
     // alternative order mirrors ValueType
-    static_assert(std::variant_size_v<Storage> == static_cast<size_t>(ValueType::Count));
+    static_assert(std::variant_size_v<Storage> == std::meta::enumerators_of(^^ValueType).size());
     static_assert(std::is_same_v<std::variant_alternative_t<static_cast<size_t>(ValueType::Bool), Storage>, bool>);
     static_assert(std::is_same_v<std::variant_alternative_t<static_cast<size_t>(ValueType::Quat), Storage>, glm::quat>);
 

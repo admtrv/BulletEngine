@@ -5,6 +5,7 @@
 #pragma once
 
 #include "ecs/Ecs.h"
+#include "reflect/Type.h"
 
 #include <string>
 #include <vector>
@@ -20,6 +21,7 @@ public:
 
 private:
     static void reload(World& world, const std::vector<std::string>& keys);
+    static void reloadObject(const reflect::Type& type, void* instance, const std::vector<std::string>& keys);
 };
 
 } // namespace systems

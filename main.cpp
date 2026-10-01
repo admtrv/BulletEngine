@@ -19,6 +19,7 @@
 #include "app/Application.h"
 #include "assets/Loaders.h"
 #include "ecs/Ecs.h"
+#include "ecs/Reflection.h"
 #include "ecs/systems/CanvasSystem.h"
 #include "ecs/systems/DebugDrawSystem.h"
 #include "ecs/systems/HierarchySystem.h"
@@ -90,6 +91,7 @@ int main()
 
         // world
         assets::registerLoaders();
+        ecs::registerTypes();
 
         ecs::World world;
 

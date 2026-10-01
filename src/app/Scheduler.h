@@ -7,6 +7,7 @@
 #include "app/Phases.h"
 
 #include <cstdint>
+#include <meta>
 #include <functional>
 #include <string>
 #include <vector>
@@ -66,7 +67,7 @@ private:
         HookFn fn;
     };
 
-    static constexpr size_t PHASE_COUNT = static_cast<size_t>(Phase::Count);
+    static constexpr size_t PHASE_COUNT = std::meta::enumerators_of(^^Phase).size();
 
     std::vector<Hook>& bucket(Phase phase) { return m_hooks[static_cast<size_t>(phase)]; }
     const std::vector<Hook>& bucket(Phase phase) const { return m_hooks[static_cast<size_t>(phase)]; }

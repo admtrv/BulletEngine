@@ -15,20 +15,6 @@ namespace BulletEngine {
 namespace ecs {
 namespace systems {
 
-// what script may define, order matches Callback
-constexpr const char* CALLBACK_NAMES[] = {
-    "onStart",
-    "onUpdate",
-    "onFixedUpdate",
-    "onLateUpdate",
-    "onCanvasDraw",
-    "onDestroy",
-    "onCollisionEnter",
-    "onCollisionExit",
-    "onTriggerEnter",
-    "onTriggerExit"
-};
-
 // machine
 
 ScriptSystem::ScriptSystem(PhysicsSystem& physics, interface::Editor& editor)
@@ -98,7 +84,7 @@ void ScriptSystem::attach(World& world, Entity entity)
 
     Instance instance{environment, {}};
 
-    for (size_t i = 0; i < static_cast<size_t>(Callback::Count); i++)
+    for (size_t i = 0; i < CALLBACK_COUNT; i++)
     {
         instance.callbacks[i] = environment[CALLBACK_NAMES[i]];
     }

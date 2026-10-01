@@ -12,6 +12,10 @@
 
 #include <sol/sol.hpp>
 
+#include <array>
+#include <meta>
+#include <string>
+
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -50,7 +54,7 @@ public:
 private:
     // types
 
-    // what script may define, names live in CALLBACK_NAMES
+    // what script may define, lua knows each as "on" and this name, so renaming breaks scripts
     enum class Callback : uint8_t {
         Start,
         Update,
@@ -61,15 +65,28 @@ private:
         CollisionEnter,
         CollisionExit,
         TriggerEnter,
-        TriggerExit,
-
-        Count
+        TriggerExit
     };
+
+    static constexpr size_t CALLBACK_COUNT = std::meta::enumerators_of(^^Callback).size();
+
+    // lua name of every callback, built from enum so both cannot drift apart
+    static constexpr std::array<const char*, CALLBACK_COUNT> CALLBACK_NAMES = []consteval {
+        std::array<const char*, CALLBACK_COUNT> names{};
+        size_t at = 0;
+
+        for (std::meta::info entry : std::meta::enumerators_of(^^Callback))
+        {
+            names[at++] = std::define_static_string("on" + std::string(std::meta::identifier_of(entry)));
+        }
+
+        return names;
+    }();
 
     // one entity, own copy of script globals
     struct Instance {
         sol::environment environment;
-        sol::protected_function callbacks[static_cast<size_t>(Callback::Count)];
+        sol::protected_function callbacks[CALLBACK_COUNT];
     };
 
     // machine

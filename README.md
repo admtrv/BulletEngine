@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>Powered by</strong>
+  <i>powered by</i>
 </p>
 
 <p align="center">
@@ -21,7 +21,7 @@
 Small but complete C/C++ 3D/2D game engine with Lua scripting. It combines a graphics engine module and a physics engine module under an ECS-based architecture, with an editor and its own project and scene workflow. The engine follows one core principle: provide a small, solid foundation for common needs, and leave the game-specific architecture to the programmer.
 
 <p align="center">
-    <img src="assets/images/Demo.gif" alt="Demo Editor" width="500">
+    <img src="assets/images/Scene2.gif" alt="Demo Editor" width="650">
 </p>
 
 ## Features
@@ -29,7 +29,7 @@ Small but complete C/C++ 3D/2D game engine with Lua scripting. It combines a gra
 - **2D/3D** modes do not limit you to one format, you can mix them freely in one game
 - **Entities** live in a flat world and hold their components, transforms form parent-child hierarchy
 - **Components** are pieces of behavior an entity is made of, attached and detached while world runs
-- **Reflection** lets a component be described once, and editor and scene format pick it up on their own
+- **Reflection** is C++26 static reflection, editor and scene format read a component off its own declaration
 - **Editor** shows the whole project, world is built and played without leaving it
 - **Scripting** in Lua, small language that embeds into engine, this is where game itself is written
 - **UI** is drawn by scripts over the game, text and images placed in pixels
@@ -38,7 +38,39 @@ Small but complete C/C++ 3D/2D game engine with Lua scripting. It combines a gra
 - **Prefabs** keep an entity with everything below it, place it back anywhere
 - **Assets** of any kind are handled the same way, and reload on the fly when file changes
 
+## Demos
+
+<p align="center">
+    <img src="assets/images/Scene1.gif" alt="Demo Model" width="650">
+</p>
+
+<p align="center">
+    Textured model under a skybox, moved by a script
+</p>
+
+<br>
+
+<p align="center">
+    <img src="assets/images/Scene2.gif" alt="Demo UI" width="650">
+</p>
+
+<p align="center">
+    Small game showing physics interactions and score drawing
+</p>
+
+<br>
+
+<p align="center">
+    <img src="assets/images/Scene3.gif" alt="Demo Sprites" width="650">
+</p>
+
+<p align="center">
+    2D character controller driven by a sprite sheet animator
+</p>
+
 ## Dependencies
+
+Requires C++26 and GCC 16 for static reflection support.
 
 Modules come as submodules, everything they need applies here too:
 
@@ -59,7 +91,7 @@ src/
 ├── scene/        reading and writing scenes and prefabs
 ├── assets/       registry and loaders
 ├── project/      project, its tree and settings
-├── reflect/      runtime type description
+├── reflect/      type description
 ├── interface/    editor panels
 └── io/           logging
 ```

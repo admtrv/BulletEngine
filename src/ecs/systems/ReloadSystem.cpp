@@ -4,13 +4,15 @@
 
 #include "ReloadSystem.h"
 
-#include "ecs/Components.h"
 #include "project/Project.h"
+#include "reflect/Annotations.h"
+#include "reflect/Registry.h"
 
 #include "render/textures/TextureLoader.h"
 #include "scene/models/ModelLoader.h"
 
 #include <algorithm>
+#include <typeindex>
 
 namespace BulletEngine {
 namespace ecs {
@@ -26,9 +28,42 @@ void ReloadSystem::update(World& world, float dt)
     }
 }
 
+// asset fields say so themselves, new one needs no word here
+void ReloadSystem::reloadObject(const reflect::Type& type, void* instance, const std::vector<std::string>& keys)
+{
+    for (const reflect::Field* field : type.getAllFields())
+    {
+        if (field->getKind() == reflect::FieldKind::Object)
+        {
+            const reflect::Type* nested = nullptr;
+
+            if (void* object = field->resolve(instance, &nested); object && nested)
+            {
+                reloadObject(*nested, object, keys);
+            }
+
+            continue;
+        }
+
+        if (!field->has<reflect::Asset>())
+        {
+            continue;
+        }
+
+        // key set back on itself pulls asset in again, past empty cache
+        const std::string key = field->get(instance).get<std::string>();
+
+        if (std::find(keys.begin(), keys.end(), key) != keys.end())
+        {
+            field->set(instance, reflect::Value(key));
+        }
+    }
+}
+
 void ReloadSystem::reload(World& world, const std::vector<std::string>& keys)
 {
-    project::Project& project = project::Project::instance();
+    const project::Project& project = project::Project::instance();
+    const reflect::Registry& registry = reflect::Registry::instance();
 
     // caches are keyed by path loader was given, not by key field holds
     for (const std::string& key : keys)
@@ -39,33 +74,13 @@ void ReloadSystem::reload(World& world, const std::vector<std::string>& keys)
         BulletRender::render::TextureLoader::instance().remove(path);
     }
 
-    // key set back on itself pulls asset in again, past empty cache
     for (Entity entity : world.getEntities())
     {
-        auto* component = world.get<RenderableComponent>(entity);
-
-        if (!component || !component->renderable)
+        for (const std::unique_ptr<Component>& component : world.getComponents(entity))
         {
-            continue;
-        }
-
-        Renderable& renderable = *component->renderable;
-
-        // only mesh reads model off disk, sprite builds its own
-        if (auto* mesh = dynamic_cast<Mesh*>(&renderable))
-        {
-            // key is copied out, setting it replaces handle getter points into
-            if (const std::string key = mesh->getModelKey(); std::find(keys.begin(), keys.end(), key) != keys.end())
+            if (const reflect::Type* type = registry.find(std::type_index(typeid(*component))))
             {
-                mesh->setModelKey(key);
-            }
-        }
-
-        for (MaterialSlot* slot : renderable.material.getSlots())
-        {
-            if (const std::string key = slot->getTextureKey(); std::find(keys.begin(), keys.end(), key) != keys.end())
-            {
-                slot->setTextureKey(key);
+                reloadObject(*type, component.get(), keys);
             }
         }
     }
