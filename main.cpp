@@ -17,6 +17,7 @@
 
 // BulletEngine
 #include "app/Application.h"
+#include "app/TaskExecutor.h"
 #include "assets/Loaders.h"
 #include "ecs/Ecs.h"
 #include "ecs/Reflection.h"
@@ -90,6 +91,7 @@ int main()
             std::make_shared<br::render::GraphicsShader>(VERTEX_SHADER_PATH, FRAGMENT_SHADER_PATH));
 
         // world
+        app::TaskExecutor::instance().start();
         assets::registerLoaders();
         ecs::registerTypes();
 
@@ -126,6 +128,10 @@ int main()
         app.setWorld(&world);
 
         app::Scheduler& scheduler = app.getScheduler();
+
+        scheduler.add(app::Phase::PreUpdate, [](const app::FrameContext&) {
+            app::TaskExecutor::instance().drain();
+        }, -10, "assets");
 
         scheduler.add(app::Phase::PreUpdate, [&editor](const app::FrameContext& frame) {
             if (editor.isSceneFocused())
@@ -245,6 +251,9 @@ int main()
             br::utils::Input::instance().endFrame();
         });
     }
+
+    // workers hold nothing of gl, but what they feed does, so they go first
+    app::TaskExecutor::instance().stop();
 
     br::render::Renderer::shutdown();
     br::app::Window::shutdown();

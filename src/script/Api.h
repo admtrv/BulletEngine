@@ -25,9 +25,10 @@ const reflect::Type* findType(const std::string& name);
 
 // canvas comes as an argument, so its type is bound once for whole state
 void bindCanvas(sol::state& lua);
+void bindAssets(sol::state& lua);
 
-// fonts stay loaded while scripts run, this lets go of them
-void releaseFonts();
+// what canvas drew stays loaded while scripts run, this lets go of it
+void releaseCanvasAssets();
 
 // what script reaches beyond its own components, one file per subject
 

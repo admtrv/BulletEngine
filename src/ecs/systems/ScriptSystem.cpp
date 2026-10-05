@@ -28,6 +28,7 @@ void ScriptSystem::bind()
 {
     script::bindTypes(m_lua);
     script::bindCanvas(m_lua);
+    script::bindAssets(m_lua);
 
     // print reaches editor console, streams mirrored there
     m_lua.set_function("print", [](sol::variadic_args args) {
@@ -150,7 +151,7 @@ void ScriptSystem::stop()
     m_broken.clear();
 
     m_events.clear();
-    script::releaseFonts();
+    script::releaseCanvasAssets();
 }
 
 // frame

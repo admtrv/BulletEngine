@@ -9,7 +9,10 @@
 #include "project/Project.h"
 #include "scene/Serializer.h"
 
+#include "render/textures/CubeMapLoader.h"
+
 #include <filesystem>
+#include <utility>
 
 #include <array>
 
@@ -38,13 +41,9 @@ static bool reload(BulletEngine::assets::Handle<T>& handle, const std::string& k
         return true;
     }
 
-    if (auto loaded = BulletEngine::assets::Registry::instance().load<T>(key))
-    {
-        handle = std::move(loaded);
-        return true;
-    }
+    handle = BulletEngine::assets::Registry::instance().load<T>(key);
 
-    return false;
+    return handle.getState() != BulletEngine::assets::State::Failed;
 }
 
 void ScriptComponent::setScriptKey(const std::string& key)
@@ -66,33 +65,32 @@ void EnvironmentComponent::setCrossKey(const std::string& key)
 
 void EnvironmentComponent::setFaceKey(int face, const std::string& key)
 {
-    m_faceKeys[face] = key;
+    reload(m_facePixels[face], key);
 
-    buildFaces();
+    m_faces.reset();    // no longer stands for what faces say
 }
 
-void EnvironmentComponent::buildFaces()
+std::shared_ptr<BulletRender::render::CubeMap> EnvironmentComponent::buildFaces() const
 {
-    std::array<std::string, FACE_COUNT> paths;
+    std::array<const BulletRender::render::TexturePixels*, FACE_COUNT> pictures;
 
     for (int face = 0; face < FACE_COUNT; face++)
     {
-        if (m_faceKeys[face].empty())
-        {
-            m_faces.reset();
-            return;
-        }
+        pictures[face] = m_facePixels[face].get();
 
-        paths[face] = project::Project::instance().getPath(m_faceKeys[face]);
+        if (!pictures[face])
+        {
+            return nullptr;
+        }
     }
 
-    m_faces = std::make_shared<BulletRender::render::CubeMap>(paths);
+    return BulletRender::render::CubeMapLoader::uploadFaces(pictures);
 }
 
-// sky covers whole view, what lies under it is never seen
+// sky covers whole view, so what lies under it is seen only until it arrives
 glm::vec3 EnvironmentComponent::getClearColor() const
 {
-    return isSkybox() ? glm::vec3(0.0f) : m_color;
+    return isSkybox() && getSkybox() ? glm::vec3(0.0f) : m_color;
 }
 
 std::shared_ptr<BulletRender::render::CubeMap> EnvironmentComponent::getSkybox() const
@@ -102,17 +100,32 @@ std::shared_ptr<BulletRender::render::CubeMap> EnvironmentComponent::getSkybox()
         return m_cross.getShared();
     }
 
-    return isFaces() ? m_faces : nullptr;
+    if (!isFaces())
+    {
+        return nullptr;
+    }
+
+    if (!m_faces)
+    {
+        m_faces = buildFaces();
+    }
+
+    return m_faces;
 }
 
 // material
 
 void MaterialSlot::setTextureKey(const std::string& key)
 {
-    if (reload(m_texture, key))
-    {
-        m_slot.texture = m_texture.getShared();
-    }
+    reload(m_texture, key);
+}
+
+BulletRender::render::TextureSlot MaterialSlot::get() const
+{
+    BulletRender::render::TextureSlot slot = m_slot;
+    slot.texture = m_texture.getShared();
+
+    return slot;
 }
 
 // only what the file names is taken, an empty entry leaves its slot as it stands
@@ -229,8 +242,6 @@ void Sprite::setFrame(int frame)
 
     // reading runs along the sheet, so counting past its end wraps to the start
     m_frame = count > 0 ? ((frame % count) + count) % count : 0;
-
-    fitFrame();
 }
 
 glm::vec2 Sprite::getSheetSize() const
@@ -285,7 +296,7 @@ void Sprite::fitFrame()
         return;
     }
 
-    // picture may not have arrived yet, square stands in until it does
+    // square keeps shape valid while picture is not there
     if (frame.x <= 0.0f || frame.y <= 0.0f)
     {
         m_shape = assets::Registry::instance().load<BulletRender::scene::Model>(assets::QUAD_KEY);

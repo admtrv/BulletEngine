@@ -33,10 +33,11 @@ Small but complete C/C++ 3D/2D game engine with Lua scripting. It combines a gra
 - **Editor** shows the whole project, world is built and played without leaving it
 - **Scripting** in Lua, small language that embeds into engine, this is where game itself is written
 - **UI** is drawn by scripts over the game, text and images placed in pixels
+- **Multithreading** uses a worker pool with one thread left to main loop, jobs run in background and finish on it
 - **Events** carry what happened by name, so one script answers another without knowing it
 - **Scenes** save as readable text, so they can be read and fixed by hand as well as by editor
 - **Prefabs** keep an entity with everything below it, place it back anywhere
-- **Assets** of any kind are handled the same way, and reload on the fly when file changes
+- **Assets** of any kind are handled the same way, read off main thread, and reload on the fly when file changes
 
 ## Demos
 
@@ -85,7 +86,7 @@ Bundled in `external/`:
 
 ```
 src/
-├── app/          app and scheduler
+├── app/          app, scheduler and task executor
 ├── ecs/          entities, components, systems
 ├── script/       lua runtime and script api
 ├── scene/        reading and writing scenes and prefabs

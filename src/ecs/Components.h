@@ -18,6 +18,7 @@
 #include "render/MaterialImport.h"
 #include "render/textures/CubeMap.h"
 #include "render/textures/Texture2D.h"
+#include "render/textures/TextureLoader.h"
 
 #include "dynamics/body/RigidBody.h"
 #include "collision/collider/Collider.h"
@@ -73,8 +74,8 @@ public:
     void setOffset(const glm::vec2& offset) { m_slot.uvOffset = offset; }
 
     // what renderer and editor take
-    bool isFilled() const { return !m_slot.empty(); }
-    const BulletRender::render::TextureSlot& get() const { return m_slot; }
+    bool isFilled() const { return !m_texture.getKey().empty(); }   // key is enough, picture may still be coming
+    BulletRender::render::TextureSlot get() const;
     const assets::Handle<BulletRender::render::Texture2D>& getTexture() const { return m_texture; }
 
 private:
@@ -203,6 +204,7 @@ private:
     // what shape was built for, picture may arrive long after frame was chosen
     glm::vec2 m_fitted{0.0f};
     Shape m_fittedShape = Shape::Quad;
+
 };
 
 class RenderableComponent : public Component {
@@ -276,22 +278,22 @@ public:
     void setCrossKey(const std::string& key);
 
     // faces
-    const std::string& getRightKey() const { return m_faceKeys[Right]; }
+    const std::string& getRightKey() const { return m_facePixels[Right].getKey(); }
     void setRightKey(const std::string& key) { setFaceKey(Right, key); }
 
-    const std::string& getLeftKey() const { return m_faceKeys[Left]; }
+    const std::string& getLeftKey() const { return m_facePixels[Left].getKey(); }
     void setLeftKey(const std::string& key) { setFaceKey(Left, key); }
 
-    const std::string& getTopKey() const { return m_faceKeys[Top]; }
+    const std::string& getTopKey() const { return m_facePixels[Top].getKey(); }
     void setTopKey(const std::string& key) { setFaceKey(Top, key); }
 
-    const std::string& getBottomKey() const { return m_faceKeys[Bottom]; }
+    const std::string& getBottomKey() const { return m_facePixels[Bottom].getKey(); }
     void setBottomKey(const std::string& key) { setFaceKey(Bottom, key); }
 
-    const std::string& getFrontKey() const { return m_faceKeys[Front]; }
+    const std::string& getFrontKey() const { return m_facePixels[Front].getKey(); }
     void setFrontKey(const std::string& key) { setFaceKey(Front, key); }
 
-    const std::string& getBackKey() const { return m_faceKeys[Back]; }
+    const std::string& getBackKey() const { return m_facePixels[Back].getKey(); }
     void setBackKey(const std::string& key) { setFaceKey(Back, key); }
 
     // what is chosen, editor asks before it draws a field
@@ -305,7 +307,7 @@ public:
 
 private:
     void setFaceKey(int face, const std::string& key);
-    void buildFaces();      // set stands only whole, one face short draws nothing
+    std::shared_ptr<BulletRender::render::CubeMap> buildFaces() const;   // nothing until all six are there
 
     // choice
     Background m_background = Background::Color;
@@ -315,8 +317,9 @@ private:
     glm::vec3 m_color = BulletRender::colors::Background;
     assets::Handle<BulletRender::render::CubeMap> m_cross;
 
-    std::string m_faceKeys[FACE_COUNT];
-    std::shared_ptr<BulletRender::render::CubeMap> m_faces;
+    // kept as pixels, gl sees them only as one set
+    assets::Handle<BulletRender::render::TexturePixels> m_facePixels[FACE_COUNT];
+    mutable std::shared_ptr<BulletRender::render::CubeMap> m_faces;
 };
 
 class CanvasComponent : public Component {

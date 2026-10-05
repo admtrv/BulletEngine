@@ -4,12 +4,10 @@
 
 #include "ReloadSystem.h"
 
+#include "assets/Registry.h"
 #include "project/Project.h"
 #include "reflect/Annotations.h"
 #include "reflect/Registry.h"
-
-#include "render/textures/TextureLoader.h"
-#include "scene/models/ModelLoader.h"
 
 #include <algorithm>
 #include <typeindex>
@@ -62,16 +60,12 @@ void ReloadSystem::reloadObject(const reflect::Type& type, void* instance, const
 
 void ReloadSystem::reload(World& world, const std::vector<std::string>& keys)
 {
-    const project::Project& project = project::Project::instance();
     const reflect::Registry& registry = reflect::Registry::instance();
 
-    // caches are keyed by path loader was given, not by key field holds
+    // slot stays until it is forgotten, so a key set back on itself would find the old asset
     for (const std::string& key : keys)
     {
-        const std::string path = project.getPath(key);
-
-        BulletRender::scene::ModelLoader::instance().remove(path);
-        BulletRender::render::TextureLoader::instance().remove(path);
+        assets::Registry::instance().forget(key);
     }
 
     for (Entity entity : world.getEntities())

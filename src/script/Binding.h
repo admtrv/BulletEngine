@@ -4,9 +4,12 @@
 
 #pragma once
 
+#include "assets/Handle.h"
 #include "ecs/Ecs.h"
 #include "reflect/Type.h"
 #include "reflect/Value.h"
+
+#include "render/textures/Texture2D.h"
 
 #include <sol/sol.hpp>
 
@@ -28,6 +31,14 @@ struct Handle {
 
 private:
     void* resolve(const reflect::Type*& outType) const;
+};
+
+// script holding this keeps texture in cache, so returning to it costs nothing
+struct ScriptTexture {
+    assets::Handle<BulletRender::render::Texture2D> texture;
+
+    const std::string& getKey() const { return texture.getKey(); }      // written back to a slot
+    bool isReady() const { return texture.isValid(); }
 };
 
 // what script sees of engine

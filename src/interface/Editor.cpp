@@ -6,6 +6,7 @@
 
 #include "interface/elements/Fonts.h"
 #include "interface/elements/Theme.h"
+#include "assets/Registry.h"
 #include "ecs/Components.h"
 #include "project/Project.h"
 #include "scene/Serializer.h"
@@ -370,6 +371,9 @@ void Editor::setMode(Mode mode)
     else
     {
         m_selection = ecs::INVALID_ENTITY;
+
+        // old world owns what restored one needs, held so cache survives swap
+        const assets::Registry::Retained held = assets::Registry::instance().retainAll();
 
         m_world.clear();
         m_world.flush();

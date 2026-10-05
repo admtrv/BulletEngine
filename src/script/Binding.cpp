@@ -204,6 +204,10 @@ void bindTypes(sol::state& lua)
     lua.new_usertype<Handle>("Component",
         sol::meta_function::index, &Handle::get,
         sol::meta_function::new_index, &Handle::set);
+
+    lua.new_usertype<ScriptTexture>("Texture", sol::no_constructor,
+        "key", sol::property(&ScriptTexture::getKey),
+        "ready", sol::property(&ScriptTexture::isReady));
 }
 
 } // namespace script
